@@ -630,195 +630,244 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <div id="page-report" class="page">
-  
-  <!-- FILTER TANGGAL & EXPORT — tetap ada -->
-  <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:1rem; flex-wrap:wrap; gap:10px">
-    <div class="row" style="flex:1; margin-bottom:0">
-      <div class="field" style="margin-bottom:0">
-        <label>Dari Tanggal</label>
-        <input type="date" id="r-start" onchange="renderR()" />
+
+  <!-- ===== FILTER BAR (sticky, selalu terlihat) ===== -->
+  <div style="background:#fff;border:1px solid #e5e5e3;border-radius:12px;padding:12px 14px;margin-bottom:14px">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+      <div style="flex:1;min-width:120px">
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Dari Tanggal</label>
+        <input type="date" id="r-start" onchange="renderR()" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid #ddd;border-radius:7px"/>
       </div>
-      <div class="field" style="margin-bottom:0">
-        <label>Sampai Tanggal</label>
-        <input type="date" id="r-end" onchange="renderR()" />
+      <div style="flex:1;min-width:120px">
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Sampai Tanggal</label>
+        <input type="date" id="r-end" onchange="renderR()" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid #ddd;border-radius:7px"/>
       </div>
-      <div class="field" style="margin-bottom:0">
-        <label>Filter dosen</label>
-        <select id="rd" onchange="renderR()"><option value="all">Semua dosen</option></select>
+      <div style="flex:1;min-width:130px">
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:3px">Filter Dosen</label>
+        <select id="rd" onchange="renderR()" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid #ddd;border-radius:7px"><option value="all">Semua dosen</option></select>
+      </div>
+      <button class="btn btn-blue" onclick="exportExcel()" style="height:34px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;white-space:nowrap;flex-shrink:0">📥 Export Excel</button>
+    </div>
+  </div>
+
+  <!-- ===== STAT SUMMARY (selalu tampil) ===== -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px">
+    <div style="background:#fff;border:1px solid #e5e5e3;border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:20px;font-weight:700;color:#1a1a1a" id="rt">0</div>
+      <div style="font-size:10px;color:#888;margin-top:2px;line-height:1.3">Total Presensi</div>
+    </div>
+    <div style="background:#eaf3de;border:1px solid #c5e09a;border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:20px;font-weight:700;color:#27500a" id="rp">0%</div>
+      <div style="font-size:10px;color:#27500a;margin-top:2px;line-height:1.3">Tepat Hadir</div>
+    </div>
+    <div style="background:#e6f1fb;border:1px solid #85b7eb;border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:20px;font-weight:700;color:#185fa5" id="rs">0%</div>
+      <div style="font-size:10px;color:#185fa5;margin-top:2px;line-height:1.3">Tepat Selesai</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e5e5e3;border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:20px;font-weight:700;color:#7e22ce" id="rg">0</div>
+      <div style="font-size:10px;color:#888;margin-top:2px;line-height:1.3">Jdwl Ganti</div>
+    </div>
+    <div style="background:#fff;border:1px solid #e5e5e3;border-radius:10px;padding:10px 6px;text-align:center">
+      <div style="font-size:20px;font-weight:700;color:#854f0b" id="rm2">0</div>
+      <div style="font-size:10px;color:#888;margin-top:2px;line-height:1.3">Jdwl Maju</div>
+    </div>
+  </div>
+
+  <!-- ===== PELANGGARAN BANNER ===== -->
+  <div id="pelanggaran-banner" style="display:none;background:#fcebeb;border:1px solid #f09595;color:#a32d2d;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px;font-weight:500;line-height:1.5">
+    🚨 Terdapat <b id="tp-count" style="font-size:15px">0</b> dosen yang seharusnya mengajar di rentang ini namun belum presensi.
+  </div>
+
+  <!-- ===== TAB PANEL DASHBOARD ===== -->
+  <div style="background:#fff;border:1px solid #e5e5e3;border-radius:12px;overflow:hidden">
+
+    <!-- Tab header -->
+    <div style="display:flex;border-bottom:1px solid #e5e5e3;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none" id="dash-tab-bar">
+      <button class="dash-tab active" onclick="switchDashTab('harian',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#1a1a1a;border-bottom:2px solid #1a1a1a;font-family:inherit">☀️ Hari Ini</button>
+      <button class="dash-tab" onclick="switchDashTab('rekap',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">📊 Rekap</button>
+      <button class="dash-tab" onclick="switchDashTab('tren',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">📈 Tren</button>
+      <button class="dash-tab" onclick="switchDashTab('dosen',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">👤 Per Dosen</button>
+      <button class="dash-tab" onclick="switchDashTab('jadwal',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">🔄 Jadwal</button>
+      <button class="dash-tab" onclick="switchDashTab('rapor',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">📋 Rapor</button>
+      <button class="dash-tab" onclick="switchDashTab('detail',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">🗂️ Detail</button>
+    </div>
+
+    <!-- ===== PANEL: HARI INI ===== -->
+    <div class="dash-panel active" id="dash-panel-harian" style="padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:600;color:#1a1a1a">Ringkasan Hari Ini</div>
+        <span id="daily-hari" style="font-size:11px;color:#888;font-weight:500"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+        <div style="background:#e6f1fb;border-radius:10px;padding:12px 8px;text-align:center">
+          <div style="font-size:24px;font-weight:700;color:#185fa5" id="daily-jadwal">0</div>
+          <div style="font-size:11px;color:#185fa5;margin-top:2px">Jadwal</div>
+        </div>
+        <div style="background:#eaf3de;border-radius:10px;padding:12px 8px;text-align:center">
+          <div style="font-size:24px;font-weight:700;color:#27500a" id="daily-hadir">0</div>
+          <div style="font-size:11px;color:#27500a;margin-top:2px">Sudah Presensi</div>
+        </div>
+        <div style="background:#fcebeb;border-radius:10px;padding:12px 8px;text-align:center">
+          <div style="font-size:24px;font-weight:700;color:#a32d2d" id="daily-belum">0</div>
+          <div style="font-size:11px;color:#a32d2d;margin-top:2px">Belum Presensi</div>
+        </div>
+      </div>
+      <div style="background:#f0f0ee;border-radius:20px;height:8px;margin-bottom:5px;overflow:hidden">
+        <div id="daily-bar" style="height:8px;border-radius:20px;background:#639922;transition:width .5s;width:0%"></div>
+      </div>
+      <div style="font-size:11px;color:#888;margin-bottom:12px" id="daily-pct-label">Menghitung...</div>
+      <div id="daily-belum-list"></div>
+
+      <!-- Alert absen berturut-turut masuk di sini juga -->
+      <div id="alert-absen-card" style="display:none;margin-top:12px;background:#fcebeb;border-radius:10px;padding:12px">
+        <div style="font-size:12px;font-weight:600;color:#a32d2d;margin-bottom:6px">🚨 Dosen Tidak Hadir Berturut-turut</div>
+        <div style="font-size:11px;color:#888;margin-bottom:8px">Tidak tercatat presensi selama <b>2 minggu atau lebih</b>.</div>
+        <div id="alert-absen-list"></div>
       </div>
     </div>
-    <button class="btn btn-blue" onclick="exportExcel()" style="height:38px; display:flex; align-items:center; gap:6px; font-weight:500">📥 Export ke Excel</button>
-  </div>
 
-  <!-- FITUR 1: DASHBOARD RINGKASAN HARIAN -->
-  <div class="card" id="daily-dashboard-card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="sec" style="margin-bottom:0">☀️ Ringkasan Hari Ini</div>
-      <span id="daily-hari" style="font-size:12px;color:#888;font-weight:500"></span>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">
-      <div style="background:#e6f1fb;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#185fa5" id="daily-jadwal">0</div>
-        <div style="font-size:11px;color:#185fa5;margin-top:2px">Jadwal Hari Ini</div>
+    <!-- ===== PANEL: REKAP ===== -->
+    <div class="dash-panel" id="dash-panel-rekap" style="padding:14px;display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Mode Kuliah</div>
+          <div style="display:flex;justify-content:center;margin-bottom:8px"><canvas id="cm" width="100" height="100"></canvas></div>
+          <div style="font-size:11px;color:#555;line-height:1.8">
+            <div style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;flex-shrink:0"></span><span id="lml">Luring: 0</span></div>
+            <div style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;flex-shrink:0"></span><span id="lms">Daring Sink.: 0</span></div>
+            <div style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#10b981;flex-shrink:0"></span><span id="lma">Daring Asink.: 0</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Kehadiran</div>
+          <div style="display:flex;justify-content:center;margin-bottom:8px"><canvas id="ch" width="100" height="100"></canvas></div>
+          <div style="font-size:11px;color:#555;line-height:1.8">
+            <div style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#639922;flex-shrink:0"></span><span id="lh">Tepat: 0</span></div>
+            <div style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#BA7517;flex-shrink:0"></span><span id="lk">Terlambat: 0</span></div>
+            <div style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#E24B4A;flex-shrink:0"></span><span id="lm">Sgt Terlambat: 0</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Selesai Mengajar</div>
+          <div style="display:flex;justify-content:center;margin-bottom:8px"><canvas id="cs" width="100" height="100"></canvas></div>
+          <div style="font-size:11px;color:#555;line-height:1.8">
+            <div style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#185fa5;flex-shrink:0"></span><span id="lsh">Tepat: 0</span></div>
+            <div style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#E24B4A;flex-shrink:0"></span><span id="lsm">Pulang Awal: 0</span></div>
+            <div style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0"></span><span id="lsn">Blm Direkam: 0</span></div>
+          </div>
+        </div>
       </div>
-      <div style="background:#eaf3de;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#27500a" id="daily-hadir">0</div>
-        <div style="font-size:11px;color:#27500a;margin-top:2px">Sudah Presensi</div>
-      </div>
-      <div style="background:#fcebeb;border-radius:10px;padding:10px;text-align:center">
-        <div style="font-size:22px;font-weight:700;color:#a32d2d" id="daily-belum">0</div>
-        <div style="font-size:11px;color:#a32d2d;margin-top:2px">Belum Presensi</div>
-      </div>
-    </div>
-    <!-- Progress bar harian -->
-    <div style="background:#f0f0ee;border-radius:20px;height:8px;margin-bottom:6px;overflow:hidden">
-      <div id="daily-bar" style="height:8px;border-radius:20px;background:#639922;transition:width .5s ease;width:0%"></div>
-    </div>
-    <div style="font-size:11px;color:#888;margin-bottom:10px" id="daily-pct-label">Menghitung...</div>
-    <!-- Daftar dosen belum presensi hari ini -->
-    <div id="daily-belum-list"></div>
-  </div>
 
-  <!-- FITUR 2: ALERT ABSEN BERTURUT-TURUT -->
-  <div class="card" id="alert-absen-card" style="display:none">
-    <div class="sec" style="color:#a32d2d">🚨 Alert — Dosen Tidak Hadir Berturut-turut</div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px">Dosen yang tidak tercatat presensi selama <b>2 minggu atau lebih</b> pada hari jadwalnya.</div>
-    <div id="alert-absen-list"></div>
-  </div>
-
-  <div class="stat-row">
-    <div class="stat"><div class="stat-num" id="rt">0</div><div class="stat-label">Total presensi</div></div>
-    <div class="stat"><div class="stat-num" id="rg">0</div><div class="stat-label">Jadwal pengganti</div></div>
-    <div class="stat"><div class="stat-num" id="rm2">0</div><div class="stat-label">Jadwal maju</div></div>
-    <div class="stat"><div class="stat-num" id="rp">0%</div><div class="stat-label">Tepat waktu hadir</div></div>
-    <div class="stat"><div class="stat-num" id="rs">0%</div><div class="stat-label">Tepat waktu selesai</div></div>
-  </div>
-
-  <div id="pelanggaran-banner" style="display:none; background:#fcebeb; border:1px solid #f09595; color:#a32d2d; padding:12px 16px; border-radius:8px; margin-bottom:1rem; font-size:13px; font-weight:500; line-height: 1.5;">
-    🚨 Terdapat <b id="tp-count" style="font-size:15px;">0</b> dosen yang seharusnya mengajar di rentang tanggal ini namun belum menggunakan aplikasi presensi.
-  </div>
-
-  <div class="card"><div class="sec">Rekap Mode Perkuliahan</div>
-    <div class="dw"><canvas id="cm" width="110" height="110"></canvas>
-      <div>
-        <div class="li"><div class="dot" style="background:#8b5cf6"></div><span id="lml">Luring: 0</span></div>
-        <div class="li"><div class="dot" style="background:#3b82f6"></div><span id="lms">Daring Sinkronus: 0</span></div>
-        <div class="li"><div class="dot" style="background:#10b981"></div><span id="lma">Daring Asinkronus: 0</span></div>
+      <!-- Rata-rata keterlambatan -->
+      <div id="card-terlambat">
+        <div style="font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:8px;display:flex;justify-content:space-between">
+          <span>⏱️ Rata-rata Keterlambatan Hadir</span>
+          <span style="font-size:11px;color:#888;font-weight:400">Hanya dosen yg pernah terlambat</span>
+        </div>
+        <div id="list-terlambat"><p class="empty">Belum ada data.</p></div>
       </div>
     </div>
-  </div>
-  <div class="card"><div class="sec">Rekap kehadiran</div>
-    <div class="dw"><canvas id="ch" width="110" height="110"></canvas>
-      <div>
-        <div class="li"><div class="dot" style="background:#639922"></div><span id="lh">Tepat waktu: 0</span></div>
-        <div class="li"><div class="dot" style="background:#BA7517"></div><span id="lk">Terlambat: 0</span></div>
-        <div class="li"><div class="dot" style="background:#E24B4A"></div><span id="lm">Sangat terlambat: 0</span></div>
+
+    <!-- ===== PANEL: TREN ===== -->
+    <div class="dash-panel" id="dash-panel-tren" style="padding:14px;display:none">
+      <div id="card-tren">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a">📈 Tren Kehadiran Bulanan</div>
+          <select id="tren-dosen" onchange="renderTren()" style="width:auto;padding:3px 8px;font-size:12px;border-radius:6px;border:1px solid #ddd">
+            <option value="all">Semua dosen</option>
+          </select>
+        </div>
+        <div style="font-size:11px;color:#888;margin-bottom:12px">% tepat waktu hadir per bulan (Jan–Des)</div>
+        <div id="tren-chart"></div>
+        <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+          <span style="font-size:10px;color:#888;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#639922"></span>≥80%</span>
+          <span style="font-size:10px;color:#888;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#BA7517"></span>60–79%</span>
+          <span style="font-size:10px;color:#888;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#E24B4A"></span>&lt;60%</span>
+          <span style="font-size:10px;color:#888;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#e5e5e3"></span>Tdk ada jadwal</span>
+        </div>
       </div>
     </div>
-  </div>
-  <div class="card"><div class="sec">Rekap selesai mengajar</div>
-    <div class="dw"><canvas id="cs" width="110" height="110"></canvas>
-      <div>
-        <div class="li"><div class="dot" style="background:#185fa5"></div><span id="lsh">Tepat waktu selesai: 0</span></div>
-        <div class="li"><div class="dot" style="background:#E24B4A"></div><span id="lsm">Pulang awal: 0</span></div>
-        <div class="li"><div class="dot" style="background:#ccc"></div><span id="lsn">Belum direkam: 0</span></div>
+
+    <!-- ===== PANEL: PER DOSEN ===== -->
+    <div class="dash-panel" id="dash-panel-dosen" style="padding:14px;display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600;color:#1a1a1a">Rekap per Dosen</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:11px;color:#888">Target:</span>
+          <select id="target-pct" onchange="renderR()" style="width:auto;padding:3px 8px;font-size:12px;border-radius:6px;border:1px solid #ddd">
+            <option value="70">≥ 70%</option>
+            <option value="75">≥ 75%</option>
+            <option value="80" selected>≥ 80%</option>
+            <option value="85">≥ 85%</option>
+            <option value="90">≥ 90%</option>
+          </select>
+        </div>
       </div>
+      <div style="font-size:11px;color:#888;margin-bottom:10px">Monitoring SP &amp; Mode — berdasarkan total jadwal vs total presensi pada periode.</div>
+      <div id="bd"></div>
     </div>
-  </div>
 
-  <!-- FITUR 4: RATA-RATA KETERLAMBATAN PER DOSEN -->
-  <div class="card" id="card-terlambat">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="sec" style="margin-bottom:0">⏱️ Rata-rata Keterlambatan Hadir</div>
-      <span style="font-size:11px;color:#888">Hanya dosen yang pernah terlambat</span>
-    </div>
-    <div id="list-terlambat"><p class="empty">Belum ada data.</p></div>
-  </div>
+    <!-- ===== PANEL: JADWAL ===== -->
+    <div class="dash-panel" id="dash-panel-jadwal" style="padding:14px;display:none">
 
-  <!-- FITUR 5: GRAFIK TREN KEHADIRAN BULANAN -->
-  <div class="card" id="card-tren">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <div class="sec" style="margin-bottom:0">📈 Tren Kehadiran Bulanan</div>
-      <select id="tren-dosen" onchange="renderTren()" style="width:auto;padding:3px 8px;font-size:12px;border-radius:6px">
-        <option value="all">Semua dosen</option>
-      </select>
-    </div>
-    <div style="font-size:11px;color:#888;margin-bottom:12px">% tepat waktu hadir per bulan (Jan–Des)</div>
-    <div id="tren-chart"></div>
-    <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-      <span style="font-size:10px;color:#888;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#639922"></span>≥80% Baik</span>
-      <span style="font-size:10px;color:#888;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#BA7517"></span>60–79%</span>
-      <span style="font-size:10px;color:#888;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#E24B4A"></span>&lt;60% Perlu Perhatian</span>
-      <span style="font-size:10px;color:#888;display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#e5e5e3"></span>Tidak ada jadwal</span>
-    </div>
-  </div>
+      <!-- Alert ganti menumpuk -->
+      <div id="card-ganti-alert" style="display:none;background:#faeeda;border-radius:10px;padding:12px;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#854f0b;margin-bottom:6px">⚠️ Ganti Jadwal Menumpuk (≥3x sebulan)</div>
+        <div style="font-size:11px;color:#888;margin-bottom:8px">Perlu tindak lanjut akademik.</div>
+        <div id="list-ganti-alert"></div>
+      </div>
 
-  <!-- FITUR 6: ALERT GANTI JADWAL MENUMPUK -->
-  <div class="card" id="card-ganti-alert" style="display:none">
-    <div class="sec" style="color:#854f0b">⚠️ Ganti Jadwal Menumpuk (≥3x dalam sebulan)</div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px">Dosen yang sering mengajukan penggantian jadwal — perlu tindak lanjut akademik.</div>
-    <div id="list-ganti-alert"></div>
-  </div>
-
-  <!-- FITUR 7: RIWAYAT GANTI JADWAL PER DOSEN -->
-  <div class="card" id="card-riwayat-ganti">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="sec" style="margin-bottom:0">🔄 Riwayat Ganti Jadwal</div>
-      <select id="filter-ganti-dosen" onchange="renderRiwayatGanti()" style="width:auto;padding:3px 8px;font-size:12px;border-radius:6px">
-        <option value="all">Semua dosen</option>
-      </select>
-    </div>
-    <div id="list-riwayat-ganti"><p class="empty">Belum ada data.</p></div>
-  </div>
-
-  <!-- FITUR 9: PREVIEW RAPOR PER DOSEN (ADMIN) -->
-  <div class="card" id="card-preview-rapor-admin">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
-      <div class="sec" style="margin-bottom:0">📊 Preview Rapor Dosen</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <select id="admin-rapor-dosen" onchange="renderAdminRapor()" style="font-size:12px;padding:4px 8px;border-radius:6px;width:auto">
-          <option value="">— Pilih dosen —</option>
+      <!-- Riwayat ganti jadwal -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:600;color:#1a1a1a">🔄 Riwayat Ganti Jadwal</div>
+        <select id="filter-ganti-dosen" onchange="renderRiwayatGanti()" style="width:auto;padding:3px 8px;font-size:12px;border-radius:6px;border:1px solid #ddd">
+          <option value="all">Semua dosen</option>
         </select>
-        <select id="admin-rapor-semester" onchange="renderAdminRapor()" style="font-size:12px;padding:4px 8px;border-radius:6px;width:auto">
-          <option value="all">Semua Periode</option>
-        </select>
-        <button class="btn btn-sm btn-blue" onclick="exportAdminRaporPDF()" style="font-size:11px">📄 Export PDF</button>
       </div>
-    </div>
-    <div id="admin-rapor-konten">
-      <div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Pilih dosen untuk melihat rapor presensinya.</div>
-    </div>
-  </div>
-  <div class="card" id="card-riwayat-maju">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="sec" style="margin-bottom:0">⏩ Riwayat Jadwal Maju</div>
-      <select id="filter-maju-dosen" onchange="renderRiwayatMaju()" style="width:auto;padding:3px 8px;font-size:12px;border-radius:6px">
-        <option value="all">Semua dosen</option>
-      </select>
-    </div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px">Pengajuan pemajuan jam kuliah karena kelas sebelumnya kosong — terpisah dari jadwal pengganti.</div>
-    <div id="list-riwayat-maju"><p class="empty">Belum ada data.</p></div>
-  </div>
+      <div id="list-riwayat-ganti" style="margin-bottom:16px"><p class="empty">Belum ada data.</p></div>
 
-  <!-- FITUR 3: TARGET KEHADIRAN per dosen (di dalam rekap per dosen) -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-      <div class="sec" style="margin-bottom:0">Rekap per dosen (Monitoring SP & Mode)</div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:11px;color:#888">Target kehadiran:</span>
-        <select id="target-pct" onchange="renderR()" style="width:auto;padding:3px 8px;font-size:12px;border-radius:6px">
-          <option value="70">≥ 70%</option>
-          <option value="75">≥ 75%</option>
-          <option value="80" selected>≥ 80%</option>
-          <option value="85">≥ 85%</option>
-          <option value="90">≥ 90%</option>
-        </select>
+      <!-- Riwayat jadwal maju -->
+      <div id="card-riwayat-maju">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a">⏩ Riwayat Jadwal Maju</div>
+          <select id="filter-maju-dosen" onchange="renderRiwayatMaju()" style="width:auto;padding:3px 8px;font-size:12px;border-radius:6px;border:1px solid #ddd">
+            <option value="all">Semua dosen</option>
+          </select>
+        </div>
+        <div style="font-size:11px;color:#888;margin-bottom:8px">Pemajuan jam kuliah karena kelas sebelumnya kosong.</div>
+        <div id="list-riwayat-maju"><p class="empty">Belum ada data.</p></div>
       </div>
     </div>
-    <div style="font-size:11px;color:#888;margin-bottom:12px">Indikator otomatis berdasarkan total jadwal vs total presensi pada periode yang dipilih.</div>
-    <div id="bd"></div>
-  </div>
-  <div class="card"><div class="sec">Detail riwayat</div><div id="det"><p class="empty">Belum ada data.</p></div></div>
+
+    <!-- ===== PANEL: RAPOR ===== -->
+    <div class="dash-panel" id="dash-panel-rapor" style="padding:14px;display:none">
+      <div id="card-preview-rapor-admin">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a">📊 Preview Rapor Dosen</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <select id="admin-rapor-dosen" onchange="renderAdminRapor()" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid #ddd;width:auto">
+              <option value="">— Pilih dosen —</option>
+            </select>
+            <select id="admin-rapor-semester" onchange="renderAdminRapor()" style="font-size:12px;padding:4px 8px;border-radius:6px;border:1px solid #ddd;width:auto">
+              <option value="all">Semua Periode</option>
+            </select>
+            <button class="btn btn-sm btn-blue" onclick="exportAdminRaporPDF()" style="font-size:11px">📄 Export PDF</button>
+          </div>
+        </div>
+        <div id="admin-rapor-konten">
+          <div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Pilih dosen untuk melihat rapor presensinya.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PANEL: DETAIL ===== -->
+    <div class="dash-panel" id="dash-panel-detail" style="padding:14px;display:none">
+      <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:10px">🗂️ Detail Riwayat Presensi</div>
+      <div id="det"><p class="empty">Belum ada data.</p></div>
+    </div>
+
+  </div><!-- /tab panel wrapper -->
 </div>
 
 <div class="app-footer">
@@ -3273,6 +3322,21 @@ function _openRaporPrintWindow(dosen, myP, myG, myM, semLabel) {
 }
 
 function cekNotifGanti() { cekNotifMaju(); }
+
+function switchDashTab(panel, btn) {
+  // Panel
+  document.querySelectorAll('.dash-panel').forEach(function(p){ p.style.display='none'; });
+  var target = document.getElementById('dash-panel-'+panel);
+  if (target) target.style.display = 'block';
+  // Tab button styles
+  document.querySelectorAll('.dash-tab').forEach(function(b){
+    b.style.color = '#888';
+    b.style.borderBottom = '2px solid transparent';
+    b.style.fontWeight = '500';
+  });
+  btn.style.color = '#1a1a1a';
+  btn.style.borderBottom = '2px solid #1a1a1a';
+}
 
 function fillBerandaDosen() {
   if (!currentUser) return;
