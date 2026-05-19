@@ -1199,7 +1199,8 @@ function updateUserUI(){
 function restoreSesi(){
   if(!currentUser)return;
   var todayStr=new Date().toLocaleDateString('id-ID');
-  var sg=P.find(function(p){return p.tanggal===todayStr&&p.dosenId===currentUser.id&&(!p.waktuSelesai||p.waktuSelesai==='');});
+  var todayTs=parseTanggal(todayStr);
+  var sg=P.find(function(p){return parseTanggal(p.tanggal)===todayTs&&p.dosenId===currentUser.id&&(!p.waktuSelesai||p.waktuSelesai==='');});
   if(sg){
     actId=sg.id;actJad=J.find(function(j){return j.id===sg.jadwalId;});
     var banner=document.getElementById('resume-banner');
@@ -1226,9 +1227,10 @@ function fillJadwalDosen(){
   
   var today=todayHari();
   var todayStr=new Date().toLocaleDateString('id-ID');
+  var todayTs=parseTanggal(todayStr);
   
   var jadwalSelesai = P.filter(function(p){
-    return p.tanggal === todayStr && p.dosenId === currentUser.id;
+    return parseTanggal(p.tanggal) === todayTs && p.dosenId === currentUser.id;
   }).map(function(p){ return p.jadwalId; });
 
   var jd=J.filter(function(j){return j.dosenId===currentUser.id;});
@@ -1404,7 +1406,8 @@ async function rekam(){
   }
 
   var todayStr=new Date().toLocaleDateString('id-ID');
-  var sudah=P.find(function(p){return p.dosenId===currentUser.id&&p.jadwalId===jid&&p.tanggal===todayStr;});
+  var todayTs=parseTanggal(todayStr);
+  var sudah=P.find(function(p){return p.dosenId===currentUser.id&&p.jadwalId===jid&&parseTanggal(p.tanggal)===todayTs;});
   if(sudah){alert('⚠️ Kamu sudah presensi untuk jadwal ini hari ini.\nWaktu hadir: '+sudah.waktuHadir);return;}
 
   // Simpan data pending dan tampilkan modal konfirmasi
@@ -3355,10 +3358,11 @@ function fillBerandaDosen() {
   if (hariLabel) hariLabel.textContent = hariIni + ', ' + new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
 
   var todayStr = new Date().toLocaleDateString('id-ID');
+  var todayTs  = parseTanggal(todayStr); // timestamp hari ini — toleran format
 
-  // Presensi hari ini milik dosen ini
+  // Presensi hari ini milik dosen ini — pakai parseTanggal agar toleran format
   var presensiHariIni = P.filter(function(p) {
-    return p.dosenId === currentUser.id && p.tanggal === todayStr;
+    return p.dosenId === currentUser.id && parseTanggal(p.tanggal) === todayTs;
   });
 
   // Jadwal hari ini milik dosen ini
@@ -3373,7 +3377,9 @@ function fillBerandaDosen() {
     } else {
       listEl.innerHTML = jadwalHariIni.map(function(j) {
         // Cari presensi yang cocok dengan jadwal ini
-        var pres = presensiHariIni.find(function(p){ return p.jadwalId === j.id; });
+        // Prioritas 1: cocok jadwalId; Prioritas 2: fallback via MK (untuk data lama tanpa jadwalId)
+        var pres = presensiHariIni.find(function(p){ return p.jadwalId && p.jadwalId === j.id; });
+        if (!pres) pres = presensiHariIni.find(function(p){ return (!p.jadwalId || p.jadwalId === '') && p.mk === j.mk; });
 
         // Tentukan status badge & warna kartu
         var statusHTML = '';
