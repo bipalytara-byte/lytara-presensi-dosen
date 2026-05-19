@@ -176,7 +176,7 @@ tr:last-child td{border-bottom:none}
 .beranda-nip { font-size:11px; color:#aaa; margin-top:2px; }
 .beranda-hari { background:#f5f5f3; border-radius:14px; padding:16px; margin-bottom:1.25rem; border:1px solid #e5e5e3; }
 .beranda-hari-title { font-size:13px; font-weight:600; color:#1a1a1a; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
-.beranda-jadwal-item { background:#fff; border:1px solid #e5e5e3; border-radius:10px; padding:10px 12px; margin-bottom:6px; display:flex; gap:10px; align-items:flex-start; }
+.beranda-jadwal-item { background:#fff; border:1px solid #e5e5e3; border-radius:10px; padding:10px 12px; margin-bottom:6px; display:flex; gap:10px; align-items:flex-start; border-left:3px solid #e5e5e3; transition:background .2s; }
 .beranda-jadwal-item:last-child { margin-bottom:0; }
 .beranda-jadwal-time { font-size:11px; font-weight:700; color:#185fa5; background:#e6f1fb; border-radius:6px; padding:3px 7px; flex-shrink:0; white-space:nowrap; margin-top:1px; }
 .beranda-jadwal-info { flex:1; min-width:0; }
@@ -1472,6 +1472,7 @@ async function eksekusiRekam(){
     tampilKartuSelesai(rec,p.jad);
     renderHari();
     renderRiwayatSaya();
+    fillBerandaDosen();
     document.getElementById('pj').innerHTML='<option value="">— Pilih jadwal —</option>';
     fillJadwalDosen();
     document.getElementById('pjam').value='';document.getElementById('pruang').value='';
@@ -1513,6 +1514,7 @@ async function rekamSelesai(){
     document.getElementById('alasan-sel').value='';
     document.getElementById('alasan-txt').value='';
     document.getElementById('alasan-txt').style.display='none';
+    fillBerandaDosen();
     alert('✅ Selesai mengajar!\nWaktu: '+ws+'\nStatus: '+st.l);
   }catch(e){setSB('er');alert('Gagal: '+e.message);}
   btn.disabled=false;btn.textContent='Rekam selesai mengajar';
@@ -3352,6 +3354,13 @@ function fillBerandaDosen() {
   var hariLabel = document.getElementById('beranda-hari-label');
   if (hariLabel) hariLabel.textContent = hariIni + ', ' + new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
 
+  var todayStr = new Date().toLocaleDateString('id-ID');
+
+  // Presensi hari ini milik dosen ini
+  var presensiHariIni = P.filter(function(p) {
+    return p.dosenId === currentUser.id && p.tanggal === todayStr;
+  });
+
   // Jadwal hari ini milik dosen ini
   var jadwalHariIni = J.filter(function(j) {
     return j.dosenId === currentUser.id && j.hari === hariIni;
@@ -3363,12 +3372,54 @@ function fillBerandaDosen() {
       listEl.innerHTML = '<div class="beranda-empty-hari" style="color:#e74c3c">Tidak ada jadwal hari ini</div>';
     } else {
       listEl.innerHTML = jadwalHariIni.map(function(j) {
-        return '<div class="beranda-jadwal-item">'
+        // Cari presensi yang cocok dengan jadwal ini
+        var pres = presensiHariIni.find(function(p){ return p.jadwalId === j.id; });
+
+        // Tentukan status badge & warna kartu
+        var statusHTML = '';
+        var borderLeft = '3px solid #e5e5e3';
+        var bgCard = '#fff';
+
+        if (!pres) {
+          // Belum rekam sama sekali
+          statusHTML = '<div style="display:flex;align-items:center;gap:4px;margin-top:5px">'
+            + '<span style="font-size:10px;background:#f5f5f3;color:#888;border:1px solid #e5e5e3;border-radius:20px;padding:2px 8px;font-weight:500">⏳ Belum Rekam</span>'
+            + '</div>';
+          borderLeft = '3px solid #e5e5e3';
+          bgCard = '#fff';
+
+        } else if (pres.waktuSelesai && pres.waktuSelesai !== '') {
+          // Sudah rekam mulai DAN selesai → selesai
+          statusHTML = '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:5px">'
+            + '<span style="font-size:10px;background:#eaf3de;color:#27500a;border-radius:20px;padding:2px 8px;font-weight:600">✅ Selesai</span>'
+            + '<span style="font-size:10px;color:#888">Mulai ' + (pres.waktuHadir||'') + ' · Selesai ' + (pres.waktuSelesai||'') + '</span>'
+            + '</div>';
+          borderLeft = '3px solid #639922';
+          bgCard = '#f9fdf5';
+
+        } else {
+          // Sudah rekam mulai, belum selesai → sedang berlangsung
+          statusHTML = '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:5px">'
+            + '<span style="font-size:10px;background:#e6f1fb;color:#185fa5;border-radius:20px;padding:2px 8px;font-weight:600">🔵 Sedang Berlangsung</span>'
+            + '<span style="font-size:10px;color:#888">Rekam mulai: ' + (pres.waktuHadir||'') + '</span>'
+            + '</div>'
+            + '<div style="margin-top:6px">'
+            + '<button onclick="pg(\'hadir\', document.getElementById(\'tab-hadir\'))" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid #185fa5;background:#185fa5;color:#fff;cursor:pointer;font-family:inherit">📍 Rekam Selesai →</button>'
+            + '</div>';
+          borderLeft = '3px solid #185fa5';
+          bgCard = '#f0f7ff';
+        }
+
+        return '<div class="beranda-jadwal-item" style="border-left:' + borderLeft + ';background:' + bgCard + ';flex-direction:column;gap:4px">'
+          + '<div style="display:flex;gap:10px;align-items:flex-start">'
           + '<span class="beranda-jadwal-time">' + (j.jamMulai||'?') + ' – ' + (j.jamSelesai||'?') + '</span>'
           + '<div class="beranda-jadwal-info">'
           + '<div class="beranda-jadwal-mk">' + j.mk + '</div>'
           + '<div class="beranda-jadwal-sub">' + (j.kelas ? j.kelas + ' · ' : '') + (j.ruang||'') + (j.semester ? ' · ' + j.semester : '') + '</div>'
-          + '</div></div>';
+          + '</div>'
+          + '</div>'
+          + statusHTML
+          + '</div>';
       }).join('');
     }
   }
