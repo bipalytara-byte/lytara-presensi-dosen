@@ -164,6 +164,37 @@ tr:last-child td{border-bottom:none}
 .dc2-mode{background:#f8f8f7;border-radius:6px;padding:5px 6px;text-align:center;font-size:10px;color:#888}
 .dc2-mode b{display:block;font-size:12px;font-weight:700;color:#1a1a1a}
 .dc2-warn{margin-top:8px;padding:7px 10px;border-radius:8px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px}
+
+/* ===== BERANDA DOSEN — MOBILE STYLE ===== */
+#page-beranda { display:none; }
+#page-beranda.active { display:block; }
+.beranda-wrap { max-width:480px; margin:0 auto; padding-bottom:2rem; }
+.beranda-greeting { background:#fff; border-radius:16px; padding:18px 20px; margin-bottom:1.25rem; border:1px solid #e5e5e3; display:flex; justify-content:space-between; align-items:center; }
+.beranda-greeting-left { flex:1; min-width:0; }
+.beranda-halo { font-size:13px; color:#888; margin-bottom:2px; }
+.beranda-nama { font-size:16px; font-weight:700; color:#1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.beranda-nip { font-size:11px; color:#aaa; margin-top:2px; }
+.beranda-hari { background:#f5f5f3; border-radius:14px; padding:16px; margin-bottom:1.25rem; border:1px solid #e5e5e3; }
+.beranda-hari-title { font-size:13px; font-weight:600; color:#1a1a1a; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.beranda-jadwal-item { background:#fff; border:1px solid #e5e5e3; border-radius:10px; padding:10px 12px; margin-bottom:6px; display:flex; gap:10px; align-items:flex-start; }
+.beranda-jadwal-item:last-child { margin-bottom:0; }
+.beranda-jadwal-time { font-size:11px; font-weight:700; color:#185fa5; background:#e6f1fb; border-radius:6px; padding:3px 7px; flex-shrink:0; white-space:nowrap; margin-top:1px; }
+.beranda-jadwal-info { flex:1; min-width:0; }
+.beranda-jadwal-mk { font-size:13px; font-weight:600; color:#1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.beranda-jadwal-sub { font-size:11px; color:#888; margin-top:2px; }
+.beranda-empty-hari { font-size:13px; color:#888; text-align:center; padding:12px 0; }
+.beranda-menu-title { font-size:13px; font-weight:700; color:#1a1a1a; margin-bottom:12px; padding-left:2px; }
+.beranda-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:1.25rem; }
+.beranda-menu-item { background:#fff; border:1px solid #e5e5e3; border-radius:14px; padding:14px 8px 12px; display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; transition:transform .12s, box-shadow .12s; text-align:center; -webkit-tap-highlight-color:transparent; }
+.beranda-menu-item:active { transform:scale(.95); }
+.beranda-menu-icon { width:46px; height:46px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.beranda-menu-label { font-size:12px; font-weight:500; color:#1a1a1a; line-height:1.3; }
+.beranda-stat-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:1.25rem; }
+.beranda-stat { background:#fff; border:1px solid #e5e5e3; border-radius:12px; padding:12px 8px; text-align:center; }
+.beranda-stat-num { font-size:20px; font-weight:700; color:#1a1a1a; }
+.beranda-stat-lbl { font-size:10px; color:#888; margin-top:2px; line-height:1.3; }
+/* Tab bar khusus dosen — sembunyikan saat beranda aktif */
+.dosen-tab-hidden { display:none !important; }
 </style>
 </head>
 <body>
@@ -227,6 +258,9 @@ tr:last-child td{border-bottom:none}
       <button class="btn btn-sm" onclick="refreshDataLokal()" style="display:flex;align-items:center;gap:4px;padding:4px 10px;background:#f5f5f3;border:1px solid #e5e5e3;color:#555;font-weight:500" title="Tarik data terbaru dari server">
         <span style="font-size:14px">🔄</span> Refresh
       </button>
+      <button class="btn btn-sm" id="btn-back-beranda" style="display:none;align-items:center;gap:4px;padding:4px 10px;background:#f5f5f3;border:1px solid #e5e5e3;color:#555;font-weight:500" onclick="pg('beranda', document.getElementById('tab-beranda'))">
+        🏠 Beranda
+      </button>
       <span class="sb" id="sb">Offline</span>
       <button class="user-badge" id="user-btn" onclick="logout()" title="Klik untuk keluar">
         <div class="user-avatar" id="user-avatar">?</div>
@@ -237,6 +271,7 @@ tr:last-child td{border-bottom:none}
 </header>
 
 <div class="tab-bar">
+  <button class="tab" id="tab-beranda" onclick="pg('beranda',this)" style="display:none">🏠 Beranda</button>
   <button class="tab" id="tab-hadir" onclick="pg('hadir',this)">Presensi</button>
   <button class="tab" id="tab-ganti" onclick="pg('ganti',this)">Jadwal Pengganti</button>
   <button class="tab" id="tab-maju" onclick="pg('maju',this)">Jadwal Maju</button>
@@ -246,6 +281,82 @@ tr:last-child td{border-bottom:none}
   <button class="tab" id="tab-dosen" onclick="pg('dosen',this)" style="display:none">Kelola Dosen</button>
   <button class="tab" id="tab-jadwal" onclick="pg('jadwal',this)" style="display:none">Kelola Jadwal</button>
 </div>
+
+<!-- ====== HALAMAN BERANDA DOSEN ====== -->
+<div id="page-beranda" class="page">
+  <div class="beranda-wrap">
+
+    <!-- Greeting -->
+    <div class="beranda-greeting">
+      <div class="beranda-greeting-left">
+        <div class="beranda-halo">Selamat datang 👋</div>
+        <div class="beranda-nama" id="beranda-nama-dosen">—</div>
+        <div class="beranda-nip" id="beranda-nip-dosen"></div>
+      </div>
+    </div>
+
+    <!-- Jadwal Hari Ini -->
+    <div class="beranda-hari">
+      <div class="beranda-hari-title">📅 Jadwal Hari Ini — <span id="beranda-hari-label" style="color:#185fa5"></span></div>
+      <div id="beranda-jadwal-list"><div class="beranda-empty-hari">Memuat jadwal...</div></div>
+    </div>
+
+    <!-- Statistik ringkas -->
+    <div class="beranda-stat-row" id="beranda-stat-row">
+      <div class="beranda-stat">
+        <div class="beranda-stat-num" id="bs-hadir">–</div>
+        <div class="beranda-stat-lbl">Total Presensi</div>
+      </div>
+      <div class="beranda-stat">
+        <div class="beranda-stat-num" id="bs-tepat">–</div>
+        <div class="beranda-stat-lbl">Tepat Waktu</div>
+      </div>
+      <div class="beranda-stat">
+        <div class="beranda-stat-num" id="bs-ganti">–</div>
+        <div class="beranda-stat-lbl">Jadwal Ganti</div>
+      </div>
+    </div>
+
+    <!-- Menu Grid -->
+    <div class="beranda-menu-title">Menu</div>
+    <div class="beranda-grid">
+
+      <div class="beranda-menu-item" onclick="pg('hadir', document.getElementById('tab-hadir'))">
+        <div class="beranda-menu-icon" style="background:#fef3e2;">📋</div>
+        <div class="beranda-menu-label">Presensi</div>
+      </div>
+
+      <div class="beranda-menu-item" onclick="pg('riwayat', document.getElementById('tab-riwayat'))">
+        <div class="beranda-menu-icon" style="background:#e6f1fb;">🕐</div>
+        <div class="beranda-menu-label">Riwayat Saya</div>
+      </div>
+
+      <div class="beranda-menu-item" onclick="pg('rapor', document.getElementById('tab-rapor'))">
+        <div class="beranda-menu-icon" style="background:#eaf3de;">📊</div>
+        <div class="beranda-menu-label">Rapor</div>
+      </div>
+
+      <div class="beranda-menu-item" onclick="pg('ganti', document.getElementById('tab-ganti'))">
+        <div class="beranda-menu-icon" style="background:#f3e8ff;">🔄</div>
+        <div class="beranda-menu-label">Jadwal Pengganti</div>
+      </div>
+
+      <div class="beranda-menu-item" onclick="pg('maju', document.getElementById('tab-maju'))">
+        <div class="beranda-menu-icon" style="background:#fff0f0;">⏩</div>
+        <div class="beranda-menu-label">Jadwal Maju</div>
+      </div>
+
+      <div class="beranda-menu-item" onclick="logout()">
+        <div class="beranda-menu-icon" style="background:#f5f5f3;">🚪</div>
+        <div class="beranda-menu-label">Keluar</div>
+      </div>
+
+    </div>
+    <!-- End grid -->
+
+  </div>
+</div>
+<!-- ====== END BERANDA ====== -->
 
 <div id="page-hadir" class="page">
   <div id="notif-ganti" style="display:none; margin-bottom:1rem;"></div>
@@ -959,6 +1070,7 @@ async function loadThenShow(){
 }
 
 function updateUserUI(){
+  var btnBeranda = document.getElementById('tab-beranda');
   var btnH = document.getElementById('tab-hadir');
   var btnG = document.getElementById('tab-ganti');
   var btnMaju = document.getElementById('tab-maju');
@@ -973,6 +1085,7 @@ function updateUserUI(){
     document.getElementById('user-name').textContent = 'Administrator';
     document.getElementById('login-info').style.display = 'none';
     
+    btnBeranda.style.display = 'none';
     btnH.style.display = 'none';
     btnR.style.display = 'none';
     btnRapor.style.display = 'none';
@@ -1014,6 +1127,7 @@ function updateUserUI(){
     mmk.innerHTML='<option value="">— Pilih mata kuliah —</option>';
     (currentUser.mk||[]).forEach(function(m){var o=document.createElement('option');o.textContent=m;mmk.appendChild(o);});
     
+    btnBeranda.style.display = 'inline-block';
     btnH.style.display = 'inline-block';
     btnR.style.display = 'inline-block';
     btnRapor.style.display = 'inline-block';
@@ -1027,7 +1141,9 @@ function updateUserUI(){
     document.getElementById('form-pengajuan-maju').style.display = 'block';
     document.getElementById('maju-title-list').textContent = 'Riwayat Pengajuan Jadwal Maju Saya';
     
-    pg('hadir', btnH);
+    // Isi konten beranda dosen
+    fillBerandaDosen();
+    pg('beranda', btnBeranda);
   }
 }
 
@@ -3158,8 +3274,57 @@ function _openRaporPrintWindow(dosen, myP, myG, myM, semLabel) {
 
 function cekNotifGanti() { cekNotifMaju(); }
 
+function fillBerandaDosen() {
+  if (!currentUser) return;
+
+  // Greeting
+  var namaEl = document.getElementById('beranda-nama-dosen');
+  var nipEl  = document.getElementById('beranda-nip-dosen');
+  if (namaEl) namaEl.textContent = currentUser.nama;
+  if (nipEl)  nipEl.textContent  = currentUser.nip ? 'NIP: ' + currentUser.nip : '';
+
+  // Hari ini
+  var hariIni = todayHari();
+  var hariLabel = document.getElementById('beranda-hari-label');
+  if (hariLabel) hariLabel.textContent = hariIni + ', ' + new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+
+  // Jadwal hari ini milik dosen ini
+  var jadwalHariIni = J.filter(function(j) {
+    return j.dosenId === currentUser.id && j.hari === hariIni;
+  }).sort(function(a,b){ return (a.jamMulai||'').localeCompare(b.jamMulai||''); });
+
+  var listEl = document.getElementById('beranda-jadwal-list');
+  if (listEl) {
+    if (jadwalHariIni.length === 0) {
+      listEl.innerHTML = '<div class="beranda-empty-hari" style="color:#e74c3c">Tidak ada jadwal hari ini</div>';
+    } else {
+      listEl.innerHTML = jadwalHariIni.map(function(j) {
+        return '<div class="beranda-jadwal-item">'
+          + '<span class="beranda-jadwal-time">' + (j.jamMulai||'?') + ' – ' + (j.jamSelesai||'?') + '</span>'
+          + '<div class="beranda-jadwal-info">'
+          + '<div class="beranda-jadwal-mk">' + j.mk + '</div>'
+          + '<div class="beranda-jadwal-sub">' + (j.kelas ? j.kelas + ' · ' : '') + (j.ruang||'') + (j.semester ? ' · ' + j.semester : '') + '</div>'
+          + '</div></div>';
+      }).join('');
+    }
+  }
+
+  // Statistik ringkas
+  var myP = P.filter(function(p){ return p.dosenId === currentUser.id; });
+  var tepat = myP.filter(function(p){ return p.color === 'green'; }).length;
+  var myG = G.filter(function(g){ return g.dosenId === currentUser.id; });
+
+  var bsH = document.getElementById('bs-hadir');
+  var bsT = document.getElementById('bs-tepat');
+  var bsG = document.getElementById('bs-ganti');
+  if (bsH) bsH.textContent = myP.length;
+  if (bsT) bsT.textContent = myP.length > 0 ? Math.round(tepat / myP.length * 100) + '%' : '–';
+  if (bsG) bsG.textContent = myG.length;
+}
+
 function fillAll(){
   updateUserUI();
+  if (!isAdmin && currentUser) fillBerandaDosen();
   fillJadwalDosen();
   var rd=document.getElementById('rd');if(rd){rd.innerHTML='<option value="all">Semua dosen</option>';D.forEach(function(d){var o=document.createElement('option');o.value=d.id;o.textContent=d.nama;rd.appendChild(o);});}
   var jfd=document.getElementById('jfd');if(jfd){jfd.innerHTML='<option value="all">Semua dosen</option>';D.forEach(function(d){var o=document.createElement('option');o.value=d.id;o.textContent=d.nama;jfd.appendChild(o);});}
@@ -3179,6 +3344,14 @@ function pg(p,btn){
   document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});
   document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
   document.getElementById('page-'+p).classList.add('active');btn.classList.add('active');
+  // Sembunyikan tab-bar saat di halaman beranda dosen
+  var tabBar = document.querySelector('.tab-bar');
+  if (tabBar) { tabBar.style.display = (p === 'beranda') ? 'none' : 'flex'; }
+  // Tombol navigasi header
+  var btnBackBeranda = document.getElementById('btn-back-beranda');
+  if (btnBackBeranda) {
+    btnBackBeranda.style.display = (!isAdmin && p !== 'beranda') ? 'flex' : 'none';
+  }
   if(p==='report'){
     var rd=document.getElementById('rd');if(rd){rd.innerHTML='<option value="all">Semua dosen</option>';D.forEach(function(d){var o=document.createElement('option');o.value=d.id;o.textContent=d.nama;rd.appendChild(o);});}
     fillAdminRaporDropdown();
