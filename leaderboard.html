@@ -14,523 +14,164 @@
   --text: #f0f2f8;
   --muted: #6b7280;
   --gold: #f5c842;
-  --gold-dim: rgba(245,200,66,0.15);
   --green: #22c55e;
   --green-dim: rgba(34,197,94,0.12);
   --red: #ef4444;
   --red-dim: rgba(239,68,68,0.12);
+  --orange: #fb923c;
+  --orange-dim: rgba(251,146,60,0.12);
   --blue: #60a5fa;
   --blue-dim: rgba(96,165,250,0.12);
-  --orange: #fb923c;
+  --yellow: #facc15;
+  --yellow-dim: rgba(250,204,21,0.12);
   --radius: 16px;
 }
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
-
-/* Ambient orb background */
-body::before {
-  content: '';
-  position: fixed;
-  top: -200px; left: -200px;
-  width: 600px; height: 600px;
-  background: radial-gradient(circle, rgba(96,165,250,0.06) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-body::after {
-  content: '';
-  position: fixed;
-  bottom: -200px; right: -200px;
-  width: 500px; height: 500px;
-  background: radial-gradient(circle, rgba(245,200,66,0.05) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.wrap {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 2rem 1.25rem 4rem;
-  position: relative;
-  z-index: 1;
-}
-
-/* ── HEADER ── */
-.header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-}
-
-.header-left {}
-
-.eyebrow {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--blue);
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.eyebrow-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--blue);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50% { opacity: .5; transform: scale(1.4); }
-}
-
-h1 {
-  font-family: 'DM Serif Display', serif;
-  font-size: clamp(26px, 5vw, 40px);
-  font-weight: 400;
-  line-height: 1.1;
-  color: var(--text);
-}
-
-h1 em {
-  font-style: italic;
-  color: var(--gold);
-}
-
-.refresh-info {
-  text-align: right;
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.7;
-  flex-shrink: 0;
-}
-
-.refresh-info b {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.countdown-ring {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 4px 12px 4px 8px;
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 6px;
-}
-
-.countdown-ring svg { flex-shrink: 0; }
-
-.ring-track { stroke: rgba(255,255,255,0.1); }
-.ring-fill {
-  stroke: var(--green);
-  stroke-linecap: round;
-  transition: stroke-dashoffset 1s linear;
-  transform-origin: center;
-  transform: rotate(-90deg);
-}
-
-/* ── FILTER ── */
-.filter-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1.5rem;
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  align-items: flex-end;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-  min-width: 160px;
-}
-
-.filter-group label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-}
-
-.filter-group input {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 9px 12px;
-  font-size: 14px;
-  font-family: 'DM Sans', sans-serif;
-  color: var(--text);
-  outline: none;
-  width: 100%;
-  transition: border-color 0.2s;
-}
-
-.filter-group input:focus {
-  border-color: var(--blue);
-}
-
-.filter-group input[readonly] {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.today-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--green);
-  background: var(--green-dim);
-  border-radius: 20px;
-  padding: 3px 10px;
-  margin-top: 4px;
-  width: fit-content;
-}
-
-/* ── STATS STRIP ── */
-.stats-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 10px;
-  margin-bottom: 1.5rem;
-}
-
-.stat-pill {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-pill::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  border-radius: 12px 12px 0 0;
-}
-
-.stat-pill.sp-all::before { background: var(--blue); }
-.stat-pill.sp-ok::before { background: var(--green); }
-.stat-pill.sp-late::before { background: var(--orange); }
-.stat-pill.sp-absent::before { background: var(--red); }
-
-.stat-num {
-  font-family: 'DM Serif Display', serif;
-  font-size: 28px;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-
-.sp-all .stat-num { color: var(--blue); }
-.sp-ok .stat-num { color: var(--green); }
-.sp-late .stat-num { color: var(--orange); }
-.sp-absent .stat-num { color: var(--red); }
-
-.stat-lbl {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-}
-
-/* ── PANELS ── */
-.panels {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-@media (max-width: 600px) {
-  .panels { grid-template-columns: 1fr; }
-}
-
-.panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.panel-head {
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.panel-icon {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.panel-top .panel-icon { background: var(--green-dim); }
-.panel-bot .panel-icon { background: var(--red-dim); }
-
-.panel-title {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
-
-.panel-top .panel-title { color: var(--green); }
-.panel-bot .panel-title { color: var(--red); }
-
-.panel-sub {
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 1px;
-}
-
-.panel-body {
-  padding: 0.5rem 0;
-}
-
-/* ── RANK ROW ── */
-.rank-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 1.25rem;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.15s;
-  animation: fadeUp 0.4s both;
-}
-
-.rank-row:last-child { border-bottom: none; }
-.rank-row:hover { background: rgba(255,255,255,0.03); }
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.rank-row:nth-child(1) { animation-delay: 0.05s; }
-.rank-row:nth-child(2) { animation-delay: 0.10s; }
-.rank-row:nth-child(3) { animation-delay: 0.15s; }
-.rank-row:nth-child(4) { animation-delay: 0.20s; }
-.rank-row:nth-child(5) { animation-delay: 0.25s; }
-
-.rank-medal {
-  font-size: 18px;
-  width: 26px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.rank-num {
-  width: 22px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
-  flex-shrink: 0;
-}
-
-.rank-avatar {
-  width: 34px; height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: #fff;
-  flex-shrink: 0;
-  font-family: 'DM Serif Display', serif;
-}
-
-.rank-info { flex: 1; min-width: 0; }
-
-.rank-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.rank-detail {
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-.rank-score {
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.rank-pct {
-  font-family: 'DM Serif Display', serif;
-  font-size: 18px;
-  line-height: 1;
-}
-
-.panel-top .rank-pct { color: var(--green); }
-.panel-bot .rank-pct { color: var(--red); }
-
-.rank-pct-lbl {
-  font-size: 10px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-/* progress bar */
-.rank-bar-wrap {
-  width: 100%;
-  margin-top: 5px;
-  height: 4px;
-  background: rgba(255,255,255,0.07);
-  border-radius: 99px;
-  overflow: hidden;
-}
-
-.rank-bar {
-  height: 100%;
-  border-radius: 99px;
-  transition: width 0.6s ease;
-}
-
-.panel-top .rank-bar { background: var(--green); }
-.panel-bot .rank-bar { background: var(--red); }
-
-/* ── LOADING / EMPTY ── */
-.skeleton {
-  background: linear-gradient(90deg, var(--surface2) 25%, rgba(255,255,255,0.04) 50%, var(--surface2) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 8px;
-  height: 14px;
-  margin: 4px 0;
-}
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.skel-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 1.25rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.skel-circle {
-  width: 34px; height: 34px;
-  border-radius: 50%;
-  background: var(--surface2);
-  flex-shrink: 0;
-}
-
-.skel-lines { flex: 1; }
-
-.empty-state {
-  padding: 2rem 1.25rem;
-  text-align: center;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.empty-state .empty-icon { font-size: 32px; margin-bottom: 8px; }
-
-/* ── LAST UPDATED ── */
-.last-updated {
-  text-align: center;
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.status-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-}
-
-/* ── ERROR ── */
-.error-banner {
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.3);
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  font-size: 13px;
-  color: #fca5a5;
-  margin-bottom: 1rem;
-  display: none;
-}
-
-/* ── FOOTER ── */
-footer {
-  text-align: center;
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 3rem;
-  letter-spacing: 0.05em;
-}
-
-footer b { color: var(--text); font-weight: 600; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;top:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(96,165,250,0.06) 0%,transparent 70%);pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;bottom:-200px;right:-200px;width:500px;height:500px;background:radial-gradient(circle,rgba(245,200,66,0.05) 0%,transparent 70%);pointer-events:none;z-index:0}
+.wrap{max-width:960px;margin:0 auto;padding:2rem 1.25rem 4rem;position:relative;z-index:1}
+
+/* HEADER */
+.header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:2rem;flex-wrap:wrap}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+h1{font-family:'DM Serif Display',serif;font-size:clamp(24px,5vw,38px);font-weight:400;line-height:1.1;color:var(--text)}
+h1 em{font-style:italic;color:var(--gold)}
+.refresh-box{text-align:right;font-size:12px;color:var(--muted);flex-shrink:0}
+.date-range{font-size:13px;color:var(--text);margin-bottom:6px;font-weight:500}
+.countdown-ring{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px 4px 8px;font-size:12px;color:var(--muted)}
+.ring-track{stroke:rgba(255,255,255,0.1)}
+.ring-fill{stroke:var(--green);stroke-linecap:round;transition:stroke-dashoffset 1s linear;transform-origin:center;transform:rotate(-90deg)}
+
+/* FILTER */
+.filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px}
+.fg label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted)}
+.fg input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;width:100%;transition:border-color .2s}
+.fg input:focus{border-color:var(--blue)}
+.fg input[readonly]{opacity:.5;cursor:not-allowed}
+.auto-badge{font-size:10px;font-weight:600;color:var(--green);background:var(--green-dim);border-radius:20px;padding:2px 8px;width:fit-content}
+.threshold-note{font-size:11px;color:var(--muted);margin-top:2px}
+.btn-refresh{background:var(--blue);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .2s}
+.btn-refresh:disabled{opacity:.5;cursor:not-allowed}
+
+/* ALERT THRESHOLD */
+.threshold-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 16px;margin-bottom:1.25rem;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.threshold-bar span{color:var(--yellow);font-weight:600}
+
+/* ERROR */
+.error-banner{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:1rem 1.25rem;font-size:13px;color:#fca5a5;margin-bottom:1rem;display:none}
+
+/* STATS */
+.stats-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.5rem}
+.stat-pill{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden}
+.stat-pill::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:12px 12px 0 0}
+.sp-all::before{background:var(--blue)}
+.sp-ok::before{background:var(--green)}
+.sp-late::before{background:var(--orange)}
+.sp-dosen::before{background:var(--yellow)}
+.stat-num{font-family:'DM Serif Display',serif;font-size:26px;line-height:1;margin-bottom:4px}
+.sp-all .stat-num{color:var(--blue)}
+.sp-ok .stat-num{color:var(--green)}
+.sp-late .stat-num{color:var(--orange)}
+.sp-dosen .stat-num{color:var(--yellow)}
+.stat-lbl{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+
+/* PANELS */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:620px){.panels{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.panel-head{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.panel-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.panel-top .panel-icon{background:var(--green-dim)}
+.panel-bot .panel-icon{background:var(--red-dim)}
+.panel-title{font-size:13px;font-weight:700;letter-spacing:.03em}
+.panel-top .panel-title{color:var(--green)}
+.panel-bot .panel-title{color:var(--red)}
+.panel-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.panel-legend{padding:8px 1.25rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);display:flex;gap:12px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.leg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* RANK ROW */
+.rank-row{display:flex;align-items:center;gap:10px;padding:10px 1.25rem;border-bottom:1px solid var(--border);transition:background .15s;animation:fadeUp .4s both}
+.rank-row:last-child{border-bottom:none}
+.rank-row:hover{background:rgba(255,255,255,0.03)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.rank-row:nth-child(1){animation-delay:.05s}
+.rank-row:nth-child(2){animation-delay:.10s}
+.rank-row:nth-child(3){animation-delay:.15s}
+.rank-row:nth-child(4){animation-delay:.20s}
+.rank-row:nth-child(5){animation-delay:.25s}
+
+/* rank 1 glow */
+.rank-row.rank-first{background:rgba(34,197,94,0.04)}
+.rank-row.rank-first-bot{background:rgba(239,68,68,0.04)}
+
+.rank-medal{font-size:18px;width:24px;text-align:center;flex-shrink:0}
+.rank-num{width:22px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);flex-shrink:0}
+.rank-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:'DM Serif Display',serif;flex-shrink:0}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-detail{font-size:11px;color:var(--muted);margin-top:1px}
+.rank-bar-wrap{width:100%;margin-top:5px;height:4px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden}
+.rank-bar{height:100%;border-radius:99px;transition:width .7s ease}
+.panel-top .rank-bar{background:var(--green)}
+.panel-bot .rank-bar{background:var(--red)}
+
+.rank-score{text-align:right;flex-shrink:0;min-width:52px}
+.rank-main-score{font-family:'DM Serif Display',serif;font-size:19px;line-height:1}
+.panel-top .rank-main-score{color:var(--green)}
+.panel-bot .rank-main-score{color:var(--red)}
+.rank-sub-score{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* BADGES */
+.badge-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.bdg{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+.bdg-green{background:var(--green-dim);color:var(--green)}
+.bdg-orange{background:var(--orange-dim);color:var(--orange)}
+.bdg-red{background:var(--red-dim);color:var(--red)}
+.bdg-blue{background:var(--blue-dim);color:var(--blue)}
+.bdg-yellow{background:var(--yellow-dim);color:var(--yellow)}
+
+/* ANOMALY WARNING */
+.anomaly-flag{display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--yellow);background:var(--yellow-dim);border-radius:20px;padding:2px 7px;font-weight:600}
+
+/* SKELETON */
+.skel-row{display:flex;align-items:center;gap:10px;padding:10px 1.25rem;border-bottom:1px solid var(--border)}
+.skel-circle{width:34px;height:34px;border-radius:50%;background:var(--surface2);flex-shrink:0}
+.skel-lines{flex:1}
+.skeleton{background:linear-gradient(90deg,var(--surface2) 25%,rgba(255,255,255,0.04) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;height:12px;margin:4px 0}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.empty-state{padding:2rem 1.25rem;text-align:center;color:var(--muted);font-size:13px}
+.empty-state .ei{font-size:32px;margin-bottom:8px}
+
+/* BOTTOM INFO */
+.last-updated{text-align:center;font-size:11px;color:var(--muted);margin-top:1.5rem;display:flex;align-items:center;justify-content:center;gap:6px}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+/* FOOTNOTE */
+.footnote{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-top:1rem;font-size:11px;color:var(--muted);line-height:1.7}
+.footnote b{color:var(--text)}
+
+footer{text-align:center;font-size:11px;color:var(--muted);margin-top:3rem;letter-spacing:.05em}
+footer b{color:var(--text);font-weight:600}
 </style>
 </head>
 <body>
-
 <div class="wrap">
 
   <!-- HEADER -->
   <div class="header">
     <div class="header-left">
-      <div class="eyebrow">
-        <span class="eyebrow-dot"></span>
-        LYTARA · Live Dashboard
-      </div>
+      <div class="eyebrow"><span class="eyebrow-dot"></span>LYTARA · Live Dashboard</div>
       <h1>Leaderboard<br><em>Kehadiran Dosen</em></h1>
     </div>
-    <div class="refresh-info">
-      <div id="date-range-display" style="font-size:13px; color: var(--text); margin-bottom:4px;">—</div>
-      <div class="countdown-ring" id="refresh-counter">
+    <div class="refresh-box">
+      <div class="date-range" id="date-range-display">—</div>
+      <div class="countdown-ring">
         <svg width="18" height="18" viewBox="0 0 18 18">
           <circle class="ring-track" cx="9" cy="9" r="7" stroke-width="2.5" fill="none"/>
           <circle class="ring-fill" id="ring-svg" cx="9" cy="9" r="7" stroke-width="2.5" fill="none"
@@ -544,30 +185,29 @@ footer b { color: var(--text); font-weight: 600; }
 
   <!-- FILTER -->
   <div class="filter-card">
-    <div class="filter-group">
+    <div class="fg">
       <label>Tanggal Mulai</label>
       <input type="date" id="tgl-awal"/>
     </div>
-    <div class="filter-group">
+    <div class="fg">
       <label>Tanggal Akhir</label>
       <input type="date" id="tgl-akhir" readonly/>
-      <span class="today-badge">✦ Otomatis: Hari Ini</span>
+      <span class="auto-badge">✦ Otomatis: Hari Ini</span>
     </div>
-    <div style="display:flex; align-items:flex-end;">
-      <button id="btn-refresh" onclick="loadData()" style="
-        background: var(--blue);
-        color: #fff;
-        border: none;
-        border-radius: 10px;
-        padding: 10px 20px;
-        font-size: 13px;
-        font-family: 'DM Sans', sans-serif;
-        font-weight: 600;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: opacity .2s;
-      ">↻ Perbarui</button>
+    <div class="fg">
+      <label>Min. Sesi (Threshold)</label>
+      <input type="number" id="min-sesi" value="8" min="1" max="50" style="width:100%"/>
+      <span class="threshold-note">Dosen di bawah ini tidak dihitung</span>
     </div>
+    <div style="display:flex;align-items:flex-end">
+      <button class="btn-refresh" id="btn-refresh" onclick="loadData()">↻ Perbarui</button>
+    </div>
+  </div>
+
+  <!-- THRESHOLD INFO -->
+  <div class="threshold-bar">
+    <span>ℹ</span>
+    <span id="threshold-info">Memuat data…</span>
   </div>
 
   <!-- ERROR -->
@@ -575,22 +215,10 @@ footer b { color: var(--text); font-weight: 600; }
 
   <!-- STATS -->
   <div class="stats-strip">
-    <div class="stat-pill sp-all">
-      <div class="stat-num" id="stat-total">—</div>
-      <div class="stat-lbl">Total Sesi</div>
-    </div>
-    <div class="stat-pill sp-ok">
-      <div class="stat-num" id="stat-ok">—</div>
-      <div class="stat-lbl">Tepat Waktu</div>
-    </div>
-    <div class="stat-pill sp-late">
-      <div class="stat-num" id="stat-late">—</div>
-      <div class="stat-lbl">Terlambat</div>
-    </div>
-    <div class="stat-pill sp-absent">
-      <div class="stat-num" id="stat-absent">—</div>
-      <div class="stat-lbl">Dosen Aktif</div>
-    </div>
+    <div class="stat-pill sp-dosen"><div class="stat-num" id="stat-dosen">—</div><div class="stat-lbl">Dosen Aktif</div></div>
+    <div class="stat-pill sp-all"><div class="stat-num" id="stat-total">—</div><div class="stat-lbl">Total Sesi</div></div>
+    <div class="stat-pill sp-ok"><div class="stat-num" id="stat-ok">—</div><div class="stat-lbl">Tepat Waktu</div></div>
+    <div class="stat-pill sp-late"><div class="stat-num" id="stat-late">—</div><div class="stat-lbl">Terlambat</div></div>
   </div>
 
   <!-- PANELS -->
@@ -602,11 +230,15 @@ footer b { color: var(--text); font-weight: 600; }
         <div class="panel-icon">🏆</div>
         <div>
           <div class="panel-title">Top 5 Tepat Waktu</div>
-          <div class="panel-sub">Tingkat kehadiran tertinggi</div>
+          <div class="panel-sub">% tepat · tiebreaker: total sesi</div>
         </div>
       </div>
+      <div class="panel-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>% Tepat waktu</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>Jumlah sesi</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--orange)"></div>Jml. MK</div>
+      </div>
       <div class="panel-body" id="panel-top">
-        <!-- skeleton -->
         <div class="skel-row"><div class="skel-circle"></div><div class="skel-lines"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%;margin-top:6px"></div></div></div>
         <div class="skel-row"><div class="skel-circle"></div><div class="skel-lines"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%;margin-top:6px"></div></div></div>
         <div class="skel-row"><div class="skel-circle"></div><div class="skel-lines"><div class="skeleton" style="width:75%"></div><div class="skeleton" style="width:50%;margin-top:6px"></div></div></div>
@@ -619,8 +251,13 @@ footer b { color: var(--text); font-weight: 600; }
         <div class="panel-icon">⏱️</div>
         <div>
           <div class="panel-title">Bottom 5 Terlambat</div>
-          <div class="panel-sub">Rata-rata keterlambatan tertinggi</div>
+          <div class="panel-sub">skor: 60% frekuensi + 40% rata-rata menit</div>
         </div>
+      </div>
+      <div class="panel-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>Skor gabungan</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--orange)"></div>Frekuensi terlambat</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--yellow)"></div>⚠ Anomali &gt;200 mnt</div>
       </div>
       <div class="panel-body" id="panel-bot">
         <div class="skel-row"><div class="skel-circle"></div><div class="skel-lines"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%;margin-top:6px"></div></div></div>
@@ -631,27 +268,31 @@ footer b { color: var(--text); font-weight: 600; }
 
   </div>
 
-  <div class="last-updated" id="last-updated">
+  <!-- FOOTNOTE -->
+  <div class="footnote">
+    <b>Cara membaca:</b>
+    <b>Top 5</b> — diurutkan berdasarkan <b>% tepat waktu</b>. Bila sama, dosen dengan <b>lebih banyak sesi</b> diunggulkan karena beban mengajar lebih berat. &nbsp;|&nbsp;
+    <b>Bottom 5</b> — menggunakan <b>skor gabungan</b>: 60% frekuensi keterlambatan + 40% rata-rata menit, sehingga dosen yang <em>sering</em> terlambat lebih terlihat daripada yang sekali terlambat sangat lama. &nbsp;|&nbsp;
+    <b>⚠ Anomali</b> — tanda kuning muncul bila ada satu kejadian &gt;200 menit, kemungkinan data tidak normal (lupa absen, dsb).
+  </div>
+
+  <div class="last-updated">
     <span class="status-dot"></span>
     <span id="last-updated-text">Memuat data…</span>
   </div>
 
 </div>
-
-<footer>
-  LYTARA · Layanan Tracking Aktivitas dan Realisasi Akademik &nbsp;·&nbsp; <b>Leaderboard</b>
-</footer>
+<footer>LYTARA · Layanan Tracking Aktivitas dan Realisasi Akademik &nbsp;·&nbsp; <b>Leaderboard Kehadiran</b></footer>
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
+const REFRESH_SEC = 60;
+const CIRC = 2 * Math.PI * 7;
+let countdown = REFRESH_SEC;
+let timer = null;
 
-const REFRESH_INTERVAL = 60; // seconds
-let countdown = REFRESH_INTERVAL;
-let timerInterval = null;
-const CIRC = 2 * Math.PI * 7; // radius=7
-
-// ── AVATAR COLORS ──
-const COLORS = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#ef4444','#06b6d4','#f97316'];
+// ── AVATAR ──
+const COLORS = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#ef4444','#06b6d4','#f97316','#a855f7','#14b8a6'];
 function avatarColor(name) {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h<<5)-h);
@@ -661,272 +302,299 @@ function initials(name) {
   return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 }
 
-// ── DATE UTILS ──
+// ── DATE ──
 function todayStr() {
-  const d = new Date();
-  return d.toISOString().slice(0,10);
+  return new Date().toISOString().slice(0,10);
 }
-
-function formatDisplayDate(str) {
+function fmtDate(str) {
   if (!str) return '—';
   const [y,m,d] = str.split('-');
-  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
-  return `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+  const mo = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+  return `${parseInt(d)} ${mo[parseInt(m)-1]} ${y}`;
 }
 
-function parseDate(str) {
-  // str: DD/MM/YYYY or YYYY-MM-DD
+// Parsing tanggal dari format D/M/YYYY atau YYYY-MM-DD
+function parseTanggal(str) {
   if (!str) return null;
-  str = str.trim();
-  if (str.includes('/')) {
-    const [d,m,y] = str.split('/');
-    return new Date(y, parseInt(m)-1, parseInt(d));
+  str = String(str).trim();
+  // D/M/YYYY
+  if (str.indexOf('/') > -1) {
+    const parts = str.split('/');
+    if (parts.length === 3) {
+      const [d, m, y] = parts;
+      return new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+    }
   }
-  return new Date(str);
+  // YYYY-MM-DD
+  if (str.indexOf('-') > -1) {
+    return new Date(str);
+  }
+  return null;
 }
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', () => {
-  // Set default tanggal awal = awal bulan ini
   const now = new Date();
   const awal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
   document.getElementById('tgl-awal').value = awal;
   document.getElementById('tgl-akhir').value = todayStr();
-
   loadData();
   startCountdown();
 });
 
-// ── COUNTDOWN & AUTO-REFRESH ──
+// ── COUNTDOWN ──
 function startCountdown() {
-  countdown = REFRESH_INTERVAL;
-  if (timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
+  countdown = REFRESH_SEC;
+  if (timer) clearInterval(timer);
+  timer = setInterval(() => {
     countdown--;
     updateCountdownUI();
-    if (countdown <= 0) {
-      countdown = REFRESH_INTERVAL;
-      loadData();
-    }
+    if (countdown <= 0) { countdown = REFRESH_SEC; loadData(); }
   }, 1000);
 }
-
 function updateCountdownUI() {
   document.getElementById('countdown-text').textContent = countdown + 's';
   const ring = document.getElementById('ring-svg');
-  const offset = CIRC * (1 - countdown / REFRESH_INTERVAL);
-  ring.style.strokeDashoffset = offset;
-  // Color shift near end
+  ring.style.strokeDashoffset = CIRC * (1 - countdown / REFRESH_SEC);
   ring.style.stroke = countdown < 10 ? 'var(--orange)' : 'var(--green)';
 }
 
-// ── LOAD DATA ──
+// ── LOAD ──
 async function loadData() {
-  // Always update tgl-akhir to today before fetching
   document.getElementById('tgl-akhir').value = todayStr();
-
-  const awal = document.getElementById('tgl-awal').value;
+  const awal  = document.getElementById('tgl-awal').value;
   const akhir = document.getElementById('tgl-akhir').value;
-
-  // Update display
-  document.getElementById('date-range-display').textContent =
-    formatDisplayDate(awal) + ' — ' + formatDisplayDate(akhir);
-
-  hideError();
-  setLoading(true);
+  document.getElementById('date-range-display').textContent = fmtDate(awal) + ' — ' + fmtDate(akhir);
+  hideError(); setLoading(true);
 
   try {
     const resp = await fetch(`${API}?action=getPresensi&bulan=all`);
     const json = await resp.json();
     if (json.error) throw new Error(json.error);
-
-    const all = json.data || [];
-
-    // Filter by date range
-    const d0 = parseDate(awal + ' 00:00:00') || new Date(0);
-    const d1 = parseDate(akhir + ' 23:59:59') || new Date();
-    d1.setHours(23,59,59);
-
-    const filtered = all.filter(p => {
-      if (!p.tanggal) return false;
-      const tgl = parseDate(p.tanggal);
-      return tgl && tgl >= d0 && tgl <= d1;
-    });
-
-    renderDashboard(filtered, awal, akhir);
-
-  } catch (e) {
+    processAndRender(json.data || [], awal, akhir);
+  } catch(e) {
     showError('Gagal memuat data: ' + e.message);
     setLoading(false);
   }
-
-  // Reset countdown after manual refresh
-  countdown = REFRESH_INTERVAL;
+  countdown = REFRESH_SEC;
   updateCountdownUI();
 }
 
-// ── PROCESS & RENDER ──
-function renderDashboard(records, awal, akhir) {
-  // Aggregate per dosen
-  const map = {};
+// ── PROCESS ──
+function processAndRender(all, awal, akhir) {
+  // Filter rentang tanggal
+  const d0 = new Date(awal + 'T00:00:00');
+  const d1 = new Date(akhir + 'T23:59:59');
 
-  records.forEach(p => {
+  const filtered = all.filter(p => {
+    if (!p.tanggal) return false;
+    const tgl = parseTanggal(p.tanggal);
+    return tgl && tgl >= d0 && tgl <= d1;
+  });
+
+  // Agregasi per dosen
+  const map = {};
+  filtered.forEach(p => {
     const id = p.dosenId || p.dosen;
     if (!id) return;
     if (!map[id]) {
       map[id] = {
-        id,
-        nama: p.dosen || id,
+        id, nama: p.dosen || id,
         total: 0,
-        hadir: 0,
         tepat: 0,
         terlambat: 0,
-        totalLambat: 0, // sum of positive diff (minutes late)
+        totalMenitLambat: 0,
+        maxMenitLambat: 0,
+        mkSet: new Set(),
+        hasAnomali: false,
+        detail: []  // untuk debug
       };
     }
     const d = map[id];
     d.total++;
 
-    const st = (p.status || '').toLowerCase();
-    const diff = Number(p.diff || 0);
+    const st    = String(p.status || '').toLowerCase();
+    const diff  = Number(p.diff || 0);
 
-    if (st === 'hadir' || st === 'tepat waktu' || st.includes('hadir')) {
-      d.hadir++;
-      if (diff <= 0) {
-        d.tepat++;
-      } else {
-        d.terlambat++;
-        d.totalLambat += diff;
-      }
-    } else if (st === 'terlambat' || diff > 0) {
-      d.hadir++;
+    // mk
+    if (p.mk) d.mkSet.add(String(p.mk).trim());
+
+    const isTepat = (st === 'tepat waktu') || (st === 'hadir' && diff <= 0);
+    const isLambat = st === 'terlambat' || st === 'sangat terlambat' ||
+                     (st.includes('terlambat')) || diff > 0;
+
+    if (isTepat && !isLambat) {
+      d.tepat++;
+    } else if (isLambat) {
       d.terlambat++;
-      d.totalLambat += Math.max(diff, 1);
+      const menit = Math.max(diff, 1);
+      d.totalMenitLambat += menit;
+      if (menit > d.maxMenitLambat) d.maxMenitLambat = menit;
+      if (menit > 200) d.hasAnomali = true;
+    } else {
+      // Tidak hadir / tidak jelas
     }
-    // absent / tidak hadir: counted in total but not hadir
+    d.detail.push({ st, diff });
   });
 
-  const list = Object.values(map).filter(d => d.total > 0);
+  const list = Object.values(map);
+  const minSesi = parseInt(document.getElementById('min-sesi').value) || 8;
+
+  // Pisahkan yang lolos threshold dan tidak
+  const lolos    = list.filter(d => d.total >= minSesi);
+  const tidakLolos = list.filter(d => d.total < minSesi);
+
+  // Update threshold info
+  document.getElementById('threshold-info').innerHTML =
+    `<span>${lolos.length} dosen memenuhi threshold ≥${minSesi} sesi</span>` +
+    (tidakLolos.length
+      ? ` · <span style="color:var(--yellow)">${tidakLolos.length} dosen dikecualikan (sesi < ${minSesi}): ${tidakLolos.map(d=>shortName(d.nama)).join(', ')}</span>`
+      : '');
 
   // Stats
-  const totalSesi = records.length;
-  const totalTepat = list.reduce((a,d) => a + d.tepat, 0);
-  const totalLambat = list.reduce((a,d) => a + d.terlambat, 0);
-  const totalDosen = list.length;
+  const totalSesi  = filtered.length;
+  const totalTepat = lolos.reduce((a,d)=>a+d.tepat, 0);
+  const totalLambat= lolos.reduce((a,d)=>a+d.terlambat, 0);
+  document.getElementById('stat-dosen').textContent  = lolos.length;
+  document.getElementById('stat-total').textContent  = totalSesi;
+  document.getElementById('stat-ok').textContent     = totalTepat;
+  document.getElementById('stat-late').textContent   = totalLambat;
 
-  document.getElementById('stat-total').textContent = totalSesi;
-  document.getElementById('stat-ok').textContent = totalTepat;
-  document.getElementById('stat-late').textContent = totalLambat;
-  document.getElementById('stat-absent').textContent = totalDosen;
-
-  // Sort: Top 5 tepat waktu = % tepat tertinggi (tepat / total)
-  const sortedTop = [...list]
-    .filter(d => d.total > 0)
-    .sort((a,b) => {
+  // ── TOP 5: % tepat waktu DESC, tiebreaker: total sesi DESC ──
+  const sortedTop = [...lolos]
+    .sort((a, b) => {
       const pA = a.tepat / a.total;
       const pB = b.tepat / b.total;
-      if (pB !== pA) return pB - pA;
-      return b.tepat - a.tepat;
+      if (Math.abs(pB - pA) > 0.0001) return pB - pA;
+      return b.total - a.total; // tiebreaker
     })
     .slice(0, 5);
 
-  // Sort: Bottom 5 terlambat = rata-rata menit terlambat tertinggi
-  const sortedBot = [...list]
-    .filter(d => d.terlambat > 0)
-    .sort((a,b) => {
-      const avgA = a.totalLambat / (a.terlambat || 1);
-      const avgB = b.totalLambat / (b.terlambat || 1);
-      return avgB - avgA;
-    })
-    .slice(0, 5);
+  // ── BOTTOM 5: skor gabungan (hanya yang pernah terlambat) ──
+  // normalisasi: skor = 0.6*(frek/maxFrek) + 0.4*(avgMnt/maxAvgMnt)
+  const withLate = lolos.filter(d => d.terlambat > 0).map(d => ({
+    ...d,
+    avgMenit: d.totalMenitLambat / d.terlambat
+  }));
+
+  let sortedBot = [];
+  if (withLate.length > 0) {
+    const maxFrek   = Math.max(...withLate.map(d => d.terlambat));
+    const maxAvg    = Math.max(...withLate.map(d => d.avgMenit));
+    withLate.forEach(d => {
+      const normFrek = maxFrek > 0 ? d.terlambat / maxFrek : 0;
+      const normAvg  = maxAvg  > 0 ? d.avgMenit  / maxAvg  : 0;
+      d.skor = (0.6 * normFrek) + (0.4 * normAvg);
+    });
+    sortedBot = withLate.sort((a,b) => b.skor - a.skor).slice(0, 5);
+  }
 
   // Render
-  const maxTop = sortedTop.length ? (sortedTop[0].tepat / sortedTop[0].total) : 1;
-  const maxBot = sortedBot.length ? (sortedBot[0].totalLambat / (sortedBot[0].terlambat||1)) : 1;
+  const maxTopPct = sortedTop.length ? (sortedTop[0].tepat / sortedTop[0].total) : 1;
+  renderTop(sortedTop, maxTopPct);
+  renderBot(sortedBot);
 
-  renderPanel('panel-top', sortedTop, 'top', maxTop);
-  renderPanel('panel-bot', sortedBot, 'bot', maxBot);
-
-  // Last updated
-  const now = new Date();
-  const ts = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-  document.getElementById('last-updated-text').textContent = `Diperbarui pukul ${ts}`;
+  // Timestamp
+  const ts = new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('last-updated-text').textContent = `Diperbarui pukul ${ts} · ${filtered.length} rekord dimuat`;
 
   setLoading(false);
 }
 
+// ── RENDER TOP ──
 const MEDALS = ['🥇','🥈','🥉'];
 
-function renderPanel(panelId, list, type, maxVal) {
-  const el = document.getElementById(panelId);
-
+function renderTop(list, maxPct) {
+  const el = document.getElementById('panel-top');
   if (!list.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">${type==='top'?'🏆':'⏱️'}</div><div>Tidak ada data pada rentang tanggal ini.</div></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="ei">🏆</div>Tidak ada data memenuhi threshold.</div>`;
     return;
   }
-
   el.innerHTML = list.map((d, i) => {
-    const isTop = type === 'top';
-    const medal = MEDALS[i] || null;
-    const rankEl = medal
-      ? `<span class="rank-medal">${medal}</span>`
+    const pct    = d.total > 0 ? (d.tepat / d.total * 100) : 0;
+    const barPct = maxPct > 0 ? (d.tepat / d.total) / maxPct * 100 : 0;
+    const mkCount = d.mkSet.size;
+    const rankEl = MEDALS[i]
+      ? `<span class="rank-medal">${MEDALS[i]}</span>`
       : `<span class="rank-num">${i+1}</span>`;
-
-    let score, subtext, barPct;
-
-    if (isTop) {
-      const pct = d.total > 0 ? (d.tepat / d.total * 100) : 0;
-      score = pct.toFixed(0) + '%';
-      subtext = `${d.tepat} tepat / ${d.total} sesi`;
-      barPct = maxVal > 0 ? (d.tepat / d.total) / maxVal * 100 : 0;
-    } else {
-      const avg = d.terlambat > 0 ? d.totalLambat / d.terlambat : 0;
-      score = Math.round(avg) + 'm';
-      subtext = `${d.terlambat}× terlambat`;
-      barPct = maxVal > 0 ? (d.totalLambat / (d.terlambat||1)) / maxVal * 100 : 0;
-    }
-
+    const rowClass = i === 0 ? 'rank-row rank-first' : 'rank-row';
     const color = avatarColor(d.nama);
-    const ini = initials(d.nama);
+
+    // Badges
+    const badges = [
+      `<span class="bdg bdg-blue">${d.total} sesi</span>`,
+      `<span class="bdg bdg-orange">${mkCount} MK</span>`,
+      d.terlambat > 0 ? `<span class="bdg bdg-red">${d.terlambat}× lambat</span>` : `<span class="bdg bdg-green">0 keterlambatan</span>`,
+    ].join('');
 
     return `
-      <div class="rank-row">
+      <div class="${rowClass}">
         ${rankEl}
-        <div class="rank-avatar" style="background:${color}">${ini}</div>
+        <div class="rank-avatar" style="background:${color}">${initials(d.nama)}</div>
         <div class="rank-info">
-          <div class="rank-name">${escHtml(d.nama)}</div>
-          <div class="rank-detail">${subtext}</div>
-          <div class="rank-bar-wrap">
-            <div class="rank-bar" style="width:${barPct.toFixed(1)}%"></div>
-          </div>
+          <div class="rank-name">${esc(d.nama)}</div>
+          <div class="badge-row">${badges}</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barPct.toFixed(1)}%"></div></div>
         </div>
         <div class="rank-score">
-          <div class="rank-pct">${score}</div>
-          <div class="rank-pct-lbl">${isTop ? 'tepat' : 'rata-rata'}</div>
+          <div class="rank-main-score">${pct.toFixed(0)}%</div>
+          <div class="rank-sub-score">${d.tepat}/${d.total} tepat</div>
         </div>
-      </div>
-    `;
+      </div>`;
+  }).join('');
+}
+
+// ── RENDER BOTTOM ──
+function renderBot(list) {
+  const el = document.getElementById('panel-bot');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty-state"><div class="ei">✅</div>Semua dosen tepat waktu pada periode ini!</div>`;
+    return;
+  }
+  const maxSkor = list[0].skor || 1;
+  el.innerHTML = list.map((d, i) => {
+    const barPct = maxSkor > 0 ? d.skor / maxSkor * 100 : 0;
+    const rankEl = `<span class="rank-num">${i+1}</span>`;
+    const rowClass = i === 0 ? 'rank-row rank-first-bot' : 'rank-row';
+    const color = avatarColor(d.nama);
+
+    const anomalyBadge = d.hasAnomali
+      ? `<span class="anomaly-flag">⚠ Ada nilai ekstrem (>200 mnt)</span>`
+      : '';
+
+    const badges = [
+      `<span class="bdg bdg-orange">${d.terlambat}× terlambat</span>`,
+      `<span class="bdg bdg-red">rata-rata ${Math.round(d.avgMenit)} mnt</span>`,
+      `<span class="bdg bdg-blue">${d.total} sesi</span>`,
+    ].join('');
+
+    return `
+      <div class="${rowClass}">
+        ${rankEl}
+        <div class="rank-avatar" style="background:${color}">${initials(d.nama)}</div>
+        <div class="rank-info">
+          <div class="rank-name">${esc(d.nama)}</div>
+          <div class="badge-row">${badges}</div>
+          ${anomalyBadge ? `<div style="margin-top:3px">${anomalyBadge}</div>` : ''}
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barPct.toFixed(1)}%"></div></div>
+        </div>
+        <div class="rank-score">
+          <div class="rank-main-score">${(d.skor * 100).toFixed(0)}</div>
+          <div class="rank-sub-score">skor</div>
+        </div>
+      </div>`;
   }).join('');
 }
 
 // ── UTILS ──
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function showError(msg) {
-  const el = document.getElementById('error-banner');
-  el.textContent = '⚠ ' + msg;
-  el.style.display = 'block';
-}
-
-function hideError() {
-  document.getElementById('error-banner').style.display = 'none';
-}
-
-function setLoading(on) {
-  document.getElementById('btn-refresh').disabled = on;
-  document.getElementById('btn-refresh').textContent = on ? '⏳ Memuat…' : '↻ Perbarui';
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function shortName(n){ return n.split(',')[0].split(' ').slice(-2).join(' '); }
+function showError(m){ const e=document.getElementById('error-banner'); e.textContent='⚠ '+m; e.style.display='block'; }
+function hideError(){ document.getElementById('error-banner').style.display='none'; }
+function setLoading(on){
+  const b = document.getElementById('btn-refresh');
+  b.disabled = on;
+  b.textContent = on ? '⏳ Memuat…' : '↻ Perbarui';
 }
 </script>
 </body>
