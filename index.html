@@ -243,8 +243,19 @@ tr:last-child td{border-bottom:none}
       </div>
       <button class="btn btn-primary login-btn" onclick="doLogin()">Masuk →</button>
       
-      <div style="margin-top:1.5rem; border-top:1px solid #f0f0ee; padding-top:1rem">
+      <div style="margin-top:1.5rem; border-top:1px solid #f0f0ee; padding-top:1rem; display:flex; flex-direction:column; gap:8px; align-items:center">
         <button class="btn btn-sm" onclick="swapLogin('admin')">Masuk ke Portal Admin</button>
+        <a href="leaderboard.html" target="_blank" style="
+          display:inline-flex; align-items:center; gap:6px;
+          text-decoration:none;
+          background:#f5f5f3; border:1px solid #e5e5e3;
+          border-radius:20px; padding:5px 14px;
+          font-size:12px; font-weight:500; color:#555;
+          font-family:inherit; transition:all .15s;
+        " onmouseover="this.style.background='#1a1a1a';this.style.color='#fff';this.style.borderColor='#1a1a1a'"
+           onmouseout="this.style.background='#f5f5f3';this.style.color='#555';this.style.borderColor='#e5e5e3'">
+          🏆 Lihat Leaderboard Kehadiran
+        </a>
       </div>
     </div>
 
