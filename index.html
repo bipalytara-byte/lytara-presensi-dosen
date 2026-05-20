@@ -138,6 +138,28 @@ tr:last-child td{border-bottom:none}
 .ganti-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px}
 /* Terlambat rata-rata bar */
 .lat-bar{height:8px;border-radius:20px;background:#BA7517;transition:width .4s}
+/* ===== STATUS FILTER BUTTONS ===== */
+.sf-wrap{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 0}
+.sf-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid #e5e5e3;background:#f5f5f3;color:#666;font-family:inherit;transition:all .15s}
+.sf-btn:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.sf-btn.sf-active{font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.sf-btn.sf-all.sf-active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.sf-btn.sf-green.sf-active{background:#eaf3de;color:#27500a;border-color:#639922}
+.sf-btn.sf-yellow.sf-active{background:#faeeda;color:#633806;border-color:#BA7517}
+.sf-btn.sf-red.sf-active{background:#fcebeb;color:#791f1f;border-color:#E24B4A}
+.sf-count{font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px;margin-left:2px}
+.sf-btn.sf-all .sf-count{background:#e5e5e3;color:#555}
+.sf-btn.sf-green .sf-count{background:#c5e09a;color:#27500a}
+.sf-btn.sf-yellow .sf-count{background:#fac775;color:#633806}
+.sf-btn.sf-red .sf-count{background:#f09595;color:#791f1f}
+/* Detail list item */
+.ds-item{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:1px solid #f5f5f3;gap:10px;animation:dsIn .18s ease}
+.ds-item:last-child{border-bottom:none}
+@keyframes dsIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.ds-left{flex:1;min-width:0}
+.ds-name{font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ds-meta{font-size:11px;color:#888;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ds-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0}
 /* ===== DOSEN CARD dc2 ===== */
 .dc2{background:#fff;border:1px solid #e5e5e3;border-radius:14px;padding:1rem 1.1rem;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .dc2-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -766,6 +788,32 @@ tr:last-child td{border-bottom:none}
           <span style="font-size:11px;color:#888;font-weight:400">Hanya dosen yg pernah terlambat</span>
         </div>
         <div id="list-terlambat"><p class="empty">Belum ada data.</p></div>
+      </div>
+
+      <!-- ===== FILTER STATUS KEHADIRAN ===== -->
+      <div id="card-filter-status" style="margin-top:16px;padding-top:14px;border-top:1px solid #f0f0ee">
+        <div style="font-size:12px;font-weight:600;color:#1a1a1a;margin-bottom:4px;display:flex;align-items:center;gap:6px">
+          🔍 Filter Rincian Kehadiran
+          <span style="font-size:11px;color:#888;font-weight:400">sesuai rentang tanggal aktif</span>
+        </div>
+        <div class="sf-wrap">
+          <button class="sf-btn sf-all sf-active" id="sfbtn-all" onclick="filterStatusKehadiran('all')">
+            Semua <span class="sf-count" id="sf-count-all">0</span>
+          </button>
+          <button class="sf-btn sf-green" id="sfbtn-green" onclick="filterStatusKehadiran('green')">
+            ✅ Tepat Waktu <span class="sf-count" id="sf-count-green">0</span>
+          </button>
+          <button class="sf-btn sf-yellow" id="sfbtn-yellow" onclick="filterStatusKehadiran('yellow')">
+            ⏱ Terlambat <span class="sf-count" id="sf-count-yellow">0</span>
+          </button>
+          <button class="sf-btn sf-red" id="sfbtn-red" onclick="filterStatusKehadiran('red')">
+            🚨 Sangat Terlambat <span class="sf-count" id="sf-count-red">0</span>
+          </button>
+        </div>
+        <div id="sf-context" style="margin-top:8px;font-size:11px;color:#888;padding:6px 10px;background:#f8f8f7;border-radius:7px;display:none"></div>
+        <div id="sf-detail-list" style="margin-top:10px">
+          <p class="empty">Pilih filter di atas untuk melihat rincian.</p>
+        </div>
       </div>
     </div>
 
@@ -2014,6 +2062,109 @@ function renderAlertAbsen() {
 }
 
 // =====================================================
+// FITUR FILTER STATUS KEHADIRAN (Tepat / Terlambat / Sangat Terlambat)
+// =====================================================
+var _sfActive = 'all'; // status filter aktif saat ini
+
+function filterStatusKehadiran(status) {
+  _sfActive = status;
+  // Update style tombol
+  ['all','green','yellow','red'].forEach(function(s){
+    var btn = document.getElementById('sfbtn-' + s);
+    if(!btn) return;
+    btn.classList.remove('sf-active');
+    if(s === status) btn.classList.add('sf-active');
+  });
+  // Rebuild filtered data dari state saat ini
+  var start = document.getElementById('r-start').value;
+  var end   = document.getElementById('r-end').value;
+  var df    = document.getElementById('rd').value;
+  var data  = P.slice();
+  if(start) { var ts0 = new Date(start).setHours(0,0,0,0); data = data.filter(function(p){ return parseTanggal(p.tanggal) >= ts0; }); }
+  if(end)   { var ts1 = new Date(end).setHours(23,59,59,999); data = data.filter(function(p){ return parseTanggal(p.tanggal) <= ts1; }); }
+  if(df !== 'all') data = data.filter(function(p){ return p.dosenId === df; });
+  renderDetailStatusKehadiran(data);
+}
+
+function renderDetailStatusKehadiran(baseData) {
+  var el = document.getElementById('sf-detail-list');
+  var ctx = document.getElementById('sf-context');
+  if(!el) return;
+
+  // Filter sesuai status aktif
+  var filtered = _sfActive === 'all' ? baseData.slice() : baseData.filter(function(p){ return p.color === _sfActive; });
+
+  // Konteks info
+  if(ctx) {
+    var start = document.getElementById('r-start').value;
+    var end   = document.getElementById('r-end').value;
+    var df    = document.getElementById('rd').value;
+    var namaFilter = _sfActive === 'all' ? 'Semua status'
+      : _sfActive === 'green' ? '✅ Tepat Waktu'
+      : _sfActive === 'yellow' ? '⏱ Terlambat'
+      : '🚨 Sangat Terlambat';
+    var periodeInfo = (start && end) ? (start + ' s/d ' + end) : start ? ('mulai ' + start) : end ? ('sampai ' + end) : 'Semua periode';
+    var dosenInfo   = (df !== 'all') ? (' · ' + (D.find(function(d){return d.id===df;})||{nama:'?'}).nama) : '';
+    ctx.textContent = namaFilter + ' · ' + periodeInfo + dosenInfo + ' · ' + filtered.length + ' sesi';
+    ctx.style.display = 'block';
+  }
+
+  if(filtered.length === 0) {
+    el.innerHTML = '<div style="padding:12px;text-align:center;background:#f8f8f7;border-radius:8px;font-size:12px;color:#888">'
+      + (_sfActive === 'all' ? '📭 Tidak ada data pada rentang ini.' : '🎉 Tidak ada sesi dengan status ini.')
+      + '</div>';
+    return;
+  }
+
+  // Kelompokkan per tanggal (terbaru dulu)
+  var grouped = {};
+  filtered.slice().reverse().forEach(function(p){
+    if(!grouped[p.tanggal]) grouped[p.tanggal] = [];
+    grouped[p.tanggal].push(p);
+  });
+
+  var AVATAR_SF = ['#185fa5','#639922','#7c3aed','#c2410c','#0f766e','#b45309','#be123c','#1d4ed8'];
+  function sfColor(n){ var c=0; for(var i=0;i<n.length;i++) c+=n.charCodeAt(i); return AVATAR_SF[c%AVATAR_SF.length]; }
+  function sfInit(n){ var p=n.trim().split(' ').filter(Boolean); return p.length===1?p[0].substring(0,2).toUpperCase():(p[0][0]+p[p.length-1][0]).toUpperCase(); }
+
+  var html = '';
+  for(var tgl in grouped) {
+    var sesiList = grouped[tgl];
+    // Header tanggal
+    html += '<div style="margin:10px 0 6px;display:flex;align-items:center;gap:6px">'
+      + '<span style="font-size:11px;font-weight:700;color:#555;background:#f0f0ee;padding:2px 8px;border-radius:6px">📅 ' + tgl + '</span>'
+      + '<span style="font-size:10px;color:#aaa">' + sesiList.length + ' sesi</span>'
+      + '</div>';
+
+    // Baris per sesi
+    sesiList.forEach(function(p){
+      var badgeBg  = p.color==='green' ? '#eaf3de' : p.color==='yellow' ? '#faeeda' : '#fcebeb';
+      var badgeTx  = p.color==='green' ? '#27500a' : p.color==='yellow' ? '#633806' : '#791f1f';
+      var badgeLabel = p.color==='green' ? '✅ Tepat' : p.color==='yellow' ? ('⏱ +' + (p.diff||0) + ' mnt') : ('🚨 +' + (p.diff||0) + ' mnt');
+      var ac = sfColor(p.dosen||'');
+      var ini = sfInit(p.dosen||'?');
+      var modeBg = '#f3e8ff', modeTx = '#7e22ce';
+      var mk = p.modeKuliah||'';
+      if(mk.indexOf('Luring')>-1){modeBg='#eaf3de';modeTx='#27500a';}
+      else if(mk.indexOf('Sinkronus')>-1){modeBg='#e6f1fb';modeTx='#185fa5';}
+      else if(mk.indexOf('Asinkronus')>-1){modeBg='#faeeda';modeTx='#633806';}
+      html += '<div class="ds-item">'
+        + '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
+          + '<div style="width:30px;height:30px;border-radius:50%;background:' + ac + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">' + ini + '</div>'
+          + '<div class="ds-left">'
+            + '<div class="ds-name">' + (p.dosen||'—') + '</div>'
+            + '<div class="ds-meta">' + (p.mk||'') + (p.kelas ? ' · ' + p.kelas : '') + ' · ' + (p.jam||'') + (p.ruang ? ' · ' + p.ruang : '') + '</div>'
+            + (mk ? '<span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:20px;background:' + modeBg + ';color:' + modeTx + '">' + mk + '</span>' : '')
+          + '</div>'
+        + '</div>'
+        + '<div class="ds-badge" style="background:' + badgeBg + ';color:' + badgeTx + '">' + badgeLabel + '</div>'
+        + '</div>';
+    });
+  }
+  el.innerHTML = html;
+}
+
+// =====================================================
 // FITUR 4: RATA-RATA KETERLAMBATAN PER DOSEN
 // =====================================================
 function renderRataLambat(data) {
@@ -2440,6 +2591,25 @@ function renderR(){
 
   // Fitur 4: rata-rata keterlambatan (pakai data filtered)
   renderRataLambat(data);
+
+  // ===== UPDATE BADGE COUNT TOMBOL FILTER STATUS =====
+  var cAll = data.length;
+  var cGreen = data.filter(function(p){return p.color==='green';}).length;
+  var cYellow = data.filter(function(p){return p.color==='yellow';}).length;
+  var cRed = data.filter(function(p){return p.color==='red';}).length;
+  var sfAll = document.getElementById('sf-count-all');
+  var sfG = document.getElementById('sf-count-green');
+  var sfY = document.getElementById('sf-count-yellow');
+  var sfR = document.getElementById('sf-count-red');
+  if(sfAll) sfAll.textContent = cAll;
+  if(sfG) sfG.textContent = cGreen;
+  if(sfY) sfY.textContent = cYellow;
+  if(sfR) sfR.textContent = cRed;
+  // Sembunyikan section filter jika bukan admin
+  var cardFS = document.getElementById('card-filter-status');
+  if(cardFS) cardFS.style.display = isAdmin ? 'block' : 'none';
+  // Re-render detail list sesuai filter aktif saat ini
+  renderDetailStatusKehadiran(data);
 
   // DETAIL RIWAYAT — card per sesi, dikelompokkan per tanggal
   var groupedData = {};
