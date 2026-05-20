@@ -135,6 +135,22 @@ h1 em{font-style:italic;color:var(--gold)}
 .status-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
 footer{text-align:center;font-size:11px;color:var(--muted);margin-top:3rem;letter-spacing:.05em}
 footer b{color:var(--text);font-weight:600}
+
+/* ANOMALY PANEL */
+.anomaly-head{background:var(--surface);border:1px solid rgba(250,204,21,0.2);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:10px}
+.an-badge{background:var(--yellow-dim);color:var(--yellow);font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;border:1px solid rgba(250,204,21,0.3)}
+.an-row{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:8px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;animation:fadeUp .4s both}
+.an-icon{font-size:20px;margin-top:2px}
+.an-body{}
+.an-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+.an-detail{font-size:11px;color:var(--muted);line-height:1.7}
+.an-detail b{color:var(--text)}
+.an-detail .an-hl{color:var(--yellow);font-weight:600}
+.an-cat{text-align:right;flex-shrink:0}
+.an-cat-label{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.cat-A{background:rgba(239,68,68,0.15);color:#fca5a5}
+.cat-B{background:rgba(251,146,60,0.15);color:var(--orange)}
+.cat-C{background:rgba(250,204,21,0.12);color:var(--yellow)}
 </style>
 </head>
 <body>
@@ -226,14 +242,31 @@ footer b{color:var(--text);font-weight:600}
 
   <div class="footnote">
     <b>Cara membaca —</b>
-    <b>Top 5:</b> diurutkan % tepat waktu. Bila sama, dosen dengan sesi lebih banyak diunggulkan (beban lebih berat). &nbsp;·&nbsp;
-    <b>Bottom 5:</b> skor gabungan 60% frekuensi + 40% rata-rata menit keterlambatan — dosen yang <em>sering</em> terlambat lebih terlihat daripada yang sekali terlambat lama. &nbsp;·&nbsp;
-    <b>Anomali dikecualikan:</b> keterlambatan yang tercatat <em>setelah jam selesai kelas</em> (kemungkinan lupa absen) tidak dihitung dalam skor, namun tetap ditampilkan sebagai informasi.
+    <b>Top 5:</b> diurutkan % tepat waktu. Bila sama, dosen dengan sesi lebih banyak diunggulkan (beban lebih berat). &nbsp;&#183;&nbsp;
+    <b>Bottom 5:</b> skor gabungan 60% frekuensi + 40% rata-rata menit keterlambatan. &nbsp;&#183;&nbsp;
+    <b>Anomali dikecualikan:</b> keterlambatan yang tercatat setelah jam selesai kelas tidak dihitung dalam skor karena kemungkinan besar merupakan rekaman absen yang terlambat dilakukan.
   </div>
 
-  <div class="last-updated">
+  <div id="anomaly-panel" style="display:none;margin-top:1rem">
+    <div class="anomaly-head">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:18px">&#128269;</span>
+        <span style="font-size:13px;font-weight:700;color:var(--yellow)">Catatan Rekaman Anomali</span>
+        <span id="anomaly-count-badge" class="an-badge"></span>
+      </div>
+      <p style="font-size:11px;color:var(--muted);line-height:1.8;margin-left:28px">
+        Kejadian berikut <b style="color:var(--text)">tidak dihitung</b> dalam skor leaderboard karena waktu rekam absen
+        tercatat <b style="color:var(--yellow)">setelah jam selesai kelas</b> menurut jadwal resmi.
+        Hal ini mengindikasikan kemungkinan <b style="color:var(--text)">lupa absen saat masuk</b> dan baru direkam belakangan,
+        bukan keterlambatan hadir yang sesungguhnya. Ditampilkan secara transparan agar dapat ditindaklanjuti.
+      </p>
+    </div>
+    <div id="anomaly-list"></div>
+  </div>
+
+  <div class="last-updated" style="margin-top:1.25rem">
     <span class="status-dot"></span>
-    <span id="last-updated-text">Memuat data…</span>
+    <span id="last-updated-text">Memuat data...</span>
   </div>
 </div>
 
@@ -266,6 +299,9 @@ function parseTgl(s){
   if(s.includes('-')) return new Date(s);
   return null;
 }
+
+// Konversi menit ke string HH:MM
+function minToJam(m){ if(m===null||m===undefined) return '?'; return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
 
 // Konversi "HH:MM", "HH.MM", "HH:MM:SS" ke menit sejak tengah malam
 function toMin(s){
@@ -314,10 +350,16 @@ async function loadData(){
     if(rP.error) throw new Error(rP.error);
     if(rJ.error) throw new Error(rJ.error);
 
-    // Build lookup jadwalId -> jamSelesai (menit)
+    // Build lookup jadwalId -> { selesai, mulai, mk, kelas, hari }
     const jadwalMap = {};
     (rJ.data||[]).forEach(j=>{
-      jadwalMap[j.id] = toMin(j.jamSelesai);
+      jadwalMap[j.id] = {
+        selesai: toMin(j.jamSelesai),
+        mulai:   toMin(j.jamMulai),
+        mk:      j.mk||'',
+        kelas:   j.kelas||'',
+        hari:    j.hari||'',
+      };
     });
 
     processAndRender(rP.data||[], jadwalMap, awal, akhir);
@@ -340,6 +382,7 @@ function processAndRender(all, jadwalMap, awal, akhir){
 
   const minSesi=parseInt(document.getElementById('min-sesi').value)||8;
   const map={};
+  const allAnomalies=[];
 
   filtered.forEach(p=>{
     const id=p.dosenId||p.dosen;
@@ -363,11 +406,25 @@ function processAndRender(all, jadwalMap, awal, akhir){
     } else if(stRaw==='Terlambat'||stRaw==='Sangat terlambat'){
       // Cek anomali: waktu hadir > jam selesai kelas
       const hadirMnt  = toMin(String(p.waktuHadir||''));
-      const selesaiMnt= jadwalMap[p.jadwalId||''];
+      const jInfo     = jadwalMap[p.jadwalId||''] || {};
+      const selesaiMnt= jInfo.selesai !== undefined ? jInfo.selesai : null;
       const isAnomali = (hadirMnt!==null && selesaiMnt!==null && hadirMnt>selesaiMnt);
 
       if(isAnomali){
         d.terlambatAnomali++;
+        // Simpan detail untuk panel anomali
+        const jadwalInfo = jadwalMap[p.jadwalId||''] || {};
+        allAnomalies.push({
+          nama: d.nama,
+          tanggal: p.tanggal || '',
+          hari: jInfo.hari || '',
+          mk: p.mk || '',
+          kelas: p.kelas || '',
+          jamMulai: minToJam(jInfo.mulai),
+          jamSelesai: minToJam(selesaiMnt),
+          waktuHadir: String(p.waktuHadir||'').replace('.',':'),
+          lewatSelesai: hadirMnt - selesaiMnt,
+        });
       } else {
         d.terlambatWajar++;
         d.totalMenitWajar+=diff>0?diff:1;
@@ -418,6 +475,7 @@ function processAndRender(all, jadwalMap, awal, akhir){
 
   const ts=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   document.getElementById('last-updated-text').textContent=`Diperbarui pukul ${ts}`;
+  renderAnomalies(allAnomalies);
   setLoading(false);
 }
 
@@ -496,6 +554,58 @@ function shortName(n){return n.split(',')[0].split(' ').slice(-2).join(' ');}
 function showError(m){const e=document.getElementById('error-banner');e.textContent='⚠ '+m;e.style.display='block';}
 function hideError(){document.getElementById('error-banner').style.display='none';}
 function setLoading(on){const b=document.getElementById('btn-refresh');b.disabled=on;b.textContent=on?'⏳ Memuat…':'↻ Perbarui';}
+
+// ── RENDER ANOMALY PANEL ──
+function renderAnomalies(anomalyList) {
+  const panel = document.getElementById('anomaly-panel');
+  const listEl = document.getElementById('anomaly-list');
+  const badge  = document.getElementById('anomaly-count-badge');
+
+  if (!anomalyList.length) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = 'block';
+  badge.textContent = anomalyList.length + ' kejadian';
+
+  // Sort by lewat_selesai desc
+  anomalyList.sort((a,b) => b.lewatSelesai - a.lewatSelesai);
+
+  listEl.innerHTML = anomalyList.map((a, idx) => {
+    // Kategorisasi berdasarkan berapa lama setelah kelas selesai
+    let cat, catLabel, icon, penjelasan;
+    if (a.lewatSelesai > 120) {
+      cat = 'cat-A'; catLabel = 'Kemungkinan Lupa Absen'; icon = '🔴';
+      penjelasan = `Rekaman masuk tercatat <b class="an-hl">${a.lewatSelesai} menit setelah kelas selesai</b>. 
+        Secara logis tidak mungkin hadir mengajar pada jam tersebut — 
+        kemungkinan besar absen dilakukan secara retroaktif setelah kelas berakhir.`;
+    } else if (a.lewatSelesai > 15) {
+      cat = 'cat-B'; catLabel = 'Absen Terlambat Direkam'; icon = '🟠';
+      penjelasan = `Rekaman masuk tercatat <b class="an-hl">${a.lewatSelesai} menit setelah kelas selesai</b>. 
+        Dosen kemungkinan hadir mengajar namun lupa absen saat tiba, 
+        dan baru merekam kehadiran menjelang atau sesudah kelas berakhir.`;
+    } else {
+      cat = 'cat-C'; catLabel = 'Absen di Akhir Sesi'; icon = '🟡';
+      penjelasan = `Rekaman masuk tercatat <b class="an-hl">${a.lewatSelesai} menit setelah kelas selesai</b>. 
+        Selisih sangat kecil — kemungkinan dosen hadir namun baru sempat absen 
+        di penghujung sesi, atau ada sedikit keterlambatan pada sistem rekam.`;
+    }
+
+    return `<div class="an-row" style="animation-delay:${idx*0.08}s">
+      <div class="an-icon">${icon}</div>
+      <div class="an-body">
+        <div class="an-name">${esc(a.nama)}</div>
+        <div class="an-detail">
+          <b>${a.tanggal} (${a.hari})</b> &nbsp;·&nbsp; ${esc(a.mk)} &nbsp;·&nbsp; Kelas ${esc(a.kelas)}<br>
+          Jadwal: <b>${a.jamMulai}–${a.jamSelesai}</b> &nbsp;|&nbsp; Rekaman hadir: <b class="an-hl">${a.waktuHadir}</b><br>
+          ${penjelasan}
+        </div>
+      </div>
+      <div class="an-cat"><span class="an-cat-label ${cat}">${catLabel}</span></div>
+    </div>`;
+  }).join('');
+}
 </script>
 </body>
 </html>
