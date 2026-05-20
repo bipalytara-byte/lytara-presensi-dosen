@@ -632,6 +632,144 @@ html, body {
   gap: 12px;
   font-size: 18px;
 }
+
+/* ANOMALY BUTTON TV */
+.btn-anomali-tv {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  background: rgba(250,204,21,0.1);
+  border: 1px solid rgba(250,204,21,0.35);
+  color: var(--yellow);
+  border-radius: 12px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .2s;
+  margin-left: 12px;
+}
+.btn-anomali-tv:hover { background: rgba(250,204,21,0.2); }
+.btn-anomali-tv.visible { display: inline-flex; }
+.an-tv-pill {
+  background: rgba(250,204,21,0.25);
+  border-radius: 20px;
+  padding: 1px 8px;
+  font-size: 12px;
+}
+
+/* ANOMALY OVERLAY */
+#anomaly-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8,10,15,0.92);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+#anomaly-overlay.open { display: flex; }
+
+.ao-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 48px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.ao-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ao-title-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 32px;
+  color: var(--yellow);
+}
+
+.ao-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+  max-width: 700px;
+  line-height: 1.7;
+}
+
+.ao-close {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s;
+}
+.ao-close:hover { background: var(--surface); }
+
+.ao-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 48px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ao-row {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  align-items: center;
+  gap: 20px;
+  background: var(--surface);
+  border: 1px solid rgba(250,204,21,0.15);
+  border-radius: 16px;
+  padding: 20px 28px;
+  animation: rowIn .4s both;
+}
+
+.ao-row:nth-child(1) { animation-delay:.05s }
+.ao-row:nth-child(2) { animation-delay:.10s }
+.ao-row:nth-child(3) { animation-delay:.15s }
+.ao-row:nth-child(4) { animation-delay:.20s }
+.ao-row:nth-child(5) { animation-delay:.25s }
+.ao-row:nth-child(6) { animation-delay:.30s }
+
+.ao-icon { font-size: 28px; text-align: center; }
+.ao-info {}
+.ao-name { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.ao-detail { font-size: 13px; color: var(--muted); line-height: 1.8; }
+.ao-detail b { color: var(--text); }
+.ao-detail .hl { color: var(--yellow); font-weight: 700; }
+.ao-cat { font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 20px; white-space: nowrap; text-align: center; }
+.cat-A { background: rgba(239,68,68,0.15); color: #fca5a5; }
+.cat-B { background: rgba(249,115,22,0.15); color: var(--orange); }
+.cat-C { background: rgba(250,204,21,0.12); color: var(--yellow); }
+
+.ao-paused-label {
+  position: fixed;
+  top: 18px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(250,204,21,0.12);
+  border: 1px solid rgba(250,204,21,0.3);
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 16px;
+  border-radius: 20px;
+  letter-spacing: .06em;
+  z-index: 201;
+  display: none;
+}
 </style>
 </head>
 <body>
@@ -652,6 +790,9 @@ html, body {
         <div class="brand-name">LYTARA</div>
         <div class="brand-sub">Layanan Tracking Aktivitas &amp; Realisasi Akademik</div>
       </div>
+      <button class="btn-anomali-tv" id="btn-anomali-tv" onclick="openAnomalyOverlay()">
+        ⚠ Anomali <span class="an-tv-pill" id="an-tv-pill">0</span>
+      </button>
     </div>
 
     <div class="slide-indicator" id="slide-indicator">
@@ -870,6 +1011,7 @@ async function loadData() {
 function process(presensi, jadwals) {
   // Build jadwal lookup
   const jMap = {};
+  const tvAnomalies = [];
   jadwals.forEach(j => {
     jMap[j.id] = {
       selesai: toMin(j.jamSelesai),
@@ -913,7 +1055,16 @@ function process(presensi, jadwals) {
       const jInfo   = jMap[p.jadwalId||''] || {};
       const selesaiM= jInfo.selesai !== undefined ? jInfo.selesai : null;
       const anomali = hadirM!==null && selesaiM!==null && hadirM>selesaiM;
-      if(anomali){ d.terlambatA++; totalAnomali++; }
+      if(anomali){
+        d.terlambatA++; totalAnomali++;
+        tvAnomalies.push({
+          nama: d.nama, tanggal: p.tanggal||'', hari: jInfo.hari||'',
+          mk: p.mk||'', kelas: p.kelas||'',
+          jamMulai: minToJam(jInfo.mulai), jamSelesai: minToJam(selesaiM),
+          waktuHadir: String(p.waktuHadir||'').replace('.',':'),
+          lewatSelesai: hadirM - selesaiM,
+        });
+      }
       else { d.terlambatW++; d.totalMenitW+=diff>0?diff:1; }
     }
   });
@@ -957,6 +1108,7 @@ function process(presensi, jadwals) {
   renderStats(lolos.length, tTepat, tLambat, totalAnomali, tTotal, ratePct);
   renderToday(hariIni, todayHadir, todayBelum, todayPresensi, jMap);
   renderTicker(top5, bot5, ratePct, tTotal);
+  renderAnomalyOverlay(tvAnomalies);
 
   // Update stat period label
   document.getElementById('stat-period-label').textContent =
@@ -1103,6 +1255,73 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function shortName(n){ const p=n.split(',')[0].trim(); return p.split(' ').slice(0,3).join(' '); }
 function hideOverlay(){ const o=document.getElementById('loading-overlay'); o.style.opacity='0'; setTimeout(()=>o.style.display='none',500); }
 
+
+// ── ANOMALY OVERLAY ──
+let anomalyData = [];
+
+function openAnomalyOverlay() {
+  document.getElementById('anomaly-overlay').classList.add('open');
+  document.getElementById('paused-label').style.display = 'block';
+  if (slideTimer) { clearInterval(slideTimer); slideTimer = null; }
+}
+
+function closeAnomalyOverlay() {
+  document.getElementById('anomaly-overlay').classList.remove('open');
+  document.getElementById('paused-label').style.display = 'none';
+  startSlideShow();
+}
+
+function renderAnomalyOverlay(list) {
+  anomalyData = list;
+  const btn  = document.getElementById('btn-anomali-tv');
+  const pill = document.getElementById('an-tv-pill');
+  const body = document.getElementById('ao-body');
+
+  if (!list.length) {
+    btn.classList.remove('visible');
+    body.innerHTML = '<div style="color:var(--muted);text-align:center;padding:60px;font-size:18px">✅ Tidak ada rekaman anomali pada periode ini.</div>';
+    return;
+  }
+
+  btn.classList.add('visible');
+  pill.textContent = list.length;
+
+  list.sort((a,b) => b.lewatSelesai - a.lewatSelesai);
+
+  body.innerHTML = list.map((a, i) => {
+    let cat, catLabel, icon, penjelasan;
+    if (a.lewatSelesai > 120) {
+      cat='cat-A'; catLabel='Kemungkinan Lupa Absen'; icon='🔴';
+      penjelasan=`Rekaman masuk tercatat <span class="hl">${a.lewatSelesai} menit setelah kelas selesai</span>.
+        Secara logis tidak mungkin hadir mengajar pada jam tersebut —
+        kemungkinan besar absen dilakukan secara retroaktif setelah kelas berakhir.`;
+    } else if (a.lewatSelesai > 15) {
+      cat='cat-B'; catLabel='Absen Terlambat Direkam'; icon='🟠';
+      penjelasan=`Rekaman masuk tercatat <span class="hl">${a.lewatSelesai} menit setelah kelas selesai</span>.
+        Dosen kemungkinan hadir mengajar namun lupa absen saat tiba,
+        dan baru merekam kehadiran menjelang atau sesudah kelas berakhir.`;
+    } else {
+      cat='cat-C'; catLabel='Absen di Akhir Sesi'; icon='🟡';
+      penjelasan=`Rekaman masuk tercatat <span class="hl">${a.lewatSelesai} menit setelah kelas selesai</span>.
+        Selisih sangat kecil — kemungkinan dosen hadir namun baru sempat absen
+        di penghujung sesi, atau ada sedikit keterlambatan pada sistem rekam.`;
+    }
+    return `<div class="ao-row" style="animation-delay:${i*0.07}s">
+      <div class="ao-icon">${icon}</div>
+      <div class="ao-info">
+        <div class="ao-name">${esc(a.nama)}</div>
+        <div class="ao-detail">
+          <b>${a.tanggal} (${a.hari})</b> &nbsp;·&nbsp; ${esc(a.mk)} &nbsp;·&nbsp; Kelas ${esc(a.kelas)}<br>
+          Jadwal: <b>${a.jamMulai}–${a.jamSelesai}</b> &nbsp;|&nbsp;
+          Rekaman hadir: <b class="hl">${a.waktuHadir}</b> &nbsp;|&nbsp;
+          ${penjelasan}
+        </div>
+      </div>
+      <div class="ao-cat ${cat}">${catLabel}</div>
+    </div>`;
+  }).join('');
+}
+
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', async ()=>{
   setInterval(updateClock, 1000);
@@ -1118,5 +1337,26 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   setInterval(loadData, REFRESH_SEC * 1000);
 });
 </script>
+
+<!-- ANOMALY OVERLAY -->
+<div class="ao-paused-label" id="paused-label">⏸ SLIDE DIJEDA</div>
+<div id="anomaly-overlay">
+  <div class="ao-topbar">
+    <div class="ao-title">
+      <span style="font-size:32px">🔍</span>
+      <div>
+        <div class="ao-title-text">Catatan Rekaman Anomali</div>
+        <div class="ao-sub">
+          Kejadian berikut <b style="color:var(--text)">tidak dihitung</b> dalam skor leaderboard karena waktu rekam tercatat
+          <b style="color:var(--yellow)">setelah jam selesai kelas</b> — mengindikasikan kemungkinan lupa absen, bukan keterlambatan hadir sesungguhnya.
+        </div>
+      </div>
+    </div>
+    <button class="ao-close" onclick="closeAnomalyOverlay()">✕ &nbsp;Tutup &amp; Lanjutkan</button>
+  </div>
+  <div class="ao-body" id="ao-body">
+    <div style="color:var(--muted);text-align:center;padding:40px">Memuat…</div>
+  </div>
+</div>
 </body>
 </html>
