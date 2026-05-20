@@ -6,25 +6,15 @@
 <title>LYTARA — Leaderboard Kehadiran</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-:root {
-  --bg: #0d0f14;
-  --surface: #141720;
-  --surface2: #1c2030;
-  --border: rgba(255,255,255,0.07);
-  --text: #f0f2f8;
-  --muted: #6b7280;
-  --gold: #f5c842;
-  --green: #22c55e;
-  --green-dim: rgba(34,197,94,0.12);
-  --red: #ef4444;
-  --red-dim: rgba(239,68,68,0.12);
-  --orange: #fb923c;
-  --orange-dim: rgba(251,146,60,0.12);
-  --blue: #60a5fa;
-  --blue-dim: rgba(96,165,250,0.12);
-  --yellow: #facc15;
-  --yellow-dim: rgba(250,204,21,0.12);
-  --radius: 16px;
+:root{
+  --bg:#0d0f14;--surface:#141720;--surface2:#1c2030;--border:rgba(255,255,255,0.07);
+  --text:#f0f2f8;--muted:#6b7280;--gold:#f5c842;
+  --green:#22c55e;--green-dim:rgba(34,197,94,0.12);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.12);
+  --orange:#fb923c;--orange-dim:rgba(251,146,60,0.12);
+  --blue:#60a5fa;--blue-dim:rgba(96,165,250,0.12);
+  --yellow:#facc15;--yellow-dim:rgba(250,204,21,0.12);
+  --radius:16px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
@@ -34,10 +24,10 @@ body::after{content:'';position:fixed;bottom:-200px;right:-200px;width:500px;hei
 
 /* HEADER */
 .header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:2rem;flex-wrap:wrap}
-.eyebrow{font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;display:flex;align-items:center;gap:6px}
 .eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
-h1{font-family:'DM Serif Display',serif;font-size:clamp(24px,5vw,38px);font-weight:400;line-height:1.1;color:var(--text)}
+h1{font-family:'DM Serif Display',serif;font-size:clamp(24px,5vw,38px);font-weight:400;line-height:1.1}
 h1 em{font-style:italic;color:var(--gold)}
 .refresh-box{text-align:right;font-size:12px;color:var(--muted);flex-shrink:0}
 .date-range{font-size:13px;color:var(--text);margin-bottom:6px;font-weight:500}
@@ -46,20 +36,20 @@ h1 em{font-style:italic;color:var(--gold)}
 .ring-fill{stroke:var(--green);stroke-linecap:round;transition:stroke-dashoffset 1s linear;transform-origin:center;transform:rotate(-90deg)}
 
 /* FILTER */
-.filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end}
+.filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.25rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end}
 .fg{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px}
-.fg label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted)}
+.fg label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 .fg input{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;width:100%;transition:border-color .2s}
 .fg input:focus{border-color:var(--blue)}
 .fg input[readonly]{opacity:.5;cursor:not-allowed}
 .auto-badge{font-size:10px;font-weight:600;color:var(--green);background:var(--green-dim);border-radius:20px;padding:2px 8px;width:fit-content}
-.threshold-note{font-size:11px;color:var(--muted);margin-top:2px}
-.btn-refresh{background:var(--blue);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .2s}
+.threshold-note{font-size:10px;color:var(--muted);margin-top:1px}
+.btn-refresh{background:var(--blue);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;white-space:nowrap}
 .btn-refresh:disabled{opacity:.5;cursor:not-allowed}
 
-/* ALERT THRESHOLD */
-.threshold-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 16px;margin-bottom:1.25rem;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
-.threshold-bar span{color:var(--yellow);font-weight:600}
+/* INFO BAR */
+.info-bar{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 16px;margin-bottom:1.25rem;font-size:12px;color:var(--muted);display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;line-height:1.6}
+.info-bar .ib-label{color:var(--blue);font-weight:600;flex-shrink:0}
 
 /* ERROR */
 .error-banner{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:1rem 1.25rem;font-size:13px;color:#fca5a5;margin-bottom:1rem;display:none}
@@ -68,15 +58,15 @@ h1 em{font-style:italic;color:var(--gold)}
 .stats-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.5rem}
 .stat-pill{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden}
 .stat-pill::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:12px 12px 0 0}
+.sp-dosen::before{background:var(--yellow)}
 .sp-all::before{background:var(--blue)}
 .sp-ok::before{background:var(--green)}
 .sp-late::before{background:var(--orange)}
-.sp-dosen::before{background:var(--yellow)}
 .stat-num{font-family:'DM Serif Display',serif;font-size:26px;line-height:1;margin-bottom:4px}
+.sp-dosen .stat-num{color:var(--yellow)}
 .sp-all .stat-num{color:var(--blue)}
 .sp-ok .stat-num{color:var(--green)}
 .sp-late .stat-num{color:var(--orange)}
-.sp-dosen .stat-num{color:var(--yellow)}
 .stat-lbl{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
 
 /* PANELS */
@@ -91,36 +81,28 @@ h1 em{font-style:italic;color:var(--gold)}
 .panel-top .panel-title{color:var(--green)}
 .panel-bot .panel-title{color:var(--red)}
 .panel-sub{font-size:11px;color:var(--muted);margin-top:1px}
-.panel-legend{padding:8px 1.25rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);display:flex;gap:12px;flex-wrap:wrap}
-.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
-.leg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 
 /* RANK ROW */
-.rank-row{display:flex;align-items:center;gap:10px;padding:10px 1.25rem;border-bottom:1px solid var(--border);transition:background .15s;animation:fadeUp .4s both}
+.rank-row{display:flex;align-items:center;gap:10px;padding:11px 1.25rem;border-bottom:1px solid var(--border);transition:background .15s;animation:fadeUp .4s both}
 .rank-row:last-child{border-bottom:none}
 .rank-row:hover{background:rgba(255,255,255,0.03)}
+.rank-row.rank-first{background:rgba(34,197,94,0.04)}
+.rank-row.rank-first-bot{background:rgba(239,68,68,0.04)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .rank-row:nth-child(1){animation-delay:.05s}
 .rank-row:nth-child(2){animation-delay:.10s}
 .rank-row:nth-child(3){animation-delay:.15s}
 .rank-row:nth-child(4){animation-delay:.20s}
 .rank-row:nth-child(5){animation-delay:.25s}
-
-/* rank 1 glow */
-.rank-row.rank-first{background:rgba(34,197,94,0.04)}
-.rank-row.rank-first-bot{background:rgba(239,68,68,0.04)}
-
 .rank-medal{font-size:18px;width:24px;text-align:center;flex-shrink:0}
 .rank-num{width:22px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);flex-shrink:0}
-.rank-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:'DM Serif Display',serif;flex-shrink:0}
+.rank-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:'DM Serif Display',serif}
 .rank-info{flex:1;min-width:0}
 .rank-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rank-detail{font-size:11px;color:var(--muted);margin-top:1px}
 .rank-bar-wrap{width:100%;margin-top:5px;height:4px;background:rgba(255,255,255,0.07);border-radius:99px;overflow:hidden}
 .rank-bar{height:100%;border-radius:99px;transition:width .7s ease}
 .panel-top .rank-bar{background:var(--green)}
 .panel-bot .rank-bar{background:var(--red)}
-
 .rank-score{text-align:right;flex-shrink:0;min-width:52px}
 .rank-main-score{font-family:'DM Serif Display',serif;font-size:19px;line-height:1}
 .panel-top .rank-main-score{color:var(--green)}
@@ -136,26 +118,21 @@ h1 em{font-style:italic;color:var(--gold)}
 .bdg-blue{background:var(--blue-dim);color:var(--blue)}
 .bdg-yellow{background:var(--yellow-dim);color:var(--yellow)}
 
-/* ANOMALY WARNING */
-.anomaly-flag{display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--yellow);background:var(--yellow-dim);border-radius:20px;padding:2px 7px;font-weight:600}
-
 /* SKELETON */
-.skel-row{display:flex;align-items:center;gap:10px;padding:10px 1.25rem;border-bottom:1px solid var(--border)}
-.skel-circle{width:34px;height:34px;border-radius:50%;background:var(--surface2);flex-shrink:0}
+.skel-row{display:flex;align-items:center;gap:10px;padding:11px 1.25rem;border-bottom:1px solid var(--border)}
+.skel-circle{width:36px;height:36px;border-radius:50%;background:var(--surface2);flex-shrink:0}
 .skel-lines{flex:1}
 .skeleton{background:linear-gradient(90deg,var(--surface2) 25%,rgba(255,255,255,0.04) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;height:12px;margin:4px 0}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .empty-state{padding:2rem 1.25rem;text-align:center;color:var(--muted);font-size:13px}
 .empty-state .ei{font-size:32px;margin-bottom:8px}
 
-/* BOTTOM INFO */
-.last-updated{text-align:center;font-size:11px;color:var(--muted);margin-top:1.5rem;display:flex;align-items:center;justify-content:center;gap:6px}
-.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
-
 /* FOOTNOTE */
-.footnote{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-top:1rem;font-size:11px;color:var(--muted);line-height:1.7}
+.footnote{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-top:1rem;font-size:11px;color:var(--muted);line-height:1.8}
 .footnote b{color:var(--text)}
 
+.last-updated{text-align:center;font-size:11px;color:var(--muted);margin-top:1.25rem;display:flex;align-items:center;justify-content:center;gap:6px}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
 footer{text-align:center;font-size:11px;color:var(--muted);margin-top:3rem;letter-spacing:.05em}
 footer b{color:var(--text);font-weight:600}
 </style>
@@ -163,9 +140,8 @@ footer b{color:var(--text);font-weight:600}
 <body>
 <div class="wrap">
 
-  <!-- HEADER -->
   <div class="header">
-    <div class="header-left">
+    <div>
       <div class="eyebrow"><span class="eyebrow-dot"></span>LYTARA · Live Dashboard</div>
       <h1>Leaderboard<br><em>Kehadiran Dosen</em></h1>
     </div>
@@ -177,13 +153,11 @@ footer b{color:var(--text);font-weight:600}
           <circle class="ring-fill" id="ring-svg" cx="9" cy="9" r="7" stroke-width="2.5" fill="none"
             stroke-dasharray="43.98" stroke-dashoffset="0"/>
         </svg>
-        <span id="countdown-text">60s</span>
-        <span>auto-refresh</span>
+        <span id="countdown-text">60s</span>&nbsp;auto-refresh
       </div>
     </div>
   </div>
 
-  <!-- FILTER -->
   <div class="filter-card">
     <div class="fg">
       <label>Tanggal Mulai</label>
@@ -196,47 +170,36 @@ footer b{color:var(--text);font-weight:600}
     </div>
     <div class="fg">
       <label>Min. Sesi (Threshold)</label>
-      <input type="number" id="min-sesi" value="8" min="1" max="50" style="width:100%"/>
-      <span class="threshold-note">Dosen di bawah ini tidak dihitung</span>
+      <input type="number" id="min-sesi" value="8" min="1" max="50"/>
+      <span class="threshold-note">Dosen di bawah batas tidak ditampilkan</span>
     </div>
     <div style="display:flex;align-items:flex-end">
       <button class="btn-refresh" id="btn-refresh" onclick="loadData()">↻ Perbarui</button>
     </div>
   </div>
 
-  <!-- THRESHOLD INFO -->
-  <div class="threshold-bar">
-    <span>ℹ</span>
-    <span id="threshold-info">Memuat data…</span>
+  <div class="info-bar" id="info-bar">
+    <span class="ib-label">ℹ</span>
+    <span id="info-text">Memuat data…</span>
   </div>
 
-  <!-- ERROR -->
   <div class="error-banner" id="error-banner"></div>
 
-  <!-- STATS -->
   <div class="stats-strip">
     <div class="stat-pill sp-dosen"><div class="stat-num" id="stat-dosen">—</div><div class="stat-lbl">Dosen Aktif</div></div>
     <div class="stat-pill sp-all"><div class="stat-num" id="stat-total">—</div><div class="stat-lbl">Total Sesi</div></div>
     <div class="stat-pill sp-ok"><div class="stat-num" id="stat-ok">—</div><div class="stat-lbl">Tepat Waktu</div></div>
-    <div class="stat-pill sp-late"><div class="stat-num" id="stat-late">—</div><div class="stat-lbl">Terlambat</div></div>
+    <div class="stat-pill sp-late"><div class="stat-num" id="stat-late">—</div><div class="stat-lbl">Terlambat Wajar</div></div>
   </div>
 
-  <!-- PANELS -->
   <div class="panels">
-
-    <!-- TOP 5 -->
     <div class="panel panel-top">
       <div class="panel-head">
         <div class="panel-icon">🏆</div>
         <div>
           <div class="panel-title">Top 5 Tepat Waktu</div>
-          <div class="panel-sub">% tepat · tiebreaker: total sesi</div>
+          <div class="panel-sub">% tepat · tiebreaker: total sesi terbanyak</div>
         </div>
-      </div>
-      <div class="panel-legend">
-        <div class="leg-item"><div class="leg-dot" style="background:var(--green)"></div>% Tepat waktu</div>
-        <div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>Jumlah sesi</div>
-        <div class="leg-item"><div class="leg-dot" style="background:var(--orange)"></div>Jml. MK</div>
       </div>
       <div class="panel-body" id="panel-top">
         <div class="skel-row"><div class="skel-circle"></div><div class="skel-lines"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%;margin-top:6px"></div></div></div>
@@ -245,7 +208,6 @@ footer b{color:var(--text);font-weight:600}
       </div>
     </div>
 
-    <!-- BOTTOM 5 -->
     <div class="panel panel-bot">
       <div class="panel-head">
         <div class="panel-icon">⏱️</div>
@@ -254,34 +216,27 @@ footer b{color:var(--text);font-weight:600}
           <div class="panel-sub">skor: 60% frekuensi + 40% rata-rata menit</div>
         </div>
       </div>
-      <div class="panel-legend">
-        <div class="leg-item"><div class="leg-dot" style="background:var(--red)"></div>Skor gabungan</div>
-        <div class="leg-item"><div class="leg-dot" style="background:var(--orange)"></div>Frekuensi terlambat</div>
-        <div class="leg-item"><div class="leg-dot" style="background:var(--yellow)"></div>⚠ Anomali &gt;200 mnt</div>
-      </div>
       <div class="panel-body" id="panel-bot">
         <div class="skel-row"><div class="skel-circle"></div><div class="skel-lines"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%;margin-top:6px"></div></div></div>
         <div class="skel-row"><div class="skel-circle"></div><div class="skel-lines"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%;margin-top:6px"></div></div></div>
         <div class="skel-row"><div class="skel-circle"></div><div class="skel-lines"><div class="skeleton" style="width:75%"></div><div class="skeleton" style="width:50%;margin-top:6px"></div></div></div>
       </div>
     </div>
-
   </div>
 
-  <!-- FOOTNOTE -->
   <div class="footnote">
-    <b>Cara membaca:</b>
-    <b>Top 5</b> — diurutkan berdasarkan <b>% tepat waktu</b>. Bila sama, dosen dengan <b>lebih banyak sesi</b> diunggulkan karena beban mengajar lebih berat. &nbsp;|&nbsp;
-    <b>Bottom 5</b> — menggunakan <b>skor gabungan</b>: 60% frekuensi keterlambatan + 40% rata-rata menit, sehingga dosen yang <em>sering</em> terlambat lebih terlihat daripada yang sekali terlambat sangat lama. &nbsp;|&nbsp;
-    <b>⚠ Anomali</b> — tanda kuning muncul bila ada satu kejadian &gt;200 menit, kemungkinan data tidak normal (lupa absen, dsb).
+    <b>Cara membaca —</b>
+    <b>Top 5:</b> diurutkan % tepat waktu. Bila sama, dosen dengan sesi lebih banyak diunggulkan (beban lebih berat). &nbsp;·&nbsp;
+    <b>Bottom 5:</b> skor gabungan 60% frekuensi + 40% rata-rata menit keterlambatan — dosen yang <em>sering</em> terlambat lebih terlihat daripada yang sekali terlambat lama. &nbsp;·&nbsp;
+    <b>Anomali dikecualikan:</b> keterlambatan yang tercatat <em>setelah jam selesai kelas</em> (kemungkinan lupa absen) tidak dihitung dalam skor, namun tetap ditampilkan sebagai informasi.
   </div>
 
   <div class="last-updated">
     <span class="status-dot"></span>
     <span id="last-updated-text">Memuat data…</span>
   </div>
-
 </div>
+
 <footer>LYTARA · Layanan Tracking Aktivitas dan Realisasi Akademik &nbsp;·&nbsp; <b>Leaderboard Kehadiran</b></footer>
 
 <script>
@@ -293,309 +248,254 @@ let timer = null;
 
 // ── AVATAR ──
 const COLORS = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#ef4444','#06b6d4','#f97316','#a855f7','#14b8a6'];
-function avatarColor(name) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h<<5)-h);
-  return COLORS[Math.abs(h) % COLORS.length];
-}
-function initials(name) {
-  return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
-}
+function avatarColor(n){ let h=0; for(let i=0;i<n.length;i++) h=n.charCodeAt(i)+((h<<5)-h); return COLORS[Math.abs(h)%COLORS.length]; }
+function initials(n){ return n.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 
 // ── DATE ──
-function todayStr() {
-  return new Date().toISOString().slice(0,10);
-}
-function fmtDate(str) {
-  if (!str) return '—';
-  const [y,m,d] = str.split('-');
-  const mo = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
-  return `${parseInt(d)} ${mo[parseInt(m)-1]} ${y}`;
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(s){
+  if(!s) return '—';
+  const [y,m,d]=s.split('-');
+  return `${parseInt(d)} ${'Jan Feb Mar Apr Mei Jun Jul Ags Sep Okt Nov Des'.split(' ')[parseInt(m)-1]} ${y}`;
 }
 
-// Parsing tanggal dari format D/M/YYYY atau YYYY-MM-DD
-function parseTanggal(str) {
-  if (!str) return null;
-  str = String(str).trim();
-  // D/M/YYYY
-  if (str.indexOf('/') > -1) {
-    const parts = str.split('/');
-    if (parts.length === 3) {
-      const [d, m, y] = parts;
-      return new Date(parseInt(y), parseInt(m)-1, parseInt(d));
-    }
-  }
-  // YYYY-MM-DD
-  if (str.indexOf('-') > -1) {
-    return new Date(str);
-  }
+// Parse D/M/YYYY atau YYYY-MM-DD ke Date
+function parseTgl(s){
+  s=String(s||'').trim();
+  if(s.includes('/')){const [d,m,y]=s.split('/'); return new Date(+y,+m-1,+d);}
+  if(s.includes('-')) return new Date(s);
+  return null;
+}
+
+// Konversi "HH:MM", "HH.MM", "HH:MM:SS" ke menit sejak tengah malam
+function toMin(s){
+  s=String(s||'').trim().replace('.',':');
+  const p=s.split(':');
+  if(p.length>=2){ const h=parseInt(p[0]),m=parseInt(p[1]); if(!isNaN(h)&&!isNaN(m)) return h*60+m; }
   return null;
 }
 
 // ── INIT ──
-window.addEventListener('DOMContentLoaded', () => {
-  const now = new Date();
-  const awal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
-  document.getElementById('tgl-awal').value = awal;
-  document.getElementById('tgl-akhir').value = todayStr();
+window.addEventListener('DOMContentLoaded',()=>{
+  const now=new Date();
+  document.getElementById('tgl-awal').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+  document.getElementById('tgl-akhir').value=todayStr();
   loadData();
   startCountdown();
 });
 
 // ── COUNTDOWN ──
-function startCountdown() {
-  countdown = REFRESH_SEC;
-  if (timer) clearInterval(timer);
-  timer = setInterval(() => {
-    countdown--;
-    updateCountdownUI();
-    if (countdown <= 0) { countdown = REFRESH_SEC; loadData(); }
-  }, 1000);
+function startCountdown(){
+  countdown=REFRESH_SEC;
+  if(timer) clearInterval(timer);
+  timer=setInterval(()=>{ countdown--; updateRing(); if(countdown<=0){countdown=REFRESH_SEC;loadData();} },1000);
 }
-function updateCountdownUI() {
-  document.getElementById('countdown-text').textContent = countdown + 's';
-  const ring = document.getElementById('ring-svg');
-  ring.style.strokeDashoffset = CIRC * (1 - countdown / REFRESH_SEC);
-  ring.style.stroke = countdown < 10 ? 'var(--orange)' : 'var(--green)';
+function updateRing(){
+  document.getElementById('countdown-text').textContent=countdown+'s';
+  const r=document.getElementById('ring-svg');
+  r.style.strokeDashoffset=CIRC*(1-countdown/REFRESH_SEC);
+  r.style.stroke=countdown<10?'var(--orange)':'var(--green)';
 }
 
-// ── LOAD ──
-async function loadData() {
-  document.getElementById('tgl-akhir').value = todayStr();
-  const awal  = document.getElementById('tgl-awal').value;
-  const akhir = document.getElementById('tgl-akhir').value;
-  document.getElementById('date-range-display').textContent = fmtDate(awal) + ' — ' + fmtDate(akhir);
+// ── LOAD: ambil presensi + jadwal secara paralel ──
+async function loadData(){
+  document.getElementById('tgl-akhir').value=todayStr();
+  const awal=document.getElementById('tgl-awal').value;
+  const akhir=document.getElementById('tgl-akhir').value;
+  document.getElementById('date-range-display').textContent=fmtDate(awal)+' — '+fmtDate(akhir);
   hideError(); setLoading(true);
 
-  try {
-    const resp = await fetch(`${API}?action=getPresensi&bulan=all`);
-    const json = await resp.json();
-    if (json.error) throw new Error(json.error);
-    processAndRender(json.data || [], awal, akhir);
-  } catch(e) {
-    showError('Gagal memuat data: ' + e.message);
+  try{
+    // Ambil presensi & jadwal paralel
+    const [rP, rJ] = await Promise.all([
+      fetch(`${API}?action=getPresensi&bulan=all`).then(r=>r.json()),
+      fetch(`${API}?action=getJadwal`).then(r=>r.json())
+    ]);
+    if(rP.error) throw new Error(rP.error);
+    if(rJ.error) throw new Error(rJ.error);
+
+    // Build lookup jadwalId -> jamSelesai (menit)
+    const jadwalMap = {};
+    (rJ.data||[]).forEach(j=>{
+      jadwalMap[j.id] = toMin(j.jamSelesai);
+    });
+
+    processAndRender(rP.data||[], jadwalMap, awal, akhir);
+  }catch(e){
+    showError('Gagal memuat data: '+e.message);
     setLoading(false);
   }
-  countdown = REFRESH_SEC;
-  updateCountdownUI();
+  countdown=REFRESH_SEC; updateRing();
 }
 
-// ── PROCESS ──
-function processAndRender(all, awal, akhir) {
+// ── PROSES ──
+function processAndRender(all, jadwalMap, awal, akhir){
   // Filter rentang tanggal
-  const d0 = new Date(awal + 'T00:00:00');
-  const d1 = new Date(akhir + 'T23:59:59');
-
-  const filtered = all.filter(p => {
-    if (!p.tanggal) return false;
-    const tgl = parseTanggal(p.tanggal);
-    return tgl && tgl >= d0 && tgl <= d1;
+  const d0=new Date(awal+'T00:00:00');
+  const d1=new Date(akhir+'T23:59:59');
+  const filtered=all.filter(p=>{
+    const t=parseTgl(p.tanggal);
+    return t && t>=d0 && t<=d1;
   });
 
-  // Agregasi per dosen
-  const map = {};
-  filtered.forEach(p => {
-    const id = p.dosenId || p.dosen;
-    if (!id) return;
-    if (!map[id]) {
-      map[id] = {
-        id, nama: p.dosen || id,
-        total: 0,
-        tepat: 0,
-        terlambat: 0,
-        totalMenitLambat: 0,
-        maxMenitLambat: 0,
-        mkSet: new Set(),
-        hasAnomali: false,
-        detail: []  // untuk debug
-      };
-    }
-    const d = map[id];
+  const minSesi=parseInt(document.getElementById('min-sesi').value)||8;
+  const map={};
+
+  filtered.forEach(p=>{
+    const id=p.dosenId||p.dosen;
+    if(!id) return;
+    if(!map[id]) map[id]={
+      id, nama:p.dosen||id,
+      total:0, tepat:0,
+      terlambatWajar:0, terlambatAnomali:0,
+      totalMenitWajar:0,
+      mkSet:new Set()
+    };
+    const d=map[id];
     d.total++;
+    if(p.mk) d.mkSet.add(String(p.mk).trim());
 
-    const st    = String(p.status || '').toLowerCase();
-    const diff  = Number(p.diff || 0);
+    const stRaw=String(p.status||'').trim();
+    const diff=Number(p.diff||0);
 
-    // mk
-    if (p.mk) d.mkSet.add(String(p.mk).trim());
-
-    const isTepat = (st === 'tepat waktu') || (st === 'hadir' && diff <= 0);
-    const isLambat = st === 'terlambat' || st === 'sangat terlambat' ||
-                     (st.includes('terlambat')) || diff > 0;
-
-    if (isTepat && !isLambat) {
+    if(stRaw==='Tepat waktu'){
       d.tepat++;
-    } else if (isLambat) {
-      d.terlambat++;
-      const menit = Math.max(diff, 1);
-      d.totalMenitLambat += menit;
-      if (menit > d.maxMenitLambat) d.maxMenitLambat = menit;
-      if (menit > 200) d.hasAnomali = true;
-    } else {
-      // Tidak hadir / tidak jelas
+    } else if(stRaw==='Terlambat'||stRaw==='Sangat terlambat'){
+      // Cek anomali: waktu hadir > jam selesai kelas
+      const hadirMnt  = toMin(String(p.waktuHadir||''));
+      const selesaiMnt= jadwalMap[p.jadwalId||''];
+      const isAnomali = (hadirMnt!==null && selesaiMnt!==null && hadirMnt>selesaiMnt);
+
+      if(isAnomali){
+        d.terlambatAnomali++;
+      } else {
+        d.terlambatWajar++;
+        d.totalMenitWajar+=diff>0?diff:1;
+      }
     }
-    d.detail.push({ st, diff });
   });
 
-  const list = Object.values(map);
-  const minSesi = parseInt(document.getElementById('min-sesi').value) || 8;
+  const list=Object.values(map);
+  const lolos=list.filter(d=>d.total>=minSesi);
+  const tidak=list.filter(d=>d.total<minSesi);
 
-  // Pisahkan yang lolos threshold dan tidak
-  const lolos    = list.filter(d => d.total >= minSesi);
-  const tidakLolos = list.filter(d => d.total < minSesi);
-
-  // Update threshold info
-  document.getElementById('threshold-info').innerHTML =
-    `<span>${lolos.length} dosen memenuhi threshold ≥${minSesi} sesi</span>` +
-    (tidakLolos.length
-      ? ` · <span style="color:var(--yellow)">${tidakLolos.length} dosen dikecualikan (sesi < ${minSesi}): ${tidakLolos.map(d=>shortName(d.nama)).join(', ')}</span>`
-      : '');
+  // Info bar
+  let infoText=`<b style="color:var(--text)">${lolos.length} dosen</b> memenuhi threshold ≥${minSesi} sesi`;
+  if(tidak.length) infoText+=` &nbsp;·&nbsp; <span style="color:var(--yellow)">${tidak.length} dikecualikan (sesi kurang): ${tidak.map(d=>shortName(d.nama)).join(', ')}</span>`;
+  document.getElementById('info-text').innerHTML=infoText;
 
   // Stats
-  const totalSesi  = filtered.length;
-  const totalTepat = lolos.reduce((a,d)=>a+d.tepat, 0);
-  const totalLambat= lolos.reduce((a,d)=>a+d.terlambat, 0);
-  document.getElementById('stat-dosen').textContent  = lolos.length;
-  document.getElementById('stat-total').textContent  = totalSesi;
-  document.getElementById('stat-ok').textContent     = totalTepat;
-  document.getElementById('stat-late').textContent   = totalLambat;
+  const ttepat=lolos.reduce((a,d)=>a+d.tepat,0);
+  const twajar=lolos.reduce((a,d)=>a+d.terlambatWajar,0);
+  document.getElementById('stat-dosen').textContent=lolos.length;
+  document.getElementById('stat-total').textContent=filtered.length;
+  document.getElementById('stat-ok').textContent=ttepat;
+  document.getElementById('stat-late').textContent=twajar;
 
-  // ── TOP 5: % tepat waktu DESC, tiebreaker: total sesi DESC ──
-  const sortedTop = [...lolos]
-    .sort((a, b) => {
-      const pA = a.tepat / a.total;
-      const pB = b.tepat / b.total;
-      if (Math.abs(pB - pA) > 0.0001) return pB - pA;
-      return b.total - a.total; // tiebreaker
-    })
-    .slice(0, 5);
+  // ── TOP 5 ──
+  const sortedTop=[...lolos]
+    .sort((a,b)=>{
+      const diff=(b.tepat/b.total)-(a.tepat/a.total);
+      return Math.abs(diff)>0.0001 ? diff : b.total-a.total;
+    }).slice(0,5);
 
-  // ── BOTTOM 5: skor gabungan (hanya yang pernah terlambat) ──
-  // normalisasi: skor = 0.6*(frek/maxFrek) + 0.4*(avgMnt/maxAvgMnt)
-  const withLate = lolos.filter(d => d.terlambat > 0).map(d => ({
-    ...d,
-    avgMenit: d.totalMenitLambat / d.terlambat
-  }));
+  // ── BOTTOM 5: hanya dari keterlambatan wajar ──
+  const withLate=lolos.filter(d=>d.terlambatWajar>0)
+    .map(d=>({...d, avgMenit:d.totalMenitWajar/d.terlambatWajar}));
 
-  let sortedBot = [];
-  if (withLate.length > 0) {
-    const maxFrek   = Math.max(...withLate.map(d => d.terlambat));
-    const maxAvg    = Math.max(...withLate.map(d => d.avgMenit));
-    withLate.forEach(d => {
-      const normFrek = maxFrek > 0 ? d.terlambat / maxFrek : 0;
-      const normAvg  = maxAvg  > 0 ? d.avgMenit  / maxAvg  : 0;
-      d.skor = (0.6 * normFrek) + (0.4 * normAvg);
+  let sortedBot=[];
+  if(withLate.length){
+    const maxFrek=Math.max(...withLate.map(d=>d.terlambatWajar));
+    const maxAvg =Math.max(...withLate.map(d=>d.avgMenit));
+    withLate.forEach(d=>{
+      d.skor=(0.6*(d.terlambatWajar/maxFrek)+0.4*(d.avgMenit/maxAvg))*100;
     });
-    sortedBot = withLate.sort((a,b) => b.skor - a.skor).slice(0, 5);
+    sortedBot=withLate.sort((a,b)=>b.skor-a.skor).slice(0,5);
   }
 
-  // Render
-  const maxTopPct = sortedTop.length ? (sortedTop[0].tepat / sortedTop[0].total) : 1;
-  renderTop(sortedTop, maxTopPct);
+  renderTop(sortedTop);
   renderBot(sortedBot);
 
-  // Timestamp
-  const ts = new Date().toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  document.getElementById('last-updated-text').textContent = `Diperbarui pukul ${ts} · ${filtered.length} rekord dimuat`;
-
+  const ts=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('last-updated-text').textContent=`Diperbarui pukul ${ts}`;
   setLoading(false);
 }
 
-// ── RENDER TOP ──
-const MEDALS = ['🥇','🥈','🥉'];
-
-function renderTop(list, maxPct) {
-  const el = document.getElementById('panel-top');
-  if (!list.length) {
-    el.innerHTML = `<div class="empty-state"><div class="ei">🏆</div>Tidak ada data memenuhi threshold.</div>`;
-    return;
-  }
-  el.innerHTML = list.map((d, i) => {
-    const pct    = d.total > 0 ? (d.tepat / d.total * 100) : 0;
-    const barPct = maxPct > 0 ? (d.tepat / d.total) / maxPct * 100 : 0;
-    const mkCount = d.mkSet.size;
-    const rankEl = MEDALS[i]
-      ? `<span class="rank-medal">${MEDALS[i]}</span>`
-      : `<span class="rank-num">${i+1}</span>`;
-    const rowClass = i === 0 ? 'rank-row rank-first' : 'rank-row';
-    const color = avatarColor(d.nama);
-
-    // Badges
-    const badges = [
+// ── RENDER TOP 5 ──
+const MEDALS=['🥇','🥈','🥉'];
+function renderTop(list){
+  const el=document.getElementById('panel-top');
+  if(!list.length){el.innerHTML=`<div class="empty-state"><div class="ei">🏆</div>Tidak ada data memenuhi threshold.</div>`;return;}
+  const maxPct=list[0].tepat/list[0].total;
+  el.innerHTML=list.map((d,i)=>{
+    const pct=d.tepat/d.total*100;
+    const barPct=maxPct>0?(d.tepat/d.total)/maxPct*100:0;
+    const rowCls=i===0?'rank-row rank-first':'rank-row';
+    const rankEl=MEDALS[i]?`<span class="rank-medal">${MEDALS[i]}</span>`:`<span class="rank-num">${i+1}</span>`;
+    const color=avatarColor(d.nama);
+    const badges=[
       `<span class="bdg bdg-blue">${d.total} sesi</span>`,
-      `<span class="bdg bdg-orange">${mkCount} MK</span>`,
-      d.terlambat > 0 ? `<span class="bdg bdg-red">${d.terlambat}× lambat</span>` : `<span class="bdg bdg-green">0 keterlambatan</span>`,
+      `<span class="bdg bdg-orange">${d.mkSet.size} MK</span>`,
+      d.terlambatWajar>0
+        ?`<span class="bdg bdg-red">${d.terlambatWajar}× terlambat</span>`
+        :`<span class="bdg bdg-green">0 keterlambatan</span>`,
+      d.terlambatAnomali>0
+        ?`<span class="bdg bdg-yellow">${d.terlambatAnomali}× data anomali</span>`:'',
     ].join('');
-
-    return `
-      <div class="${rowClass}">
-        ${rankEl}
-        <div class="rank-avatar" style="background:${color}">${initials(d.nama)}</div>
-        <div class="rank-info">
-          <div class="rank-name">${esc(d.nama)}</div>
-          <div class="badge-row">${badges}</div>
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barPct.toFixed(1)}%"></div></div>
-        </div>
-        <div class="rank-score">
-          <div class="rank-main-score">${pct.toFixed(0)}%</div>
-          <div class="rank-sub-score">${d.tepat}/${d.total} tepat</div>
-        </div>
-      </div>`;
+    return `<div class="${rowCls}">
+      ${rankEl}
+      <div class="rank-avatar" style="background:${color}">${initials(d.nama)}</div>
+      <div class="rank-info">
+        <div class="rank-name">${esc(d.nama)}</div>
+        <div class="badge-row">${badges}</div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barPct.toFixed(1)}%"></div></div>
+      </div>
+      <div class="rank-score">
+        <div class="rank-main-score">${pct.toFixed(0)}%</div>
+        <div class="rank-sub-score">${d.tepat}/${d.total} tepat</div>
+      </div>
+    </div>`;
   }).join('');
 }
 
-// ── RENDER BOTTOM ──
-function renderBot(list) {
-  const el = document.getElementById('panel-bot');
-  if (!list.length) {
-    el.innerHTML = `<div class="empty-state"><div class="ei">✅</div>Semua dosen tepat waktu pada periode ini!</div>`;
-    return;
-  }
-  const maxSkor = list[0].skor || 1;
-  el.innerHTML = list.map((d, i) => {
-    const barPct = maxSkor > 0 ? d.skor / maxSkor * 100 : 0;
-    const rankEl = `<span class="rank-num">${i+1}</span>`;
-    const rowClass = i === 0 ? 'rank-row rank-first-bot' : 'rank-row';
-    const color = avatarColor(d.nama);
-
-    const anomalyBadge = d.hasAnomali
-      ? `<span class="anomaly-flag">⚠ Ada nilai ekstrem (>200 mnt)</span>`
-      : '';
-
-    const badges = [
-      `<span class="bdg bdg-orange">${d.terlambat}× terlambat</span>`,
+// ── RENDER BOTTOM 5 ──
+function renderBot(list){
+  const el=document.getElementById('panel-bot');
+  if(!list.length){el.innerHTML=`<div class="empty-state"><div class="ei">✅</div>Semua dosen tepat waktu pada periode ini!</div>`;return;}
+  const maxSkor=list[0].skor||1;
+  el.innerHTML=list.map((d,i)=>{
+    const barPct=d.skor/maxSkor*100;
+    const rowCls=i===0?'rank-row rank-first-bot':'rank-row';
+    const color=avatarColor(d.nama);
+    const badges=[
+      `<span class="bdg bdg-orange">${d.terlambatWajar}× terlambat</span>`,
       `<span class="bdg bdg-red">rata-rata ${Math.round(d.avgMenit)} mnt</span>`,
       `<span class="bdg bdg-blue">${d.total} sesi</span>`,
+      d.terlambatAnomali>0
+        ?`<span class="bdg bdg-yellow">${d.terlambatAnomali}× anomali (tdk dihitung)</span>`:'',
     ].join('');
-
-    return `
-      <div class="${rowClass}">
-        ${rankEl}
-        <div class="rank-avatar" style="background:${color}">${initials(d.nama)}</div>
-        <div class="rank-info">
-          <div class="rank-name">${esc(d.nama)}</div>
-          <div class="badge-row">${badges}</div>
-          ${anomalyBadge ? `<div style="margin-top:3px">${anomalyBadge}</div>` : ''}
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barPct.toFixed(1)}%"></div></div>
-        </div>
-        <div class="rank-score">
-          <div class="rank-main-score">${(d.skor * 100).toFixed(0)}</div>
-          <div class="rank-sub-score">skor</div>
-        </div>
-      </div>`;
+    return `<div class="${rowCls}">
+      <span class="rank-num">${i+1}</span>
+      <div class="rank-avatar" style="background:${color}">${initials(d.nama)}</div>
+      <div class="rank-info">
+        <div class="rank-name">${esc(d.nama)}</div>
+        <div class="badge-row">${badges}</div>
+        <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barPct.toFixed(1)}%"></div></div>
+      </div>
+      <div class="rank-score">
+        <div class="rank-main-score">${Math.round(d.skor)}</div>
+        <div class="rank-sub-score">skor</div>
+      </div>
+    </div>`;
   }).join('');
 }
 
 // ── UTILS ──
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function shortName(n){ return n.split(',')[0].split(' ').slice(-2).join(' '); }
-function showError(m){ const e=document.getElementById('error-banner'); e.textContent='⚠ '+m; e.style.display='block'; }
-function hideError(){ document.getElementById('error-banner').style.display='none'; }
-function setLoading(on){
-  const b = document.getElementById('btn-refresh');
-  b.disabled = on;
-  b.textContent = on ? '⏳ Memuat…' : '↻ Perbarui';
-}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function shortName(n){return n.split(',')[0].split(' ').slice(-2).join(' ');}
+function showError(m){const e=document.getElementById('error-banner');e.textContent='⚠ '+m;e.style.display='block';}
+function hideError(){document.getElementById('error-banner').style.display='none';}
+function setLoading(on){const b=document.getElementById('btn-refresh');b.disabled=on;b.textContent=on?'⏳ Memuat…':'↻ Perbarui';}
 </script>
 </body>
 </html>
