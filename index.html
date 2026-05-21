@@ -243,23 +243,8 @@ tr:last-child td{border-bottom:none}
       </div>
       <button class="btn btn-primary login-btn" onclick="doLogin()">Masuk →</button>
       
-      <div style="margin-top:1.5rem; border-top:1px solid #f0f0ee; padding-top:1rem; display:flex; flex-direction:column; gap:8px;">
-        <div style="font-size:11px;color:#aaa;font-weight:500;margin-bottom:2px;text-align:left">Akses Publik</div>
-        <div style="display:flex;gap:8px;">
-          <a href="leaderboard.html" target="_blank" style="flex:1;text-decoration:none">
-            <button class="btn btn-sm" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;background:#f0f7ff;border-color:#85b7eb;color:#185fa5;font-weight:500">
-              🏆 Leaderboard
-            </button>
-          </a>
-          <a href="leaderboard-tv.html" target="_blank" style="flex:1;text-decoration:none">
-            <button class="btn btn-sm" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;background:#f3e8ff;border-color:#d8b4fe;color:#7e22ce;font-weight:500">
-              📺 Leaderboard TV
-            </button>
-          </a>
-        </div>
-        <div style="border-top:1px solid #f0f0ee;padding-top:8px;margin-top:2px">
-          <button class="btn btn-sm" onclick="swapLogin('admin')">Masuk ke Portal Admin</button>
-        </div>
+      <div style="margin-top:1.5rem; border-top:1px solid #f0f0ee; padding-top:1rem">
+        <button class="btn btn-sm" onclick="swapLogin('admin')">Masuk ke Portal Admin</button>
       </div>
     </div>
 
@@ -428,7 +413,8 @@ tr:last-child td{border-bottom:none}
       <div id="mode-hint" style="display:none;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:500"></div>
     </div>
     <div id="prev" style="display:none;margin-bottom:1rem;padding:10px 14px;border-radius:8px;font-size:14px;font-weight:500"></div>
-    <button class="btn btn-primary" id="brek" onclick="rekam()">Rekam mulai mengajar</button>
+    <div id="rekam-countdown" style="display:none;margin-bottom:8px;padding:9px 12px;border-radius:8px;background:#faeeda;border-left:3px solid #fac775;font-size:13px;color:#633806;font-weight:500"></div>
+    <button class="btn btn-primary" id="brek" onclick="rekam()" disabled style="background:#999;border-color:#999;cursor:not-allowed">Rekam mulai mengajar</button>
   </div>
   
   <div id="csel" style="display:none">
@@ -1047,8 +1033,76 @@ function tick(){
   var el=document.getElementById('clk');if(!el)return;
   var n=new Date();
   el.textContent=n.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' — '+n.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  checkRekamLock();
 }
 function todayHari(){return['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][new Date().getDay()];}
+
+// =====================================================
+// FITUR: KUNCI TOMBOL REKAM — aktif 15 menit sebelum jam mulai
+// =====================================================
+function checkRekamLock() {
+  var btn = document.getElementById('brek');
+  var info = document.getElementById('rekam-countdown');
+  if (!btn || !info) return;
+
+  // Jika tidak ada jadwal yang dipilih → tetap terkunci
+  var jid = document.getElementById('pj') ? document.getElementById('pj').value : '';
+  if (!jid) {
+    btn.disabled = true;
+    btn.style.background = '#999'; btn.style.borderColor = '#999'; btn.style.cursor = 'not-allowed';
+    info.style.display = 'none';
+    return;
+  }
+
+  var jam = document.getElementById('pjam') ? document.getElementById('pjam').value : '';
+  if (!jam) {
+    btn.disabled = true;
+    btn.style.background = '#999'; btn.style.borderColor = '#999'; btn.style.cursor = 'not-allowed';
+    info.style.display = 'none';
+    return;
+  }
+
+  // Cek apakah ada jadwal ganti/maju yang ACC hari ini → boleh rekam kapan saja
+  var jad = J.find(function(j){ return j.id === jid; });
+  if (jad && currentUser) {
+    var now2 = new Date();
+    var ymd = now2.getFullYear() + '-' + String(now2.getMonth()+1).padStart(2,'0') + '-' + String(now2.getDate()).padStart(2,'0');
+    var isGantiValid = G.find(function(g){ return g.dosenId === currentUser.id && g.mk === jad.mk && g.statusAcc === 'Disetujui' && g.ganti === ymd; });
+    var isMajuValid  = M.find(function(m){ return m.dosenId === currentUser.id && m.mk === jad.mk && m.statusAcc === 'Disetujui' && m.tglRaw === ymd; });
+    if (isGantiValid || isMajuValid) {
+      // Jadwal pengganti/maju — tidak ada restriksi waktu
+      btn.disabled = false;
+      btn.style.background = '#1a1a1a'; btn.style.borderColor = '#1a1a1a'; btn.style.cursor = 'pointer';
+      info.style.display = 'none';
+      return;
+    }
+  }
+
+  // Hitung selisih waktu sekarang vs 15 menit sebelum jam mulai
+  var parts = jam.split(':');
+  var jh = parseInt(parts[0]), jm = parseInt(parts[1]);
+  var now = new Date();
+  var menitSekarang = now.getHours() * 60 + now.getMinutes();
+  var menitBuka = (jh * 60 + jm) - 15; // buka 15 menit sebelum jam mulai
+
+  var selisih = menitBuka - menitSekarang; // negatif = sudah boleh rekam
+
+  if (selisih <= 0) {
+    // Sudah bisa rekam
+    btn.disabled = false;
+    btn.style.background = '#1a1a1a'; btn.style.borderColor = '#1a1a1a'; btn.style.cursor = 'pointer';
+    info.style.display = 'none';
+  } else {
+    // Belum boleh rekam — tampilkan countdown
+    btn.disabled = true;
+    btn.style.background = '#999'; btn.style.borderColor = '#999'; btn.style.cursor = 'not-allowed';
+    var menitSisa = Math.floor(selisih);
+    var detikSisa = Math.round((selisih - menitSisa) * 60);
+    info.style.display = 'block';
+    var jamBuka = String(Math.floor(menitBuka / 60)).padStart(2,'0') + ':' + String(menitBuka % 60).padStart(2,'0');
+    info.innerHTML = '⏳ Tombol rekam terkunci — aktif pukul <b>' + jamBuka + '</b> (15 menit sebelum jadwal mulai). Sisa: <b>' + menitSisa + ' menit</b>.';
+  }
+}
 
 async function get(p){var r=await fetch(API+'?'+new URLSearchParams(p).toString(),{redirect:'follow'});return JSON.parse(await r.text());}
 async function post(b){var r=await fetch(API+'?method=POST&payload='+encodeURIComponent(JSON.stringify(b)),{redirect:'follow'});return JSON.parse(await r.text());}
@@ -1373,12 +1427,13 @@ function onJadwal(){
       }else{document.getElementById('hint').style.display='block';}
   }
   previewStatus();
+  checkRekamLock();
 }
 
 function previewStatus(){
   var jam=document.getElementById('pjam').value,jid=document.getElementById('pj').value;
   var el=document.getElementById('prev');
-  if(!jam){el.style.display='none';return;}
+  if(!jam){el.style.display='none';checkRekamLock();return;}
   var j=J.find(function(x){return x.id===jid;}),today=todayHari();
 
   var d = new Date();
@@ -1395,6 +1450,7 @@ function previewStatus(){
   if(st.c==='green'){el.style.background='#eaf3de';el.style.color='#27500a';el.textContent='Sekarang '+ns+' · Jadwal '+jam+' → Tepat waktu';}
   else if(st.c==='yellow'){el.style.background='#faeeda';el.style.color='#633806';el.textContent='Sekarang '+ns+' · Terlambat '+st.d+' menit';}
   else{el.style.background='#fcebeb';el.style.color='#791f1f';el.textContent='Sekarang '+ns+' · Sangat terlambat '+st.d+' menit';}
+  checkRekamLock();
 }
 
 function stH(jam){
@@ -2163,13 +2219,6 @@ function renderDetailStatusKehadiran(baseData) {
       if(mk.indexOf('Luring')>-1){modeBg='#eaf3de';modeTx='#27500a';}
       else if(mk.indexOf('Sinkronus')>-1){modeBg='#e6f1fb';modeTx='#185fa5';}
       else if(mk.indexOf('Asinkronus')>-1){modeBg='#faeeda';modeTx='#633806';}
-      var selesaiSudahDirekam = p.waktuSelesai && p.waktuSelesai !== '';
-      var tutupPaksaBtn = (isAdmin && !selesaiSudahDirekam)
-        ? '<button class="btn btn-sm btn-danger" style="padding:1px 7px;font-size:10px;margin-top:4px" onclick="tutupPaksa(\'' + p.id + '\')">Tutup Paksa</button>'
-        : '';
-      var selesaiInfo = selesaiSudahDirekam
-        ? '<span style="font-size:10px;color:#888;margin-top:3px;display:block">✔ Selesai ' + p.waktuSelesai + '</span>'
-        : '';
       html += '<div class="ds-item">'
         + '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
           + '<div style="width:30px;height:30px;border-radius:50%;background:' + ac + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">' + ini + '</div>'
@@ -2179,11 +2228,7 @@ function renderDetailStatusKehadiran(baseData) {
             + (mk ? '<span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:20px;background:' + modeBg + ';color:' + modeTx + '">' + mk + '</span>' : '')
           + '</div>'
         + '</div>'
-        + '<div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;gap:2px">'
-          + '<div class="ds-badge" style="background:' + badgeBg + ';color:' + badgeTx + '">' + badgeLabel + '</div>'
-          + selesaiInfo
-          + tutupPaksaBtn
-        + '</div>'
+        + '<div class="ds-badge" style="background:' + badgeBg + ';color:' + badgeTx + '">' + badgeLabel + '</div>'
         + '</div>';
     });
   }
