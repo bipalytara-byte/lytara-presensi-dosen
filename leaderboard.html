@@ -654,6 +654,7 @@ footer b { color: var(--text); font-weight: 600; }
     <div class="refresh-info">
       <div style="display:flex; align-items:center; gap:8px; justify-content:flex-end; margin-bottom:4px;">
         <div id="date-range-display" style="font-size:13px; color: var(--text);">—</div>
+        <div id="window-label" style="font-size:11px;color:var(--green);background:var(--green-dim);border-radius:20px;padding:3px 10px;font-weight:600;display:none"></div>
         <button id="btn-anomali" onclick="openAnomalyOverlay()" style="display:none; align-items:center; gap:6px; background:rgba(250,204,21,0.1); border:1px solid rgba(250,204,21,0.35); color:#facc15; border-radius:10px; padding:4px 12px; font-size:12px; font-family:'DM Sans',sans-serif; font-weight:700; cursor:pointer; white-space:nowrap;">
           ⚠ Anomali <span id="an-pill" style="background:rgba(250,204,21,0.25);border-radius:20px;padding:1px 7px;font-size:11px;">0</span>
         </button>
@@ -672,27 +673,18 @@ footer b { color: var(--text); font-weight: 600; }
 
   <!-- FILTER -->
   <div class="filter-card">
-    <div class="filter-group">
-      <label>Tanggal Mulai</label>
-      <input type="date" id="tgl-awal"/>
-    </div>
-    <div class="filter-group">
-      <label>Tanggal Akhir</label>
-      <input type="date" id="tgl-akhir" readonly/>
-      <span class="today-badge">✦ Otomatis: Hari Ini</span>
-    </div>
     <div class="filter-group" style="max-width: 120px;">
       <label>Min. Sesi</label>
-      <input type="number" id="input-min-sesi" min="1" max="99" value="8"
+      <input type="number" id="input-min-sesi" min="1" max="99" value="1"
         style="text-align:center; font-weight:700;"
         onchange="applyMinSesi(this.value)"
         oninput="applyMinSesi(this.value)"
         title="Threshold minimum sesi untuk masuk Top 5"/>
-      <span class="today-badge" style="color:var(--blue); background:var(--blue-dim);">✦ Top 5</span>
+      <span class="today-badge">✦ Top 5</span>
     </div>
     <div class="filter-group" style="max-width: 130px;">
       <label>Min. % Luring</label>
-      <input type="number" id="input-min-luring" min="0" max="100" value="70"
+      <input type="number" id="input-min-luring" min="0" max="100" value="0"
         style="text-align:center; font-weight:700;"
         onchange="applyMinLuring(this.value)"
         oninput="applyMinLuring(this.value)"
@@ -701,7 +693,7 @@ footer b { color: var(--text); font-weight: 600; }
     </div>
     <div class="filter-group" style="max-width: 130px;">
       <label>Min. % Tepat</label>
-      <input type="number" id="input-min-tepat" min="0" max="100" value="70"
+      <input type="number" id="input-min-tepat" min="0" max="100" value="0"
         style="text-align:center; font-weight:700;"
         onchange="applyMinTepat(this.value)"
         oninput="applyMinTepat(this.value)"
@@ -800,111 +792,115 @@ footer b { color: var(--text); font-weight: 600; }
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
 
-// ── KONFIGURASI — ubah sesuai kebutuhan ──
-let MIN_SESI       = 8;   // threshold minimum sesi untuk masuk Top 5
-let MIN_PCT_LURING = 70;  // minimum % sesi luring (0–100)
-let MIN_PCT_TEPAT  = 70;  // minimum % tepat waktu (0–100)
+// ── KONFIGURASI ──
+let MIN_SESI       = 1;
+let MIN_PCT_LURING = 0;
+let MIN_PCT_TEPAT  = 0;
 
 function _rerender() {
   if (window._lastRecords && window._lastJMap) {
-    renderDashboard(window._lastRecords, window._lastAwal, window._lastAkhir, window._lastJMap);
+    renderDashboard(window._lastRecords, window._lastJMap, window._lastJadwals);
   }
 }
 
 function applyMinSesi(val) {
-  const n = parseInt(val);
-  if (isNaN(n) || n < 1) return;
-  MIN_SESI = n;
-  document.getElementById('min-sesi-label').textContent = MIN_SESI;
-  _rerender();
+  const n = parseInt(val); if (isNaN(n) || n < 1) return;
+  MIN_SESI = n; document.getElementById('min-sesi-label').textContent = MIN_SESI; _rerender();
 }
-
 function applyMinLuring(val) {
-  const n = parseInt(val);
-  if (isNaN(n) || n < 0 || n > 100) return;
-  MIN_PCT_LURING = n;
-  document.getElementById('min-luring-label').textContent = MIN_PCT_LURING;
-  _rerender();
+  const n = parseInt(val); if (isNaN(n) || n < 0 || n > 100) return;
+  MIN_PCT_LURING = n; document.getElementById('min-luring-label').textContent = MIN_PCT_LURING; _rerender();
 }
-
 function applyMinTepat(val) {
-  const n = parseInt(val);
-  if (isNaN(n) || n < 0 || n > 100) return;
-  MIN_PCT_TEPAT = n;
-  document.getElementById('min-tepat-label').textContent = MIN_PCT_TEPAT;
-  _rerender();
+  const n = parseInt(val); if (isNaN(n) || n < 0 || n > 100) return;
+  MIN_PCT_TEPAT = n; document.getElementById('min-tepat-label').textContent = MIN_PCT_TEPAT; _rerender();
 }
 
-const REFRESH_INTERVAL = 60; // seconds
+const REFRESH_INTERVAL = 60;
 let countdown = REFRESH_INTERVAL;
 let timerInterval = null;
-const CIRC = 2 * Math.PI * 7; // radius=7
+const CIRC = 2 * Math.PI * 7;
 
-// ── AVATAR COLORS ──
 const COLORS = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#ef4444','#06b6d4','#f97316'];
 function avatarColor(name) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h<<5)-h);
+  let h = 0; for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h<<5)-h);
   return COLORS[Math.abs(h) % COLORS.length];
 }
 function initials(name) {
   return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 }
 
-// ── DATE UTILS ──
-function todayStr() {
-  const d = new Date();
-  return d.toISOString().slice(0,10);
-}
+// ── DATE & TIME UTILS ──
+function todayStr() { return new Date().toISOString().slice(0,10); }
 
-function formatDisplayDate(str) {
-  if (!str) return '—';
-  const [y,m,d] = str.split('-');
-  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
-  return `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
+function todayHariID() {
+  return ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][new Date().getDay()];
 }
 
 function parseDate(str) {
-  // str: DD/MM/YYYY or YYYY-MM-DD
-  if (!str) return null;
-  str = str.trim();
-  if (str.includes('/')) {
-    const [d,m,y] = str.split('/');
-    return new Date(y, parseInt(m)-1, parseInt(d));
-  }
+  if (!str) return null; str = str.trim();
+  if (str.includes('/')) { const [d,m,y] = str.split('/'); return new Date(y, parseInt(m)-1, parseInt(d)); }
   return new Date(str);
+}
+
+function toMin(s) {
+  s = String(s||'').trim().replace('.',':');
+  const p = s.split(':');
+  if (p.length >= 2) { const h=parseInt(p[0]),m=parseInt(p[1]); if(!isNaN(h)&&!isNaN(m)) return h*60+m; }
+  return null;
+}
+
+function formatTime(min) {
+  const h = Math.floor(min/60), m = min%60;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
+
+// ── HITUNG JENDELA WAKTU HARI INI ──
+// Mulai dari 15 menit sebelum jam pertama jadwal hari ini
+// Batas akhir: sekarang (saat load)
+function getTodayWindow(jadwals) {
+  const hariIni = todayHariID();
+  const jadwalHariIni = jadwals.filter(j => j.hari === hariIni);
+
+  // Ambil jam mulai paling awal hari ini
+  let earliestMin = null;
+  jadwalHariIni.forEach(j => {
+    const m = toMin(j.jamMulai);
+    if (m !== null && (earliestMin === null || m < earliestMin)) earliestMin = m;
+  });
+
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  let windowStart = null;
+  if (earliestMin !== null) {
+    windowStart = earliestMin - 15; // 15 menit sebelum kuliah pertama
+    if (windowStart < 0) windowStart = 0;
+  }
+
+  return { windowStart, nowMin, hariIni, jadwalHariIni };
 }
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', () => {
-  // Sync nilai konfigurasi ke UI
   document.getElementById('min-sesi-label').textContent   = MIN_SESI;
   document.getElementById('min-luring-label').textContent = MIN_PCT_LURING;
   document.getElementById('min-tepat-label').textContent  = MIN_PCT_TEPAT;
   document.getElementById('input-min-sesi').value         = MIN_SESI;
   document.getElementById('input-min-luring').value       = MIN_PCT_LURING;
   document.getElementById('input-min-tepat').value        = MIN_PCT_TEPAT;
-  // Set default tanggal awal = awal bulan ini
-  const now = new Date();
-  const awal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
-  document.getElementById('tgl-awal').value = awal;
-  document.getElementById('tgl-akhir').value = todayStr();
 
   loadData();
   startCountdown();
 });
 
-// ── COUNTDOWN & AUTO-REFRESH ──
 function startCountdown() {
   countdown = REFRESH_INTERVAL;
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(() => {
     countdown--;
     updateCountdownUI();
-    if (countdown <= 0) {
-      countdown = REFRESH_INTERVAL;
-      loadData();
-    }
+    if (countdown <= 0) { countdown = REFRESH_INTERVAL; loadData(); }
   }, 1000);
 }
 
@@ -913,25 +909,13 @@ function updateCountdownUI() {
   const ring = document.getElementById('ring-svg');
   const offset = CIRC * (1 - countdown / REFRESH_INTERVAL);
   ring.style.strokeDashoffset = offset;
-  // Color shift near end
   ring.style.stroke = countdown < 10 ? 'var(--orange)' : 'var(--green)';
 }
 
 // ── LOAD DATA ──
 async function loadData() {
-  // Always update tgl-akhir to today before fetching
-  document.getElementById('tgl-akhir').value = todayStr();
-
-  const awal = document.getElementById('tgl-awal').value;
-  const akhir = document.getElementById('tgl-akhir').value;
-
-  // Update display
-  document.getElementById('date-range-display').textContent =
-    formatDisplayDate(awal) + ' — ' + formatDisplayDate(akhir);
-
   hideError();
   setLoading(true);
-
   try {
     const [rP, rJ] = await Promise.all([
       fetch(`${API}?action=getPresensi&bulan=all`).then(r=>r.json()),
@@ -943,192 +927,151 @@ async function loadData() {
     const all = rP.data || [];
     const jadwals = rJ.data || [];
 
-    // Build jadwal lookup untuk deteksi anomali
+    // Build jadwal lookup
     const jMap = {};
     jadwals.forEach(j => {
-      jMap[j.id] = {
-        selesai: toMin(j.jamSelesai),
-        mulai:   toMin(j.jamMulai),
-      };
+      jMap[j.id] = { selesai: toMin(j.jamSelesai), mulai: toMin(j.jamMulai) };
     });
 
-    // Filter by date range
-    const d0 = parseDate(awal + ' 00:00:00') || new Date(0);
-    const d1 = parseDate(akhir + ' 23:59:59') || new Date();
-    d1.setHours(23,59,59);
+    // Dapatkan jendela waktu hari ini
+    const { windowStart, nowMin, hariIni, jadwalHariIni } = getTodayWindow(jadwals);
 
-    const filtered = all.filter(p => {
+    // Filter presensi: hanya hari ini, dan waktu hadir ≥ windowStart
+    const now = new Date();
+    const todayFiltered = all.filter(p => {
       if (!p.tanggal) return false;
       const tgl = parseDate(p.tanggal);
-      return tgl && tgl >= d0 && tgl <= d1;
+      const isToday = tgl &&
+        tgl.getDate() === now.getDate() &&
+        tgl.getMonth() === now.getMonth() &&
+        tgl.getFullYear() === now.getFullYear();
+      if (!isToday) return false;
+      // Cek waktu hadir ≥ windowStart (15 menit sebelum jadwal pertama)
+      if (windowStart !== null) {
+        const hadirMin = toMin(String(p.waktuHadir || ''));
+        if (hadirMin !== null && hadirMin < windowStart) return false;
+      }
+      return true;
     });
 
-    renderDashboard(filtered, awal, akhir, jMap);
+    // Tampilkan info periode di header
+    const nowDisp = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+    const dateLabel = `${hariIni}, ${now.getDate()} ${BULAN[now.getMonth()]} ${now.getFullYear()}`;
+    document.getElementById('date-range-display').textContent = dateLabel;
 
+    const wLabel = document.getElementById('window-label');
+    if (windowStart !== null) {
+      wLabel.style.display = 'inline-flex';
+      wLabel.textContent = `📋 Data mulai ${formatTime(windowStart)} – ${nowDisp}`;
+    } else {
+      wLabel.style.display = 'none';
+    }
+
+    renderDashboard(todayFiltered, jMap, jadwals);
   } catch (e) {
     showError('Gagal memuat data: ' + e.message);
     setLoading(false);
   }
-
-  // Reset countdown after manual refresh
   countdown = REFRESH_INTERVAL;
   updateCountdownUI();
 }
 
-// ── TIME UTILS ──
-function toMin(s) {
-  s = String(s||'').trim().replace('.',':');
-  const p = s.split(':');
-  if (p.length >= 2) { const h=parseInt(p[0]), m=parseInt(p[1]); if(!isNaN(h)&&!isNaN(m)) return h*60+m; }
-  return null;
-}
-
 // ── PROCESS & RENDER ──
-function renderDashboard(records, awal, akhir, jMap) {
-  // Simpan untuk re-render saat MIN_SESI diubah tanpa fetch ulang
+function renderDashboard(records, jMap, jadwals) {
   window._lastRecords = records;
-  window._lastAwal    = awal;
-  window._lastAkhir   = akhir;
   window._lastJMap    = jMap;
+  window._lastJadwals = jadwals || [];
 
-  // Aggregate per dosen
   const map = {};
-
   const anomalyList = [];
 
   records.forEach(p => {
-    const id = p.dosenId || p.dosen;
-    if (!id) return;
+    const id = p.dosenId || p.dosen; if (!id) return;
     if (!map[id]) {
-      map[id] = {
-        id,
-        nama: p.dosen || id,
-        total: 0,
-        hadir: 0,
-        tepat: 0,
-        terlambat: 0,
-        totalLambat: 0,
-        luring: 0,
-        daring: 0,
-      };
+      map[id] = { id, nama: p.dosen || id, total: 0, hadir: 0, tepat: 0, terlambat: 0, totalLambat: 0, luring: 0, daring: 0 };
     }
     const d = map[id];
     d.total++;
 
-    // Track mode kuliah
     const mode = (p.modeKuliah || '').toLowerCase();
-    if (mode === 'luring') d.luring++;
-    else d.daring++;
+    if (mode === 'luring') d.luring++; else d.daring++;
 
-    const st = (p.status || '').toLowerCase();
-    const diff = Number(p.diff || 0);
+    const st   = (p.statusHadir || p.status || '').toLowerCase();
+    const diff = Number(p.selisihHadir || p.diff || 0);
 
-    // Cek anomali: waktuHadir tercatat setelah jam selesai kelas
-    const hadirM  = toMin(String(p.waktuHadir || ''));
-    const jInfo   = jMap && jMap[p.jadwalId || ''];
+    const hadirM   = toMin(String(p.waktuHadir || ''));
+    const jInfo    = jMap && jMap[p.jadwalId || ''];
     const selesaiM = jInfo ? jInfo.selesai : null;
     const isAnomali = hadirM !== null && selesaiM !== null && hadirM > selesaiM;
 
-    if (st === 'hadir' || st === 'tepat waktu' || st.includes('hadir')) {
-      d.hadir++;
-      if (diff <= 0) {
-        d.tepat++;
-      } else if (isAnomali) {
-        // anomali — tidak dihitung sebagai terlambat wajar
-        anomalyList.push({
-          nama: d.nama, tanggal: p.tanggal || '', mk: p.mk || '',
-          kelas: p.kelas || '', waktuHadir: String(p.waktuHadir || ''),
-          jamMulai: jInfo ? minToJam(jInfo.mulai) : '?',
-          jamSelesai: minToJam(selesaiM),
-          lewatSelesai: hadirM - selesaiM,
-        });
-      } else {
-        d.terlambat++;
-        d.totalLambat += diff;
-      }
-    } else if (st === 'terlambat' || diff > 0) {
-      d.hadir++;
-      if (isAnomali) {
-        anomalyList.push({
-          nama: d.nama, tanggal: p.tanggal || '', mk: p.mk || '',
-          kelas: p.kelas || '', waktuHadir: String(p.waktuHadir || ''),
-          jamMulai: jInfo ? minToJam(jInfo.mulai) : '?',
-          jamSelesai: minToJam(selesaiM),
-          lewatSelesai: hadirM - selesaiM,
-        });
-      } else {
-        d.terlambat++;
-        d.totalLambat += Math.max(diff, 1);
-      }
+    d.hadir++;
+    if (st === 'tepat waktu' || st.includes('tepat') || diff <= 0) {
+      d.tepat++;
+    } else if (isAnomali) {
+      anomalyList.push({ nama: d.nama, tanggal: p.tanggal||'', mk: p.mk||'', kelas: p.kelas||'', waktuHadir: String(p.waktuHadir||''), jamMulai: jInfo ? minToJam(jInfo.mulai) : '?', jamSelesai: minToJam(selesaiM), lewatSelesai: hadirMin - selesaiM });
+    } else {
+      d.terlambat++;
+      d.totalLambat += Math.max(diff, 1);
     }
   });
 
   const list = Object.values(map).filter(d => d.total > 0);
 
   // Stats
-  const totalSesi = records.length;
-  const totalTepat = list.reduce((a,d) => a + d.tepat, 0);
+  const totalSesi   = records.length;
+  const totalTepat  = list.reduce((a,d) => a + d.tepat, 0);
   const totalLambat = list.reduce((a,d) => a + d.terlambat, 0);
-  const totalDosen = list.length;
+  const totalDosen  = list.length;
 
-  document.getElementById('stat-total').textContent = totalSesi;
-  document.getElementById('stat-ok').textContent = totalTepat;
-  document.getElementById('stat-late').textContent = totalLambat;
-  document.getElementById('stat-absent').textContent = totalDosen;
+  document.getElementById('stat-total').textContent   = totalSesi;
+  document.getElementById('stat-ok').textContent      = totalTepat;
+  document.getElementById('stat-late').textContent    = totalLambat;
+  document.getElementById('stat-absent').textContent  = totalDosen;
 
-  // ── SCORING FORMULA TOP 5 ──
-  // Skor = jumlah sesi luring × % tepat waktu
-  // Syarat: total sesi ≥ MIN_SESI, % luring ≥ MIN_PCT_LURING, % tepat ≥ MIN_PCT_TEPAT
+  // ── TOP 5: tepat waktu ──
   list.forEach(d => {
     d.pctTepat  = d.total > 0 ? d.tepat / d.total : 0;
     d.pctLuring = d.total > 0 ? d.luring / d.total : 0;
-    d.skorTotal = d.luring * d.pctTepat; // sesi luring × % tepat waktu
+    d.skorTotal = d.luring * d.pctTepat;
   });
 
   const sortedTop = [...list]
-    .filter(d =>
-      d.total >= MIN_SESI &&
-      d.pctLuring * 100 >= MIN_PCT_LURING &&
-      d.pctTepat  * 100 >= MIN_PCT_TEPAT
-    )
-    .sort((a, b) => {
-      if (b.skorTotal !== a.skorTotal) return b.skorTotal - a.skorTotal;
-      if (b.pctTepat  !== a.pctTepat)  return b.pctTepat  - a.pctTepat;
-      if (b.luring    !== a.luring)    return b.luring    - a.luring;
-      return b.total - a.total;
+    .filter(d => d.total >= MIN_SESI && d.pctLuring * 100 >= MIN_PCT_LURING && d.pctTepat * 100 >= MIN_PCT_TEPAT)
+    .sort((a,b) => {
+      if (b.pctTepat !== a.pctTepat) return b.pctTepat - a.pctTepat;
+      // Tiebreak: yang hadir paling awal (diff terkecil) — pakai tepat count
+      return b.tepat - a.tepat;
     })
     .slice(0, 5);
 
-  // ── BOTTOM 5: skor gabungan frekuensi + rata-rata menit terlambat wajar ──
-  const withLate = list.filter(d => d.terlambat > 0).map(d => ({
-    ...d, avgM: d.totalLambat / d.terlambat
-  }));
+  // ── BOTTOM 5: paling terlambat ──
+  const withLate = list.filter(d => d.terlambat > 0).map(d => ({ ...d, avgM: d.totalLambat / d.terlambat }));
   let sortedBot = [];
   if (withLate.length) {
     const mxF = Math.max(...withLate.map(d => d.terlambat));
     const mxA = Math.max(...withLate.map(d => d.avgM));
-    withLate.forEach(d => {
-      d.skorBot = (0.6 * (d.terlambat / mxF) + 0.4 * (d.avgM / mxA)) * 100;
-    });
-    sortedBot = withLate.sort((a, b) => b.skorBot - a.skorBot).slice(0, 5);
+    withLate.forEach(d => { d.skorBot = (0.6 * (d.terlambat/mxF) + 0.4 * (d.avgM/mxA)) * 100; });
+    sortedBot = withLate.sort((a,b) => b.skorBot - a.skorBot).slice(0, 5);
   }
 
-  // Render
-  const maxTop = sortedTop.length ? sortedTop[0].skorTotal : 1;
+  const maxTop = sortedTop.length ? Math.max(...sortedTop.map(d => d.pctTepat)) : 1;
   const maxBot = sortedBot.length ? sortedBot[0].skorBot : 1;
 
   renderPanel('panel-top', sortedTop, 'top', maxTop);
   renderPanel('panel-bot', sortedBot, 'bot', maxBot);
-
-  // Render anomali
   renderAnomalyBadge(anomalyList);
 
-  // Last updated
-  const now = new Date();
-  const ts = now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  const now2 = new Date();
+  const ts = now2.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
   document.getElementById('last-updated-text').textContent = `Diperbarui pukul ${ts}`;
 
   setLoading(false);
+}
+
+function minToJam(m) {
+  if (m === null || m === undefined) return '?';
+  return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
 }
 
 const MEDALS = ['🥇','🥈','🥉'];
@@ -1138,52 +1081,50 @@ function renderPanel(panelId, list, type, maxVal) {
 
   if (!list.length) {
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">${type==='top'?'🏆':'⏱️'}</div><div>${type==='top'
-      ? `Belum ada dosen yang memenuhi syarat: min. ${MIN_SESI} sesi, ≥${MIN_PCT_LURING}% luring, ≥${MIN_PCT_TEPAT}% tepat waktu.`
-      : 'Tidak ada data keterlambatan pada rentang tanggal ini.'}</div></div>`;
+      ? `Belum ada dosen yang memenuhi syarat hari ini (min. ${MIN_SESI} sesi, ≥${MIN_PCT_LURING}% luring, ≥${MIN_PCT_TEPAT}% tepat waktu).`
+      : 'Tidak ada keterlambatan tercatat hari ini.'}</div></div>`;
     return;
   }
 
   el.innerHTML = list.map((d, i) => {
     const isTop = type === 'top';
     const medal = MEDALS[i] || null;
-    const rankEl = medal
-      ? `<span class="rank-medal">${medal}</span>`
-      : `<span class="rank-num">${i+1}</span>`;
+    const rankEl = medal ? `<span class="rank-medal">${medal}</span>` : `<span class="rank-num">${i+1}</span>`;
 
     let score, subtext, barPct, breakdownHtml = '';
 
     if (isTop) {
-      const pctTepat = (d.pctTepat * 100).toFixed(0) + '%';
+      const pctTepat  = (d.pctTepat  * 100).toFixed(0) + '%';
       const pctLuring = (d.pctLuring * 100).toFixed(0) + '%';
-      score = d.skorTotal.toFixed(1);
-      subtext = `${d.luring} sesi luring · ${d.tepat}/${d.total} tepat waktu`;
-      barPct = maxVal > 0 ? (d.skorTotal / maxVal * 100) : 0;
+      score   = pctTepat;
+      subtext = `${d.tepat}/${d.total} tepat waktu · ${d.luring} sesi luring`;
+      barPct  = maxVal > 0 ? (d.pctTepat / maxVal * 100) : 0;
 
       breakdownHtml = `
         <div class="score-breakdown">
           <div class="breakdown-item">
+            <span class="bd-label">Tepat</span>
+            <span class="bd-val" style="color:var(--green); background:var(--green-dim)">${d.tepat}x</span>
+          </div>
+          <div class="breakdown-item">
             <span class="bd-label">Luring</span>
             <span class="bd-val" style="color:var(--orange); background:rgba(251,146,60,0.15)">${d.luring} sesi (${pctLuring})</span>
           </div>
-          <div class="breakdown-item">
-            <span class="bd-label">Tepat Waktu</span>
-            <span class="bd-val" style="color:var(--green); background:var(--green-dim)">${pctTepat}</span>
-          </div>
-          <div class="breakdown-item">
-            <span class="bd-label">Daring</span>
-            <span class="bd-val" style="color:var(--blue); background:var(--blue-dim)">${d.daring} sesi</span>
-          </div>
+          ${d.terlambat > 0 ? `<div class="breakdown-item">
+            <span class="bd-label">Terlambat</span>
+            <span class="bd-val" style="color:var(--red); background:var(--red-dim)">${d.terlambat}x</span>
+          </div>` : ''}
         </div>
       `;
     } else {
       const avg = d.terlambat > 0 ? d.totalLambat / d.terlambat : 0;
-      score = Math.round(d.skorBot || 0);
+      score   = Math.round(avg) + ' mnt';
       subtext = `${d.terlambat}× terlambat · rata-rata ${Math.round(avg)} menit`;
-      barPct = maxVal > 0 ? ((d.skorBot || 0) / maxVal * 100) : 0;
+      barPct  = maxVal > 0 ? ((d.skorBot || 0) / maxVal * 100) : 0;
     }
 
     const color = avatarColor(d.nama);
-    const ini = initials(d.nama);
+    const ini   = initials(d.nama);
 
     return `
       <div class="rank-row">
@@ -1199,7 +1140,7 @@ function renderPanel(panelId, list, type, maxVal) {
         </div>
         <div class="rank-score">
           <div class="rank-pct">${score}</div>
-          <div class="rank-pct-lbl">${isTop ? 'skor luring×tepat' : 'skor keterlambatan'}</div>
+          <div class="rank-pct-lbl">${isTop ? '% tepat waktu' : 'avg terlambat'}</div>
         </div>
       </div>
     `;
@@ -1207,82 +1148,40 @@ function renderPanel(panelId, list, type, maxVal) {
 }
 
 // ── ANOMALI ──
-function minToJam(m) {
-  if (m === null || m === undefined) return '?';
-  return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
-}
-
 let _anomalyList = [];
 
 function renderAnomalyBadge(list) {
   _anomalyList = list;
   const btn = document.getElementById('btn-anomali');
   const pill = document.getElementById('an-pill');
-  if (!list.length) {
-    btn.style.display = 'none';
-    return;
-  }
+  if (!list.length) { btn.style.display = 'none'; return; }
   btn.style.display = 'inline-flex';
   pill.textContent = list.length;
-
-  // Isi overlay body
   list.sort((a,b) => b.lewatSelesai - a.lewatSelesai);
   const body = document.getElementById('ao-body');
   body.innerHTML = list.map((a, i) => {
     let cat, catLabel, icon, penjelasan;
-    if (a.lewatSelesai > 120) {
-      cat='cat-A'; catLabel='Kemungkinan Lupa Absen'; icon='🔴';
-      penjelasan=`Rekaman masuk tercatat <span class="hl">${a.lewatSelesai} menit setelah kelas selesai</span>. Secara logis tidak mungkin hadir mengajar pada jam tersebut — kemungkinan besar absen dilakukan secara retroaktif setelah kelas berakhir.`;
-    } else if (a.lewatSelesai > 15) {
-      cat='cat-B'; catLabel='Absen Terlambat Direkam'; icon='🟠';
-      penjelasan=`Rekaman masuk tercatat <span class="hl">${a.lewatSelesai} menit setelah kelas selesai</span>. Dosen kemungkinan hadir mengajar namun lupa absen saat tiba, dan baru merekam kehadiran menjelang atau sesudah kelas berakhir.`;
-    } else {
-      cat='cat-C'; catLabel='Absen di Akhir Sesi'; icon='🟡';
-      penjelasan=`Rekaman masuk tercatat <span class="hl">${a.lewatSelesai} menit setelah kelas selesai</span>. Selisih sangat kecil — kemungkinan dosen hadir namun baru sempat absen di penghujung sesi.`;
-    }
+    if (a.lewatSelesai > 120) { cat='cat-A'; catLabel='Kemungkinan Lupa Absen'; icon='🔴'; penjelasan=`Rekaman masuk tercatat <span class="hl">${a.lewatSelesai} menit setelah kelas selesai</span>.`; }
+    else if (a.lewatSelesai > 15) { cat='cat-B'; catLabel='Absen Terlambat Direkam'; icon='🟠'; penjelasan=`Rekaman masuk tercatat <span class="hl">${a.lewatSelesai} menit setelah kelas selesai</span>.`; }
+    else { cat='cat-C'; catLabel='Absen di Akhir Sesi'; icon='🟡'; penjelasan=`Rekaman masuk tercatat <span class="hl">${a.lewatSelesai} menit setelah kelas selesai</span>.`; }
     return `<div class="ao-row" style="animation-delay:${i*0.07}s">
       <div class="ao-icon">${icon}</div>
       <div class="ao-info">
         <div class="ao-name">${escHtml(a.nama)}</div>
-        <div class="ao-detail">
-          <b>${a.tanggal}</b> &nbsp;·&nbsp; ${escHtml(a.mk)} &nbsp;·&nbsp; Kelas ${escHtml(a.kelas)}<br>
-          Jadwal: <b>${a.jamMulai}–${a.jamSelesai}</b> &nbsp;|&nbsp;
-          Rekaman hadir: <b class="hl">${a.waktuHadir}</b> &nbsp;|&nbsp;
-          ${penjelasan}
-        </div>
+        <div class="ao-detail"><b>${a.tanggal}</b> · ${escHtml(a.mk)} · Kelas ${escHtml(a.kelas)}<br>Jadwal: <b>${a.jamMulai}–${a.jamSelesai}</b> | Hadir: <b class="hl">${a.waktuHadir}</b> | ${penjelasan}</div>
       </div>
       <div class="ao-cat ${cat}">${catLabel}</div>
     </div>`;
   }).join('');
 }
 
-function openAnomalyOverlay() {
-  document.getElementById('anomaly-overlay').classList.add('open');
-}
+function openAnomalyOverlay() { document.getElementById('anomaly-overlay').classList.add('open'); }
+function closeAnomalyOverlay() { document.getElementById('anomaly-overlay').classList.remove('open'); }
 
-function closeAnomalyOverlay() {
-  document.getElementById('anomaly-overlay').classList.remove('open');
-}
-
-// ── UTILS ──
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-function showError(msg) {
-  const el = document.getElementById('error-banner');
-  el.textContent = '⚠ ' + msg;
-  el.style.display = 'block';
-}
-
-function hideError() {
-  document.getElementById('error-banner').style.display = 'none';
-}
-
-function setLoading(on) {
-  document.getElementById('btn-refresh').disabled = on;
-  document.getElementById('btn-refresh').textContent = on ? '⏳ Memuat…' : '↻ Perbarui';
-}
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showError(msg) { const el=document.getElementById('error-banner'); el.textContent='⚠ '+msg; el.style.display='block'; }
+function hideError() { document.getElementById('error-banner').style.display='none'; }
+function setLoading(on) { document.getElementById('btn-refresh').disabled=on; document.getElementById('btn-refresh').textContent=on?'⏳ Memuat…':'↻ Perbarui'; }
 </script>
 <!-- ANOMALY OVERLAY -->
 <div id="anomaly-overlay">
