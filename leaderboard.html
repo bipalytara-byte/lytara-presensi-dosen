@@ -730,7 +730,7 @@ footer b { color: var(--text); font-weight: 600; }
         <div class="panel-icon">🏆</div>
         <div>
           <div class="panel-title">Top 5 Dosen Terapresiasi</div>
-          <div class="panel-sub">Skor: Mode kuliah × Ketepatan × Konsistensi</div>
+          <div class="panel-sub">Min. <span id="min-sesi-label">8</span> sesi · Skor: Mode × Ketepatan × Konsistensi</div>
         </div>
       </div>
       <div class="panel-body" id="panel-top">
@@ -772,6 +772,9 @@ footer b { color: var(--text); font-weight: 600; }
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
+
+// ── KONFIGURASI — ubah sesuai kebutuhan ──
+const MIN_SESI = 8; // threshold minimum sesi untuk masuk Top 5
 
 const REFRESH_INTERVAL = 60; // seconds
 let countdown = REFRESH_INTERVAL;
@@ -815,6 +818,9 @@ function parseDate(str) {
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', () => {
+  // Tampilkan nilai MIN_SESI di subtitle panel
+  const lbl = document.getElementById('min-sesi-label');
+  if (lbl) lbl.textContent = MIN_SESI;
   // Set default tanggal awal = awal bulan ini
   const now = new Date();
   const awal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
@@ -1002,29 +1008,22 @@ function renderDashboard(records, awal, akhir, jMap) {
   document.getElementById('stat-absent').textContent = totalDosen;
 
   // ── SCORING FORMULA ──
-  // Hitung skor per dosen untuk Top 5
   list.forEach(d => {
-    // 1. Poin Mode per sesi (luring=2, daring=1)
     const poinMode = (d.luring * 2) + (d.daring * 1);
 
-    // 2. Poin Ketepatan Hadir per sesi (berdasarkan diff rata-rata)
-    // Tepat (≤0 menit) = ×1.5 | Telat 1-10m = ×1.0 | Telat 11-20m = ×0.5 | >20m = ×0.25
-    // Kita kalkulasi bobot per status
     const avgDiff = d.terlambat > 0 ? d.totalLambat / d.terlambat : 0;
     let poinKetepatan;
-    if (d.terlambat === 0) poinKetepatan = 1.5; // selalu tepat
+    if (d.terlambat === 0) poinKetepatan = 1.5;
     else if (avgDiff <= 10) poinKetepatan = 1.0;
     else if (avgDiff <= 20) poinKetepatan = 0.5;
     else poinKetepatan = 0.25;
 
-    // 3. Bonus Konsistensi (% sesi tepat waktu)
     const pctTepat = d.total > 0 ? d.tepat / d.total : 0;
     let bonusKonsistensi;
     if (pctTepat >= 0.8) bonusKonsistensi = 1.3;
     else if (pctTepat >= 0.6) bonusKonsistensi = 1.1;
     else bonusKonsistensi = 1.0;
 
-    // Total Skor
     d.skorMode = poinMode;
     d.skorKetepatan = poinKetepatan;
     d.skorKonsistensi = bonusKonsistensi;
@@ -1033,12 +1032,15 @@ function renderDashboard(records, awal, akhir, jMap) {
     d.avgDiff = avgDiff;
   });
 
-  // Sort: Top 5 = skor tertinggi
+  // Sort: Top 5 = min MIN_SESI sesi, skor tertinggi
+  // Tiebreaker: 1) skorTotal 2) % tepat 3) sesi luring 4) total sesi
   const sortedTop = [...list]
-    .filter(d => d.total > 0)
-    .sort((a,b) => {
+    .filter(d => d.total >= MIN_SESI)
+    .sort((a, b) => {
       if (b.skorTotal !== a.skorTotal) return b.skorTotal - a.skorTotal;
-      return b.pctTepat - a.pctTepat;
+      if (b.pctTepat !== a.pctTepat) return b.pctTepat - a.pctTepat;
+      if (b.luring !== a.luring) return b.luring - a.luring;
+      return b.total - a.total;
     })
     .slice(0, 5);
 
@@ -1076,7 +1078,7 @@ function renderPanel(panelId, list, type, maxVal) {
   const el = document.getElementById(panelId);
 
   if (!list.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">${type==='top'?'🏆':'⏱️'}</div><div>Tidak ada data pada rentang tanggal ini.</div></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">${type==='top'?'🏆':'⏱️'}</div><div>${type==='top' ? `Belum ada dosen dengan minimal ${MIN_SESI} sesi pada rentang ini.` : 'Tidak ada data pada rentang tanggal ini.'}</div></div>`;
     return;
   }
 
