@@ -2219,6 +2219,15 @@ function renderDetailStatusKehadiran(baseData) {
       if(mk.indexOf('Luring')>-1){modeBg='#eaf3de';modeTx='#27500a';}
       else if(mk.indexOf('Sinkronus')>-1){modeBg='#e6f1fb';modeTx='#185fa5';}
       else if(mk.indexOf('Asinkronus')>-1){modeBg='#faeeda';modeTx='#633806';}
+      var selesaiSf = '';
+      if (p.waktuSelesai && p.waktuSelesai !== '') {
+        var sBgSf = p.colorSelesai==='blue' ? '#e6f1fb' : '#fcebeb';
+        var sTxSf = p.colorSelesai==='blue' ? '#185fa5' : '#791f1f';
+        selesaiSf = '<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;background:' + sBgSf + ';color:' + sTxSf + ';margin-left:4px">'
+          + p.waktuSelesai + ' · ' + (p.statusSelesai||'') + '</span>';
+      } else if (isAdmin) {
+        selesaiSf = '<button class="btn btn-sm btn-danger" style="padding:1px 7px;font-size:10px;margin-left:6px" onclick="tutupPaksa(\'' + p.id + '\')">Tutup Paksa</button>';
+      }
       html += '<div class="ds-item">'
         + '<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
           + '<div style="width:30px;height:30px;border-radius:50%;background:' + ac + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">' + ini + '</div>'
@@ -2228,7 +2237,10 @@ function renderDetailStatusKehadiran(baseData) {
             + (mk ? '<span style="font-size:10px;font-weight:500;padding:1px 6px;border-radius:20px;background:' + modeBg + ';color:' + modeTx + '">' + mk + '</span>' : '')
           + '</div>'
         + '</div>'
-        + '<div class="ds-badge" style="background:' + badgeBg + ';color:' + badgeTx + '">' + badgeLabel + '</div>'
+        + '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
+          + '<div class="ds-badge" style="background:' + badgeBg + ';color:' + badgeTx + '">' + badgeLabel + '</div>'
+          + selesaiSf
+        + '</div>'
         + '</div>';
     });
   }
