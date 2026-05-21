@@ -924,6 +924,9 @@ let currentSlide  = 0;
 let slideTimer    = null;
 let refreshTimer  = null;
 
+// ── HARI MAP (global — dipakai di process() & updateClock) ──
+const HARI_MAP = {0:'Minggu',1:'Senin',2:'Selasa',3:'Rabu',4:'Kamis',5:'Jumat',6:'Sabtu'};
+
 // ── AVATAR ──
 const COLORS = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#ef4444','#06b6d4','#f97316','#a855f7','#14b8a6'];
 function avatarColor(n){ let h=0; for(let i=0;i<n.length;i++) h=n.charCodeAt(i)+((h<<5)-h); return COLORS[Math.abs(h)%COLORS.length]; }
@@ -1022,20 +1025,35 @@ function process(presensi, jadwals) {
     };
   });
 
-  // Filter: semua data bulan berjalan (awal bulan - hari ini)
-  const now  = new Date();
-  const d0   = new Date(now.getFullYear(), now.getMonth(), 1);
-  const d1   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23,59,59);
-  const filtered = presensi.filter(p => {
-    const t = parseTgl(p.tanggal); return t && t>=d0 && t<=d1;
-  });
+  // ── JENDELA WAKTU HARI INI ──
+  // Filter: hanya hari ini, mulai 15 menit sebelum jadwal pertama
+  const now   = new Date();
+  const hariIni  = HARI_MAP[now.getDay()];
+  const jadwalHariIni = jadwals.filter(j => j.hari === hariIni);
 
-  // Hari ini
-  const todayDate = `${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()}`;
+  // Jam mulai paling awal hari ini
+  let earliestMin = null;
+  jadwalHariIni.forEach(j => {
+    const m = toMin(j.jamMulai);
+    if (m !== null && (earliestMin === null || m < earliestMin)) earliestMin = m;
+  });
+  const windowStart = earliestMin !== null ? Math.max(0, earliestMin - 15) : null;
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  // Filter presensi hari ini saja + dalam jendela waktu
   const todayPresensi = presensi.filter(p => {
     const t = parseTgl(p.tanggal);
-    return t && t.getDate()===now.getDate() && t.getMonth()===now.getMonth() && t.getFullYear()===now.getFullYear();
+    if (!t) return false;
+    const isToday = t.getDate()===now.getDate() && t.getMonth()===now.getMonth() && t.getFullYear()===now.getFullYear();
+    if (!isToday) return false;
+    if (windowStart !== null) {
+      const hadirM = toMin(String(p.waktuHadir||''));
+      if (hadirM !== null && hadirM < windowStart) return false;
+    }
+    return true;
   });
+
+  const filtered = todayPresensi; // hanya hari ini
 
   // Agregasi
   const map = {};
@@ -1093,9 +1111,7 @@ function process(presensi, jadwals) {
     bot5=withLate.sort((a,b)=>b.skor-a.skor).slice(0,5);
   }
 
-  // Today: who has schedule today
-  const HARI_MAP = {0:'Minggu',1:'Senin',2:'Selasa',3:'Rabu',4:'Kamis',5:'Jumat',6:'Sabtu'};
-  const hariIni  = HARI_MAP[now.getDay()];
+  // Today: who has schedule today (hariIni sudah terdefinisi di atas)
   const jadwalHariIni = jadwals.filter(j=>j.hari===hariIni).sort((a,b)=>(toMin(a.jamMulai)||0)-(toMin(b.jamMulai)||0));
 
   // Cross with presensi hari ini
@@ -1112,8 +1128,12 @@ function process(presensi, jadwals) {
   renderAnomalyOverlay(tvAnomalies);
 
   // Update stat period label
+  const BULAN_TV = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const windowLabel = windowStart !== null
+    ? ` · Data mulai ${minToJam(windowStart)}`
+    : '';
   document.getElementById('stat-period-label').textContent =
-    `${fmtDate(now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01')} — ${fmtDate(todayStr())}`;
+    `${hariIni}, ${now.getDate()} ${BULAN_TV[now.getMonth()]} ${now.getFullYear()}${windowLabel}`;
 }
 
 // ── RENDER TOP 5 ──
