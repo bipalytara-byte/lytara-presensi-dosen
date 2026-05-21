@@ -681,6 +681,15 @@ footer b { color: var(--text); font-weight: 600; }
       <input type="date" id="tgl-akhir" readonly/>
       <span class="today-badge">✦ Otomatis: Hari Ini</span>
     </div>
+    <div class="filter-group" style="max-width: 140px;">
+      <label>Min. Sesi Top 5</label>
+      <input type="number" id="input-min-sesi" min="1" max="99" value="8"
+        style="text-align:center; font-weight:700;"
+        onchange="applyMinSesi(this.value)"
+        oninput="applyMinSesi(this.value)"
+        title="Threshold minimum sesi untuk masuk Top 5"/>
+      <span class="today-badge" style="color:var(--blue); background:var(--blue-dim);">✦ Threshold Top 5</span>
+    </div>
     <div style="display:flex; align-items:flex-end;">
       <button id="btn-refresh" onclick="loadData()" style="
         background: var(--blue);
@@ -774,7 +783,20 @@ footer b { color: var(--text); font-weight: 600; }
 const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
 
 // ── KONFIGURASI — ubah sesuai kebutuhan ──
-const MIN_SESI = 8; // threshold minimum sesi untuk masuk Top 5
+let MIN_SESI = 8; // threshold minimum sesi untuk masuk Top 5
+
+function applyMinSesi(val) {
+  const n = parseInt(val);
+  if (isNaN(n) || n < 1) return;
+  MIN_SESI = n;
+  // Update label di subtitle panel
+  const lbl = document.getElementById('min-sesi-label');
+  if (lbl) lbl.textContent = MIN_SESI;
+  // Re-render langsung tanpa fetch ulang — pakai data terakhir
+  if (window._lastRecords && window._lastJMap) {
+    renderDashboard(window._lastRecords, window._lastAwal, window._lastAkhir, window._lastJMap);
+  }
+}
 
 const REFRESH_INTERVAL = 60; // seconds
 let countdown = REFRESH_INTERVAL;
@@ -818,9 +840,11 @@ function parseDate(str) {
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', () => {
-  // Tampilkan nilai MIN_SESI di subtitle panel
+  // Tampilkan nilai MIN_SESI di subtitle panel dan input
   const lbl = document.getElementById('min-sesi-label');
   if (lbl) lbl.textContent = MIN_SESI;
+  const inp = document.getElementById('input-min-sesi');
+  if (inp) inp.value = MIN_SESI;
   // Set default tanggal awal = awal bulan ini
   const now = new Date();
   const awal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
@@ -922,6 +946,12 @@ function toMin(s) {
 
 // ── PROCESS & RENDER ──
 function renderDashboard(records, awal, akhir, jMap) {
+  // Simpan untuk re-render saat MIN_SESI diubah tanpa fetch ulang
+  window._lastRecords = records;
+  window._lastAwal    = awal;
+  window._lastAkhir   = akhir;
+  window._lastJMap    = jMap;
+
   // Aggregate per dosen
   const map = {};
 
