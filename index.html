@@ -243,8 +243,23 @@ tr:last-child td{border-bottom:none}
       </div>
       <button class="btn btn-primary login-btn" onclick="doLogin()">Masuk →</button>
       
-      <div style="margin-top:1.5rem; border-top:1px solid #f0f0ee; padding-top:1rem">
-        <button class="btn btn-sm" onclick="swapLogin('admin')">Masuk ke Portal Admin</button>
+      <div style="margin-top:1.5rem; border-top:1px solid #f0f0ee; padding-top:1rem; display:flex; flex-direction:column; gap:8px;">
+        <div style="font-size:11px;color:#aaa;font-weight:500;margin-bottom:2px;text-align:left">Akses Publik</div>
+        <div style="display:flex;gap:8px;">
+          <a href="leaderboard.html" target="_blank" style="flex:1;text-decoration:none">
+            <button class="btn btn-sm" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;background:#f0f7ff;border-color:#85b7eb;color:#185fa5;font-weight:500">
+              🏆 Leaderboard
+            </button>
+          </a>
+          <a href="leaderboard-tv.html" target="_blank" style="flex:1;text-decoration:none">
+            <button class="btn btn-sm" style="width:100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;background:#f3e8ff;border-color:#d8b4fe;color:#7e22ce;font-weight:500">
+              📺 Leaderboard TV
+            </button>
+          </a>
+        </div>
+        <div style="border-top:1px solid #f0f0ee;padding-top:8px;margin-top:2px">
+          <button class="btn btn-sm" onclick="swapLogin('admin')">Masuk ke Portal Admin</button>
+        </div>
       </div>
     </div>
 
