@@ -998,11 +998,8 @@ function startSlideShow() {
 
 // ── DATA LOAD ──
 function fetchWithTimeout(url, ms=15000) {
-  const ctrl = new AbortController();
-  const tid = setTimeout(()=>ctrl.abort(), ms);
-  return fetch(url, {signal: ctrl.signal})
-    .then(r=>{ clearTimeout(tid); return r.json(); })
-    .catch(e=>{ clearTimeout(tid); throw e; });
+  const timeout = new Promise((_,rej) => setTimeout(()=>rej(new Error('Fetch timeout')), ms));
+  return Promise.race([fetch(url).then(r=>r.json()), timeout]);
 }
 
 async function loadData() {
