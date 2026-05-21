@@ -681,14 +681,32 @@ footer b { color: var(--text); font-weight: 600; }
       <input type="date" id="tgl-akhir" readonly/>
       <span class="today-badge">✦ Otomatis: Hari Ini</span>
     </div>
-    <div class="filter-group" style="max-width: 140px;">
-      <label>Min. Sesi Top 5</label>
+    <div class="filter-group" style="max-width: 120px;">
+      <label>Min. Sesi</label>
       <input type="number" id="input-min-sesi" min="1" max="99" value="8"
         style="text-align:center; font-weight:700;"
         onchange="applyMinSesi(this.value)"
         oninput="applyMinSesi(this.value)"
         title="Threshold minimum sesi untuk masuk Top 5"/>
-      <span class="today-badge" style="color:var(--blue); background:var(--blue-dim);">✦ Threshold Top 5</span>
+      <span class="today-badge" style="color:var(--blue); background:var(--blue-dim);">✦ Top 5</span>
+    </div>
+    <div class="filter-group" style="max-width: 130px;">
+      <label>Min. % Luring</label>
+      <input type="number" id="input-min-luring" min="0" max="100" value="70"
+        style="text-align:center; font-weight:700;"
+        onchange="applyMinLuring(this.value)"
+        oninput="applyMinLuring(this.value)"
+        title="Minimum % sesi luring untuk masuk Top 5"/>
+      <span class="today-badge" style="color:var(--orange); background:rgba(251,146,60,0.15);">🏛️ Luring</span>
+    </div>
+    <div class="filter-group" style="max-width: 130px;">
+      <label>Min. % Tepat</label>
+      <input type="number" id="input-min-tepat" min="0" max="100" value="70"
+        style="text-align:center; font-weight:700;"
+        onchange="applyMinTepat(this.value)"
+        oninput="applyMinTepat(this.value)"
+        title="Minimum % tepat waktu untuk masuk Top 5"/>
+      <span class="today-badge" style="color:var(--green); background:var(--green-dim);">✓ Disiplin</span>
     </div>
     <div style="display:flex; align-items:flex-end;">
       <button id="btn-refresh" onclick="loadData()" style="
@@ -739,7 +757,7 @@ footer b { color: var(--text); font-weight: 600; }
         <div class="panel-icon">🏆</div>
         <div>
           <div class="panel-title">Top 5 Dosen Terapresiasi</div>
-          <div class="panel-sub">Min. <span id="min-sesi-label">8</span> sesi · Skor: Mode × Ketepatan × Konsistensi</div>
+          <div class="panel-sub">Min. <span id="min-sesi-label">8</span> sesi · ≥<span id="min-luring-label">70</span>% luring · ≥<span id="min-tepat-label">70</span>% tepat waktu</div>
         </div>
       </div>
       <div class="panel-body" id="panel-top">
@@ -783,19 +801,38 @@ footer b { color: var(--text); font-weight: 600; }
 const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
 
 // ── KONFIGURASI — ubah sesuai kebutuhan ──
-let MIN_SESI = 8; // threshold minimum sesi untuk masuk Top 5
+let MIN_SESI       = 8;   // threshold minimum sesi untuk masuk Top 5
+let MIN_PCT_LURING = 70;  // minimum % sesi luring (0–100)
+let MIN_PCT_TEPAT  = 70;  // minimum % tepat waktu (0–100)
+
+function _rerender() {
+  if (window._lastRecords && window._lastJMap) {
+    renderDashboard(window._lastRecords, window._lastAwal, window._lastAkhir, window._lastJMap);
+  }
+}
 
 function applyMinSesi(val) {
   const n = parseInt(val);
   if (isNaN(n) || n < 1) return;
   MIN_SESI = n;
-  // Update label di subtitle panel
-  const lbl = document.getElementById('min-sesi-label');
-  if (lbl) lbl.textContent = MIN_SESI;
-  // Re-render langsung tanpa fetch ulang — pakai data terakhir
-  if (window._lastRecords && window._lastJMap) {
-    renderDashboard(window._lastRecords, window._lastAwal, window._lastAkhir, window._lastJMap);
-  }
+  document.getElementById('min-sesi-label').textContent = MIN_SESI;
+  _rerender();
+}
+
+function applyMinLuring(val) {
+  const n = parseInt(val);
+  if (isNaN(n) || n < 0 || n > 100) return;
+  MIN_PCT_LURING = n;
+  document.getElementById('min-luring-label').textContent = MIN_PCT_LURING;
+  _rerender();
+}
+
+function applyMinTepat(val) {
+  const n = parseInt(val);
+  if (isNaN(n) || n < 0 || n > 100) return;
+  MIN_PCT_TEPAT = n;
+  document.getElementById('min-tepat-label').textContent = MIN_PCT_TEPAT;
+  _rerender();
 }
 
 const REFRESH_INTERVAL = 60; // seconds
@@ -840,11 +877,13 @@ function parseDate(str) {
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', () => {
-  // Tampilkan nilai MIN_SESI di subtitle panel dan input
-  const lbl = document.getElementById('min-sesi-label');
-  if (lbl) lbl.textContent = MIN_SESI;
-  const inp = document.getElementById('input-min-sesi');
-  if (inp) inp.value = MIN_SESI;
+  // Sync nilai konfigurasi ke UI
+  document.getElementById('min-sesi-label').textContent   = MIN_SESI;
+  document.getElementById('min-luring-label').textContent = MIN_PCT_LURING;
+  document.getElementById('min-tepat-label').textContent  = MIN_PCT_TEPAT;
+  document.getElementById('input-min-sesi').value         = MIN_SESI;
+  document.getElementById('input-min-luring').value       = MIN_PCT_LURING;
+  document.getElementById('input-min-tepat').value        = MIN_PCT_TEPAT;
   // Set default tanggal awal = awal bulan ini
   const now = new Date();
   const awal = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
@@ -1037,56 +1076,46 @@ function renderDashboard(records, awal, akhir, jMap) {
   document.getElementById('stat-late').textContent = totalLambat;
   document.getElementById('stat-absent').textContent = totalDosen;
 
-  // ── SCORING FORMULA ──
+  // ── SCORING FORMULA TOP 5 ──
+  // Skor = jumlah sesi luring × % tepat waktu
+  // Syarat: total sesi ≥ MIN_SESI, % luring ≥ MIN_PCT_LURING, % tepat ≥ MIN_PCT_TEPAT
   list.forEach(d => {
-    const poinMode = (d.luring * 2) + (d.daring * 1);
-
-    const avgDiff = d.terlambat > 0 ? d.totalLambat / d.terlambat : 0;
-    let poinKetepatan;
-    if (d.terlambat === 0) poinKetepatan = 1.5;
-    else if (avgDiff <= 10) poinKetepatan = 1.0;
-    else if (avgDiff <= 20) poinKetepatan = 0.5;
-    else poinKetepatan = 0.25;
-
-    const pctTepat = d.total > 0 ? d.tepat / d.total : 0;
-    let bonusKonsistensi;
-    if (pctTepat >= 0.8) bonusKonsistensi = 1.3;
-    else if (pctTepat >= 0.6) bonusKonsistensi = 1.1;
-    else bonusKonsistensi = 1.0;
-
-    d.skorMode = poinMode;
-    d.skorKetepatan = poinKetepatan;
-    d.skorKonsistensi = bonusKonsistensi;
-    d.skorTotal = poinMode * poinKetepatan * bonusKonsistensi;
-    d.pctTepat = pctTepat;
-    d.avgDiff = avgDiff;
+    d.pctTepat  = d.total > 0 ? d.tepat / d.total : 0;
+    d.pctLuring = d.total > 0 ? d.luring / d.total : 0;
+    d.skorTotal = d.luring * d.pctTepat; // sesi luring × % tepat waktu
   });
 
-  // Sort: Top 5 = min MIN_SESI sesi, skor tertinggi
-  // Tiebreaker: 1) skorTotal 2) % tepat 3) sesi luring 4) total sesi
   const sortedTop = [...list]
-    .filter(d => d.total >= MIN_SESI)
+    .filter(d =>
+      d.total >= MIN_SESI &&
+      d.pctLuring * 100 >= MIN_PCT_LURING &&
+      d.pctTepat  * 100 >= MIN_PCT_TEPAT
+    )
     .sort((a, b) => {
       if (b.skorTotal !== a.skorTotal) return b.skorTotal - a.skorTotal;
-      if (b.pctTepat !== a.pctTepat) return b.pctTepat - a.pctTepat;
-      if (b.luring !== a.luring) return b.luring - a.luring;
+      if (b.pctTepat  !== a.pctTepat)  return b.pctTepat  - a.pctTepat;
+      if (b.luring    !== a.luring)    return b.luring    - a.luring;
       return b.total - a.total;
     })
     .slice(0, 5);
 
-  // Sort: Bottom 5 terlambat = rata-rata menit terlambat tertinggi
-  const sortedBot = [...list]
-    .filter(d => d.terlambat > 0)
-    .sort((a,b) => {
-      const avgA = a.totalLambat / (a.terlambat || 1);
-      const avgB = b.totalLambat / (b.terlambat || 1);
-      return avgB - avgA;
-    })
-    .slice(0, 5);
+  // ── BOTTOM 5: skor gabungan frekuensi + rata-rata menit terlambat wajar ──
+  const withLate = list.filter(d => d.terlambat > 0).map(d => ({
+    ...d, avgM: d.totalLambat / d.terlambat
+  }));
+  let sortedBot = [];
+  if (withLate.length) {
+    const mxF = Math.max(...withLate.map(d => d.terlambat));
+    const mxA = Math.max(...withLate.map(d => d.avgM));
+    withLate.forEach(d => {
+      d.skorBot = (0.6 * (d.terlambat / mxF) + 0.4 * (d.avgM / mxA)) * 100;
+    });
+    sortedBot = withLate.sort((a, b) => b.skorBot - a.skorBot).slice(0, 5);
+  }
 
   // Render
   const maxTop = sortedTop.length ? sortedTop[0].skorTotal : 1;
-  const maxBot = sortedBot.length ? (sortedBot[0].totalLambat / (sortedBot[0].terlambat||1)) : 1;
+  const maxBot = sortedBot.length ? sortedBot[0].skorBot : 1;
 
   renderPanel('panel-top', sortedTop, 'top', maxTop);
   renderPanel('panel-bot', sortedBot, 'bot', maxBot);
@@ -1108,7 +1137,9 @@ function renderPanel(panelId, list, type, maxVal) {
   const el = document.getElementById(panelId);
 
   if (!list.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">${type==='top'?'🏆':'⏱️'}</div><div>${type==='top' ? `Belum ada dosen dengan minimal ${MIN_SESI} sesi pada rentang ini.` : 'Tidak ada data pada rentang tanggal ini.'}</div></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">${type==='top'?'🏆':'⏱️'}</div><div>${type==='top'
+      ? `Belum ada dosen yang memenuhi syarat: min. ${MIN_SESI} sesi, ≥${MIN_PCT_LURING}% luring, ≥${MIN_PCT_TEPAT}% tepat waktu.`
+      : 'Tidak ada data keterlambatan pada rentang tanggal ini.'}</div></div>`;
     return;
   }
 
@@ -1122,37 +1153,33 @@ function renderPanel(panelId, list, type, maxVal) {
     let score, subtext, barPct, breakdownHtml = '';
 
     if (isTop) {
-      score = Math.round(d.skorTotal);
-      const pctStr = (d.pctTepat * 100).toFixed(0) + '%';
-      const dominan = d.luring >= d.daring ? '🏛️ Luring' : '💻 Daring';
-      subtext = `${d.tepat} tepat / ${d.total} sesi · ${dominan}`;
+      const pctTepat = (d.pctTepat * 100).toFixed(0) + '%';
+      const pctLuring = (d.pctLuring * 100).toFixed(0) + '%';
+      score = d.skorTotal.toFixed(1);
+      subtext = `${d.luring} sesi luring · ${d.tepat}/${d.total} tepat waktu`;
       barPct = maxVal > 0 ? (d.skorTotal / maxVal * 100) : 0;
-
-      // Badge warna mode dominan
-      const modeBadgeColor = d.luring >= d.daring ? 'var(--orange)' : 'var(--blue)';
-      const modeBadgeBg = d.luring >= d.daring ? 'rgba(251,146,60,0.15)' : 'var(--blue-dim)';
 
       breakdownHtml = `
         <div class="score-breakdown">
           <div class="breakdown-item">
-            <span class="bd-label">Mode</span>
-            <span class="bd-val" style="color:${modeBadgeColor}; background:${modeBadgeBg}">${d.luring}L · ${d.daring}D</span>
+            <span class="bd-label">Luring</span>
+            <span class="bd-val" style="color:var(--orange); background:rgba(251,146,60,0.15)">${d.luring} sesi (${pctLuring})</span>
           </div>
           <div class="breakdown-item">
-            <span class="bd-label">Ketepatan</span>
-            <span class="bd-val" style="color:var(--green); background:var(--green-dim)">×${d.skorKetepatan.toFixed(1)}</span>
+            <span class="bd-label">Tepat Waktu</span>
+            <span class="bd-val" style="color:var(--green); background:var(--green-dim)">${pctTepat}</span>
           </div>
           <div class="breakdown-item">
-            <span class="bd-label">Konsistensi</span>
-            <span class="bd-val" style="color:var(--gold); background:var(--gold-dim)">×${d.skorKonsistensi.toFixed(1)} (${pctStr})</span>
+            <span class="bd-label">Daring</span>
+            <span class="bd-val" style="color:var(--blue); background:var(--blue-dim)">${d.daring} sesi</span>
           </div>
         </div>
       `;
     } else {
       const avg = d.terlambat > 0 ? d.totalLambat / d.terlambat : 0;
-      score = Math.round(avg) + 'm';
-      subtext = `${d.terlambat}× terlambat`;
-      barPct = maxVal > 0 ? (d.totalLambat / (d.terlambat||1)) / maxVal * 100 : 0;
+      score = Math.round(d.skorBot || 0);
+      subtext = `${d.terlambat}× terlambat · rata-rata ${Math.round(avg)} menit`;
+      barPct = maxVal > 0 ? ((d.skorBot || 0) / maxVal * 100) : 0;
     }
 
     const color = avatarColor(d.nama);
@@ -1172,7 +1199,7 @@ function renderPanel(panelId, list, type, maxVal) {
         </div>
         <div class="rank-score">
           <div class="rank-pct">${score}</div>
-          <div class="rank-pct-lbl">${isTop ? 'skor' : 'rata-rata'}</div>
+          <div class="rank-pct-lbl">${isTop ? 'skor luring×tepat' : 'skor keterlambatan'}</div>
         </div>
       </div>
     `;
