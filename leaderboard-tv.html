@@ -519,6 +519,11 @@ html, body {
 .today-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .today-status { font-size: 11px; font-weight: 700; flex-shrink: 0; }
 
+/* ── TODAY STATUS EXTENDED ── */
+.today-status-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+.today-mk-late { font-size: 10px; color: var(--orange); font-weight: 600; white-space: nowrap; }
+
+
 /* ── BOTTOM TICKER ── */
 .ticker-bar {
   border-top: 1px solid var(--border);
@@ -829,7 +834,7 @@ html, body {
       <div class="slide-header">
         <div class="slide-icon" style="background:var(--red-dim)">⏱️</div>
         <div>
-          <div class="slide-title" style="color:var(--red)">Bottom 5 Terlambat</div>
+          <div class="slide-title" style="color:var(--red)">Bottom 5 Perlu Perhatian</div>
           <div class="slide-sub">Berdasarkan skor gabungan: 60% frekuensi + 40% rata-rata menit keterlambatan wajar</div>
         </div>
       </div>
@@ -1084,7 +1089,11 @@ function process(presensi, jadwals) {
     const selesaiM= jInfo.selesai !== undefined ? jInfo.selesai : null;
     const anomali = hadirM!==null && selesaiM!==null && hadirM>selesaiM;
 
-    if(st==='tepat waktu' || st.includes('tepat') || diff<=0) {
+    // Hitung keterlambatan riil
+    const mulaiM2  = jInfo.mulai !== undefined ? jInfo.mulai : null;
+    const lambatRiil = (hadirM!==null && mulaiM2!==null) ? hadirM - mulaiM2 : diff;
+
+    if(st.includes('tepat') || (!st.includes('terlambat') && lambatRiil<=0)) {
       d.tepat++;
     } else if(anomali) {
       d.terlambatA++; totalAnomali++;
@@ -1096,7 +1105,11 @@ function process(presensi, jadwals) {
         lewatSelesai: hadirM - selesaiM,
       });
     } else {
-      d.terlambatW++; d.totalMenitW+=Math.max(diff,1);
+      d.terlambatW++;
+      const menitLambat = lambatRiil > 0 ? lambatRiil : Math.max(diff,1);
+      d.totalMenitW += menitLambat;
+      if(!d.mkTerlambat) d.mkTerlambat = [];
+      d.mkTerlambat.push({ mk: p.mk||'', kelas: p.kelas||'', menit: menitLambat, waktuHadir: String(p.waktuHadir||'').replace('.',':'), jamMulai: minToJam(jInfo.mulai) });
     }
   });
 
@@ -1242,17 +1255,27 @@ function renderToday(hariIni, hadir, belum, presensiHariIni, jMap) {
 
   function renderItem(j, idx) {
     const color = avatarColor(j.dosenId||'');
-    const ini   = (j.dosenId||'?').slice(0,2).toUpperCase();
+    const dosenNama = j.dosen || j.dosenId || '?';
+    const ini   = initials(dosenNama);
     const pr    = mkPresensi[j.id];
+    // Status check sama seperti leaderboard.html
+    const prSt = pr ? (pr.statusHadir||pr.status||'').toLowerCase() : '';
+    const prHadirM = pr ? toMin(String(pr.waktuHadir||'')) : null;
+    const jMulaiM  = toMin(j.jamMulai||'');
+    const prLambat = (prHadirM!==null && jMulaiM!==null) ? prHadirM - jMulaiM : Number(pr ? pr.diff||0 : 0);
+    const prIsTepat = pr && (prSt.includes('tepat') || (!prSt.includes('terlambat') && prLambat<=0));
     const statusEl = pr
-      ? `<span class="today-status" style="color:${pr.status==='Tepat waktu'?'var(--green)':'var(--orange)'}">
-           ${pr.status==='Tepat waktu'?'✓ Tepat':'⚠ Terlambat'}
-         </span>`
+      ? `<div class="today-status-wrap">
+           <span class="today-status" style="color:${prIsTepat?'var(--green)':'var(--orange)'}">
+             ${prIsTepat?'✓ Tepat':'⚠ Terlambat +'+prLambat+' mnt'}
+           </span>
+           ${!prIsTepat?`<span class="today-mk-late">⏱ Hadir ${String(pr.waktuHadir||'')} (jadwal ${j.jamMulai||'?'})</span>`:''}
+         </div>`
       : `<span class="today-status" style="color:var(--muted)">—</span>`;
     return `<div class="today-item" style="animation-delay:${idx*0.08}s">
       <div class="today-avatar" style="background:${color}">${ini}</div>
       <div class="today-info">
-        <div class="today-name">${esc(j.mk||'—')} · ${esc(j.kelas||'')}</div>
+        <div class="today-name">${esc(dosenNama)} — ${esc(j.mk||'—')} · ${esc(j.kelas||'')}</div>
         <div class="today-detail">${j.jamMulai||'?'} – ${j.jamSelesai||'?'}</div>
       </div>
       ${statusEl}
