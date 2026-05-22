@@ -217,134 +217,6 @@ tr:last-child td{border-bottom:none}
 .beranda-stat-lbl { font-size:10px; color:#888; margin-top:2px; line-height:1.3; }
 /* Tab bar khusus dosen — sembunyikan saat beranda aktif */
 .dosen-tab-hidden { display:none !important; }
-
-/* ===== SISTEM LIBUR LYTARA ===== */
-.libur-banner {
-  background: linear-gradient(135deg, #fff4e5, #fef9f0);
-  border: 1.5px solid #fac775;
-  border-left: 4px solid #BA7517;
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 1rem;
-  animation: liburPulse 3s ease-in-out infinite;
-}
-@keyframes liburPulse {
-  0%,100% { border-left-color: #BA7517; }
-  50% { border-left-color: #EF9F27; }
-}
-.libur-banner-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #633806;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.libur-banner-item {
-  background: #fff;
-  border: 1px solid #fac775;
-  border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: 6px;
-  font-size: 12px;
-  color: #633806;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-.libur-banner-item:last-child { margin-bottom: 0; }
-.libur-banner-item-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-.libur-banner-item-text { flex: 1; line-height: 1.5; }
-.libur-banner-item-text b { color: #a32d2d; }
-.libur-btn-ganti {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #BA7517;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 7px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  margin-top: 10px;
-  transition: background .15s;
-}
-.libur-btn-ganti:hover { background: #854F0B; }
-
-/* Banner blokir presensi */
-.libur-block-banner {
-  background: #fcebeb;
-  border: 1.5px solid #f09595;
-  border-left: 4px solid #E24B4A;
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 1rem;
-}
-.libur-block-banner-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: #791f1f;
-  margin-bottom: 6px;
-}
-.libur-block-banner-sub {
-  font-size: 12px;
-  color: #a32d2d;
-  line-height: 1.6;
-}
-
-/* Admin: switch mode libur */
-.libur-switch-card {
-  background: #fff;
-  border: 1.5px solid #e5e5e3;
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.libur-switch-card.active {
-  border-color: #fac775;
-  background: #fff9f0;
-}
-.libur-switch-info { flex: 1; min-width: 0; }
-.libur-switch-label { font-size: 13px; font-weight: 600; color: #1a1a1a; }
-.libur-switch-sub { font-size: 11px; color: #888; margin-top: 2px; }
-.toggle-switch {
-  position: relative;
-  width: 44px;
-  height: 24px;
-  flex-shrink: 0;
-}
-.toggle-switch input { opacity: 0; width: 0; height: 0; }
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background: #ccc;
-  border-radius: 24px;
-  transition: .3s;
-}
-.toggle-slider:before {
-  content: '';
-  position: absolute;
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background: white;
-  border-radius: 50%;
-  transition: .3s;
-}
-input:checked + .toggle-slider { background: #E24B4A; }
-input:checked + .toggle-slider:before { transform: translateX(20px); }
-
 </style>
 </head>
 <body>
@@ -460,8 +332,6 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       </div>
     </div>
 
-    <!-- Banner Libur Beranda -->
-    <div id="beranda-banner-libur" style="display:none"></div>
     <!-- Jadwal Hari Ini -->
     <div class="beranda-hari">
       <div class="beranda-hari-title">📅 Jadwal Hari Ini — <span id="beranda-hari-label" style="color:#185fa5"></span></div>
@@ -526,10 +396,6 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
 <!-- ====== END BERANDA ====== -->
 
 <div id="page-hadir" class="page">
-  <!-- BANNER PERINGATAN LIBUR H-2 -->
-  <div id="banner-libur-peringatan" style="display:none"></div>
-  <!-- BANNER BLOKIR PRESENSI (hari libur) -->
-  <div id="banner-libur-blokir" style="display:none"></div>
   <div id="notif-ganti" style="display:none; margin-bottom:1rem;"></div>
 
   <div class="resume-banner" id="resume-banner" style="display:none">
@@ -819,21 +685,6 @@ input:checked + .toggle-slider:before { transform: translateX(20px); }
       </div>
       <button class="btn btn-blue" onclick="exportExcel()" style="height:34px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;white-space:nowrap;flex-shrink:0">📥 Export Excel</button>
     </div>
-  </div>
-
-  <!-- ===== SWITCH MODE LIBUR (Admin only) ===== -->
-  <div id="admin-libur-card" style="display:none">
-    <div class="libur-switch-card" id="libur-switch-wrap">
-      <div class="libur-switch-info">
-        <div class="libur-switch-label" id="libur-switch-label">🏖️ Mode Libur</div>
-        <div class="libur-switch-sub" id="libur-switch-sub">Nonaktifkan presensi untuk semua dosen saat libur besar</div>
-      </div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="toggle-mode-libur" onchange="toggleModeLibur(this.checked)"/>
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
-    <div id="libur-pesan-admin" style="display:none; margin-bottom:1rem; padding:10px 14px; background:#fff4e5; border:1px solid #fac775; border-radius:10px; font-size:12px; color:#633806; line-height:1.6"></div>
   </div>
 
   <!-- ===== STAT SUMMARY (selalu tampil) ===== -->
@@ -1315,9 +1166,6 @@ async function refreshDataLokal() {
        renderR();
     }
     cekNotifGanti();
-    // Refresh cek libur
-    if(!isAdmin && currentUser) jalankanCekLibur();
-    if(isAdmin) renderAdminLiburSwitch();
   } catch(e) {
     setSB('er');
     alert('Gagal menyegarkan data: ' + e.message);
@@ -1327,20 +1175,9 @@ async function refreshDataLokal() {
 async function loadThenShow(){
   setSB('sy');
   try{
-    var r=await Promise.all([
-      get({action:'getDosen'}),get({action:'getJadwal'}),get({action:'getPresensi'}),
-      get({action:'getGanti'}),get({action:'getMaju'}),get({action:'getSettings'})
-    ]);
+    var r=await Promise.all([get({action:'getDosen'}),get({action:'getJadwal'}),get({action:'getPresensi'}),get({action:'getGanti'}),get({action:'getMaju'})]);
     D=r[0].data||[];J=r[1].data||[];P=r[2].data||[];G=r[3].data||[];M=r[4].data||[];
-    // Load settings mode libur
-    if(r[5]&&r[5].data){
-      _modeLiburAktif = r[5].data.liburAktif===true||r[5].data.liburAktif==='true';
-      _pesanModeLibur = r[5].data.pesanLibur||'';
-    }
     setSB('ok');fillAll();restoreSesi();
-    // Jalankan cek libur setelah data siap
-    if(!isAdmin && currentUser) jalankanCekLibur();
-    if(isAdmin) renderAdminLiburSwitch();
   }catch(e){setSB('er');}
 }
 
@@ -1613,26 +1450,6 @@ var _rekamPending = null;
 
 async function rekam(){
   if(!currentUser){alert('Hanya dosen yang bisa melakukan ini.');return;}
-  // Guard: mode libur admin
-  if(_modeLiburAktif){
-    alert('⛔ Presensi dinonaktifkan.
-'+(_pesanModeLibur||'Mode libur sedang aktif. Hubungi admin.'));
-    return;
-  }
-  // Guard: hari libur nasional tanpa pengganti
-  if(_liburNasional.length>0){
-    var liburHariIni=isHariIniLibur(_liburNasional);
-    if(liburHariIni){
-      var hariNow=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][new Date().getDay()];
-      var jadwalsHariIni=J.filter(function(j){return j.dosenId===currentUser.id&&j.hari===hariNow;});
-      var semuaSudahGanti=jadwalsHariIni.every(function(j){return G.some(function(g){return g.dosenId===currentUser.id&&g.mk===j.mk&&g.statusAcc==='Disetujui';});});
-      if(jadwalsHariIni.length>0&&!semuaSudahGanti){
-        alert('⛔ Hari ini adalah '+liburHariIni.holiday_name+'.
-Presensi tidak dapat direkam karena belum ada jadwal pengganti yang disetujui.');
-        return;
-      }
-    }
-  }
   var jid=document.getElementById('pj').value,
       jam=document.getElementById('pjam').value,
       ruang=document.getElementById('pruang').value,
@@ -3853,309 +3670,12 @@ function pg(p,btn){
     btnBackBeranda.style.display = (!isAdmin && p !== 'beranda') ? 'flex' : 'none';
   }
   if(p==='report'){
-    renderAdminLiburSwitch();
     var rd=document.getElementById('rd');if(rd){rd.innerHTML='<option value="all">Semua dosen</option>';D.forEach(function(d){var o=document.createElement('option');o.value=d.id;o.textContent=d.nama;rd.appendChild(o);});}
     fillAdminRaporDropdown();
     renderR();
   }
   if(p==='rapor'){ if(!isAdmin) renderRapor(null); }
 }
-
-// ============================================================
-// SISTEM LIBUR LYTARA — Deteksi H-2 Libur Nasional
-// ============================================================
-
-var _liburNasional = [];    // cache data libur dari API
-var _modeLiburAktif = false; // switch admin
-var _pesanModeLibur = '';
-var _liburChecked = false;
-
-// ── Fetch libur nasional dari API publik (no key needed) ──
-async function fetchLiburNasional() {
-  if (_liburNasional.length > 0) return _liburNasional;
-  try {
-    var tahun = new Date().getFullYear();
-    var r = await fetch('https://api-harilibur.vercel.app/api?year=' + tahun);
-    var data = await r.json();
-    // Format: [{holiday_date:"2025-01-01", holiday_name:"Tahun Baru Masehi", is_national_holiday:true}]
-    _liburNasional = (data || []).filter(function(d){ return d.is_national_holiday; });
-    return _liburNasional;
-  } catch(e) {
-    console.warn('Gagal fetch libur nasional:', e);
-    return [];
-  }
-}
-
-// ── Cek hari libur dalam X hari ke depan ──
-function getLiburDalamHari(liburList, hariKedepan) {
-  var result = [];
-  var now = new Date(); now.setHours(0,0,0,0);
-  for (var i = 1; i <= hariKedepan; i++) {
-    var tgl = new Date(now.getTime() + i * 86400000);
-    var tglStr = tgl.getFullYear() + '-'
-      + String(tgl.getMonth()+1).padStart(2,'0') + '-'
-      + String(tgl.getDate()).padStart(2,'0');
-    var libur = liburList.find(function(l){ return l.holiday_date === tglStr; });
-    if (libur) {
-      result.push({
-        tanggal: tglStr,
-        nama: libur.holiday_name,
-        hariKe: i,
-        tglFormatted: tgl.toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long', year:'numeric'})
-      });
-    }
-  }
-  return result;
-}
-
-// ── Cari jadwal dosen yang terdampak hari libur ──
-function getJadwalTerdampak(liburItem) {
-  if (!currentUser) return [];
-  var HARI_MAP = {0:'Minggu',1:'Senin',2:'Selasa',3:'Rabu',4:'Kamis',5:'Jumat',6:'Sabtu'};
-  var tgl = new Date(liburItem.tanggal + 'T00:00:00');
-  var hariLibur = HARI_MAP[tgl.getDay()];
-  return J.filter(function(j){ return j.dosenId === currentUser.id && j.hari === hariLibur; });
-}
-
-// ── Cek apakah jadwal di hari libur sudah ada pengganti yang disetujui ──
-function sudahAdaPengganti(liburItem, jadwal) {
-  return G.some(function(g){
-    return g.dosenId === currentUser.id
-      && g.mk === jadwal.mk
-      && g.asli === liburItem.tanggal.split('-').reverse().join('/')
-      && (g.statusAcc === 'Disetujui' || g.statusAcc === 'Menunggu');
-  });
-}
-
-// ── Format tanggal YYYY-MM-DD → DD/MM/YYYY ──
-function ymdToDmy(ymd) {
-  var p = ymd.split('-');
-  return p[2]+'/'+p[1]+'/'+p[0];
-}
-
-// ── Render banner peringatan H-2 ──
-function renderBannerLiburPeringatan(liburItems) {
-  var el = document.getElementById('banner-libur-peringatan');
-  var elBeranda = document.getElementById('beranda-banner-libur');
-  if (!el && !elBeranda) return;
-
-  // Filter hanya yang punya jadwal terdampak dan belum ada pengganti
-  var itemsPerlu = [];
-  liburItems.forEach(function(lib) {
-    var jadwals = getJadwalTerdampak(lib);
-    jadwals.forEach(function(j) {
-      if (!sudahAdaPengganti(lib, j)) {
-        itemsPerlu.push({ lib: lib, jadwal: j });
-      }
-    });
-  });
-
-  if (itemsPerlu.length === 0) {
-    if (el) el.style.display = 'none';
-    if (elBeranda) elBeranda.style.display = 'none';
-    return;
-  }
-
-  var itemsHtml = itemsPerlu.map(function(item) {
-    return '<div class="libur-banner-item">'
-      + '<span class="libur-banner-item-icon">📚</span>'
-      + '<div class="libur-banner-item-text">'
-      + '<b>' + item.jadwal.mk + (item.jadwal.kelas ? ' · ' + item.jadwal.kelas : '') + '</b>'
-      + ' — jadwal rutin hari <b>' + item.jadwal.hari + '</b>'
-      + ' bertepatan dengan <b>' + item.lib.nama + '</b>'
-      + ' (' + item.lib.tglFormatted + ').'
-      + ' Segera ajukan jadwal pengganti!'
-      + '</div>'
-      + '</div>';
-  }).join('');
-
-  var html = '<div class="libur-banner">'
-    + '<div class="libur-banner-title">⚠️ Perhatian — Libur Nasional H-' + liburItems[0].hariKe + '</div>'
-    + itemsHtml
-    + '<button class="libur-btn-ganti" onclick="pg('ganti', document.getElementById('tab-ganti')); prefillGantiLibur(' + JSON.stringify(itemsPerlu[0].lib) + ', ' + JSON.stringify(itemsPerlu[0].jadwal.mk) + ')">'
-    + '🔄 Ajukan Jadwal Pengganti Sekarang'
-    + '</button>'
-    + '</div>';
-
-  if (el) { el.innerHTML = html; el.style.display = 'block'; }
-  if (elBeranda) { elBeranda.innerHTML = html; elBeranda.style.display = 'block'; }
-}
-
-// ── Pre-fill form ganti jadwal dengan data libur ──
-function prefillGantiLibur(liburItem, mkName) {
-  // Set tanggal asli = tanggal libur
-  var tglInput = document.getElementById('gasli');
-  if (tglInput) tglInput.value = liburItem.tanggal;
-
-  // Set MK jika match
-  var gmk = document.getElementById('gmk');
-  if (gmk && mkName) {
-    for (var i = 0; i < gmk.options.length; i++) {
-      if (gmk.options[i].text === mkName || gmk.options[i].value === mkName) {
-        gmk.value = gmk.options[i].value;
-        break;
-      }
-    }
-  }
-
-  // Set keterangan otomatis
-  var gket = document.getElementById('gket');
-  if (gket) gket.value = 'Penggantian jadwal karena ' + liburItem.nama + ' (' + liburItem.tglFormatted + ')';
-}
-
-// ── Cek apakah HARI INI adalah hari libur (untuk blokir presensi) ──
-function isHariIniLibur(liburList) {
-  var now = new Date();
-  var tglStr = now.getFullYear() + '-'
-    + String(now.getMonth()+1).padStart(2,'0') + '-'
-    + String(now.getDate()).padStart(2,'0');
-  return liburList.find(function(l){ return l.holiday_date === tglStr; }) || null;
-}
-
-// ── Render banner blokir presensi (hari libur aktif) ──
-function renderBannerLiburBlokir(liburHariIni, modeModeLibur) {
-  var el = document.getElementById('banner-libur-blokir');
-  var brekBtn = document.getElementById('brek');
-  var pjSel = document.getElementById('pj');
-
-  var isBlokir = false;
-  var alasan = '';
-
-  if (modeModeLibur) {
-    isBlokir = true;
-    alasan = _pesanModeLibur || 'Presensi dinonaktifkan oleh Admin.';
-  } else if (liburHariIni) {
-    // Cek apakah semua jadwal hari ini sudah ada penggantinya
-    var jadwalsHariIni = currentUser
-      ? J.filter(function(j){ return j.dosenId === currentUser.id && j.hari === ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][new Date().getDay()]; })
-      : [];
-    var adaYangBelum = jadwalsHariIni.some(function(j){
-      return !G.some(function(g){
-        return g.dosenId === currentUser.id && g.mk === j.mk && g.statusAcc === 'Disetujui';
-      });
-    });
-    if (jadwalsHariIni.length > 0 && adaYangBelum) {
-      isBlokir = true;
-      alasan = 'Hari ini adalah <b>' + liburHariIni.holiday_name + '</b>. '
-        + 'Presensi reguler tidak dapat direkam karena belum ada jadwal pengganti yang disetujui. '
-        + 'Hubungi admin jika ada kekeliruan.';
-    }
-  }
-
-  if (!el) return;
-
-  if (isBlokir) {
-    el.innerHTML = '<div class="libur-block-banner">'
-      + '<div class="libur-block-banner-title">⛔ Presensi Tidak Tersedia</div>'
-      + '<div class="libur-block-banner-sub">' + alasan + '</div>'
-      + '<button class="libur-btn-ganti" style="margin-top:8px;background:#a32d2d" onclick="pg('ganti', document.getElementById('tab-ganti'))">'
-      + '🔄 Ajukan Jadwal Pengganti'
-      + '</button>'
-      + '</div>';
-    el.style.display = 'block';
-    // Blokir tombol rekam & dropdown
-    if (brekBtn) { brekBtn.disabled = true; brekBtn.title = 'Presensi dinonaktifkan saat libur'; }
-    if (pjSel) pjSel.disabled = true;
-  } else {
-    el.style.display = 'none';
-    if (brekBtn) { brekBtn.disabled = false; brekBtn.title = ''; }
-    if (pjSel) pjSel.disabled = false;
-  }
-
-  return isBlokir;
-}
-
-// ── Main: jalankan semua cek libur ──
-async function jalankanCekLibur() {
-  if (!currentUser) return;
-  var liburList = await fetchLiburNasional();
-
-  // Cek H-1 s/d H-2 untuk peringatan
-  var liburMendatang = getLiburDalamHari(liburList, 2);
-  if (liburMendatang.length > 0) {
-    renderBannerLiburPeringatan(liburMendatang);
-  }
-
-  // Cek apakah HARI INI libur → blokir presensi
-  var liburHariIni = isHariIniLibur(liburList);
-  renderBannerLiburBlokir(liburHariIni, _modeLiburAktif);
-}
-
-// ── Load settings dari server ──
-async function loadSettings() {
-  try {
-    var r = await get({action: 'getSettings'});
-    if (r && r.data) {
-      _modeLiburAktif = r.data.liburAktif === true || r.data.liburAktif === 'true';
-      _pesanModeLibur = r.data.pesanLibur || '';
-    }
-  } catch(e) {
-    _modeLiburAktif = false;
-  }
-}
-
-// ── Admin: toggle mode libur ──
-async function toggleModeLibur(aktif) {
-  if (!isAdmin) return;
-  var pesan = aktif
-    ? (prompt('Masukkan pesan yang akan ditampilkan ke dosen (opsional):') || 'Presensi dinonaktifkan karena hari libur. Silakan ajukan jadwal pengganti.')
-    : '';
-
-  var wrap = document.getElementById('libur-switch-wrap');
-  var subEl = document.getElementById('libur-switch-sub');
-  var pesanEl = document.getElementById('libur-pesan-admin');
-  var labelEl = document.getElementById('libur-switch-label');
-
-  setSB('sy');
-  try {
-    await post({action: 'saveSettings', data: {liburAktif: aktif, pesanLibur: pesan}});
-    _modeLiburAktif = aktif;
-    _pesanModeLibur = pesan;
-    setSB('ok');
-
-    if (aktif) {
-      wrap.classList.add('active');
-      labelEl.textContent = '🔴 Mode Libur AKTIF';
-      subEl.textContent = 'Semua presensi dosen sedang diblokir.';
-      if (pesan) { pesanEl.textContent = '💬 Pesan ke dosen: ' + pesan; pesanEl.style.display = 'block'; }
-    } else {
-      wrap.classList.remove('active');
-      labelEl.textContent = '🏖️ Mode Libur';
-      subEl.textContent = 'Nonaktifkan presensi untuk semua dosen saat libur besar';
-      pesanEl.style.display = 'none';
-    }
-    alert(aktif ? '✅ Mode Libur AKTIF. Semua dosen tidak bisa presensi.' : '✅ Mode Libur DIMATIKAN. Presensi kembali normal.');
-  } catch(e) {
-    setSB('er');
-    alert('Gagal menyimpan pengaturan: ' + e.message);
-    // Kembalikan toggle ke posisi semula
-    document.getElementById('toggle-mode-libur').checked = !aktif;
-  }
-}
-
-// ── Tampilkan switch admin di dashboard ──
-function renderAdminLiburSwitch() {
-  if (!isAdmin) return;
-  var card = document.getElementById('admin-libur-card');
-  if (!card) return;
-  card.style.display = 'block';
-
-  var toggle = document.getElementById('toggle-mode-libur');
-  var wrap = document.getElementById('libur-switch-wrap');
-  var subEl = document.getElementById('libur-switch-sub');
-  var pesanEl = document.getElementById('libur-pesan-admin');
-  var labelEl = document.getElementById('libur-switch-label');
-
-  if (toggle) toggle.checked = _modeLiburAktif;
-
-  if (_modeLiburAktif) {
-    wrap.classList.add('active');
-    labelEl.textContent = '🔴 Mode Libur AKTIF';
-    subEl.textContent = 'Semua presensi dosen sedang diblokir.';
-    if (_pesanModeLibur) { pesanEl.textContent = '💬 Pesan ke dosen: ' + _pesanModeLibur; pesanEl.style.display = 'block'; }
-  }
-}
-
 document.querySelectorAll('.mo').forEach(function(el){el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
 function cm(id){document.getElementById(id).classList.remove('open');}
 </script>
