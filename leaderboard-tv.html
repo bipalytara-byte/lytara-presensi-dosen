@@ -530,6 +530,52 @@ html, body {
 .today-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .today-status { font-size: 11px; font-weight: 700; flex-shrink: 0; }
 
+
+/* ── TODAY: BERLANGSUNG HIGHLIGHT ── */
+.today-item.berlangsung {
+  background: linear-gradient(135deg, rgba(245,200,66,0.10), rgba(245,200,66,0.04));
+  border-color: rgba(245,200,66,0.35);
+  box-shadow: 0 0 0 1px rgba(245,200,66,0.15);
+  position: relative;
+}
+.today-item.berlangsung::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--gold);
+  border-radius: 99px 0 0 99px;
+}
+.badge-live {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background: var(--gold);
+  color: #000;
+  border-radius: 6px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+  animation: pulseBadge 1.8s infinite;
+}
+@keyframes pulseBadge {
+  0%,100% { opacity:1; }
+  50% { opacity:.6; }
+}
+
+/* ── TODAY COLUMNS: smooth CSS scroll animation ── */
+.today-col-scroll {
+  overflow: hidden;
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.today-col-inner {
+  will-change: transform;
+  flex: 1;
+}
+
 /* ── TODAY STATUS EXTENDED ── */
 .today-status-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
 .today-mk-late { font-size: 10px; color: var(--orange); font-weight: 600; white-space: nowrap; }
@@ -845,8 +891,8 @@ html, body {
       <div class="slide-header">
         <div class="slide-icon" style="background:var(--red-dim)">⏱️</div>
         <div>
-          <div class="slide-title" style="color:var(--red)">Bottom 5 Perlu Perhatian</div>
-          <div class="slide-sub">Berdasarkan skor gabungan: 60% frekuensi + 40% rata-rata menit keterlambatan wajar</div>
+          <div class="slide-title" style="color:var(--red)">Bottom 5 Terlambat Masuk</div>
+          <div class="slide-sub">Diurutkan berdasarkan frekuensi & rata-rata menit terlambat masuk</div>
         </div>
       </div>
       <div class="lb-list" id="tv-bot"></div>
@@ -902,17 +948,17 @@ html, body {
         </div>
       </div>
       <div class="today-grid">
-        <div>
+        <div class="today-col-scroll" id="scroll-hadir">
           <div class="today-col-head" style="color:var(--green)">
             <span>✓</span> Sudah Hadir
           </div>
-          <div id="today-hadir"></div>
+          <div class="today-col-inner" id="today-hadir"></div>
         </div>
-        <div>
+        <div class="today-col-scroll" id="scroll-belum">
           <div class="today-col-head" style="color:var(--orange)">
             <span>◷</span> Belum / Akan Mengajar
           </div>
-          <div id="today-belum"></div>
+          <div class="today-col-inner" id="today-belum"></div>
         </div>
       </div>
     </div>
@@ -999,6 +1045,8 @@ function goSlide(n) {
   currentSlide = (n + TOTAL_SLIDES) % TOTAL_SLIDES;
 
   slides[currentSlide].classList.add('active');
+  // Restart scroll saat masuk slide Today
+  if (currentSlide === 3) setTimeout(startTodayScroll, 400);
   dots[currentSlide].classList.add('active');
   // Restart fill animation
   const dot = dots[currentSlide];
@@ -1196,7 +1244,7 @@ function renderTop5(list) {
         <div class="lb-meta">
           <span class="lb-tag tag-blue">${d.total} sesi</span>
           <span class="lb-tag tag-orange">${d.mkSet.size} MK</span>
-          ${d.terlambatW>0?`<span class="lb-tag tag-red">${d.terlambatW}× terlambat</span>`:`<span class="lb-tag tag-green">Tepat Waktu</span>`}
+          ${d.terlambatW>0?`<span class="lb-tag tag-red">${d.terlambatW}× terlambat masuk</span>`:`<span class="lb-tag tag-green">Tepat Waktu</span>`}
           ${d.terlambatA>0?`<span class="lb-tag tag-yellow">${d.terlambatA}× anomali</span>`:''}
         </div>
         <div class="lb-bar-wrap"><div class="lb-bar" style="width:${bar.toFixed(1)}%;background:var(--green)"></div></div>
@@ -1269,6 +1317,12 @@ function renderToday(hariIni, hadir, belum, presensiHariIni, jMap) {
     const dosenNama = j.dosen || j.dosenId || '?';
     const ini   = initials(dosenNama);
     const pr    = mkPresensi[j.id];
+
+    // Cek apakah kelas sedang berlangsung sekarang
+    const nowM   = new Date().getHours()*60 + new Date().getMinutes();
+    const mulaiM_j = toMin(j.jamMulai||'');
+    const selM_j   = toMin(j.jamSelesai||'');
+    const isBerlangsung = mulaiM_j!==null && selM_j!==null && nowM>=mulaiM_j && nowM<=selM_j;
     // Status check sama seperti leaderboard.html
     const prSt = pr ? (pr.statusHadir||pr.status||'').toLowerCase() : '';
     const prHadirM = pr ? toMin(String(pr.waktuHadir||'')) : null;
@@ -1283,12 +1337,13 @@ function renderToday(hariIni, hadir, belum, presensiHariIni, jMap) {
            ${!prIsTepat?`<span class="today-mk-late">⏱ Hadir ${String(pr.waktuHadir||'')} (jadwal ${j.jamMulai||'?'})</span>`:''}
          </div>`
       : `<span class="today-status" style="color:var(--muted)">—</span>`;
-    return `<div class="today-item" style="animation-delay:${idx*0.08}s">
+    return `<div class="today-item${isBerlangsung?' berlangsung':''}" style="animation-delay:${idx*0.08}s">
       <div class="today-avatar" style="background:${color}">${ini}</div>
       <div class="today-info">
         <div class="today-name">${esc(dosenNama)} — ${esc(j.mk||'—')} · ${esc(j.kelas||'')}</div>
-        <div class="today-detail">${j.jamMulai||'?'} – ${j.jamSelesai||'?'}</div>
+        <div class="today-detail">${j.jamMulai||'?'} – ${j.jamSelesai||'?'}${isBerlangsung?' <span style="color:var(--gold);font-weight:700">· sedang berlangsung</span>':''}</div>
       </div>
+      ${isBerlangsung?'<span class="badge-live">LIVE</span>':''}
       ${statusEl}
     </div>`;
   }
@@ -1304,25 +1359,50 @@ function renderToday(hariIni, hadir, belum, presensiHariIni, jMap) {
   hadirEl.innerHTML = hadir.length ? hadir.map(renderItem).join('') : '<div style="color:var(--muted);font-size:13px;padding:16px 0">Belum ada yang hadir</div>';
   belumEl.innerHTML = belum.length ? belum.map(renderItem).join('') : '<div style="color:var(--green);font-size:13px;padding:16px 0">✓ Semua sudah tercatat hadir</div>';
 
-  // Auto-scroll kolom jika konten melebihi tinggi — loop up/down untuk TV
-  [hadirEl, belumEl].forEach(el => {
-    el.scrollTop = 0;
-    let dir = 1;
-    let scrollTimer = null;
-    function doScroll() {
-      if (el.scrollHeight <= el.clientHeight) return;
-      el.scrollTop += dir;
-      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
-        // Tahan di bawah sejenak lalu balik
-        clearInterval(scrollTimer);
-        setTimeout(() => { dir = -1; scrollTimer = setInterval(doScroll, 30); }, 1500);
-      } else if (el.scrollTop <= 0 && dir === -1) {
-        clearInterval(scrollTimer);
-        setTimeout(() => { dir = 1; scrollTimer = setInterval(doScroll, 30); }, 1500);
+  // Mulai auto-scroll setelah DOM update
+  setTimeout(startTodayScroll, 300);
+}
+
+// ── TODAY AUTO-SCROLL (smooth, CSS-animation based) ──
+let _todayScrollRAF = {};
+
+function startTodayScroll() {
+  ['scroll-hadir','scroll-belum'].forEach(colId => {
+    const col   = document.getElementById(colId);
+    const inner = col ? col.querySelector('.today-col-inner') : null;
+    if (!col || !inner) return;
+
+    // Cancel previous
+    if (_todayScrollRAF[colId]) cancelAnimationFrame(_todayScrollRAF[colId]);
+
+    const head   = col.querySelector('.today-col-head');
+    const headH  = head ? head.offsetHeight + 12 : 0;
+    const colH   = col.offsetHeight - headH;
+    const contH  = inner.scrollHeight;
+
+    if (contH <= colH) return; // tidak perlu scroll
+
+    const SPEED    = 0.5;   // px per frame (~30px/sec @ 60fps)
+    const PAUSE_MS = 2000;  // jeda di atas & bawah
+    let y = 0, dir = 1, paused = false;
+
+    function frame() {
+      if (!paused) {
+        y += SPEED * dir;
+        if (y >= contH - colH) {
+          y = contH - colH;
+          paused = true;
+          setTimeout(() => { dir = -1; paused = false; }, PAUSE_MS);
+        } else if (y <= 0 && dir === -1) {
+          y = 0;
+          paused = true;
+          setTimeout(() => { dir = 1; paused = false; }, PAUSE_MS);
+        }
+        inner.style.transform = `translateY(${-y}px)`;
       }
+      _todayScrollRAF[colId] = requestAnimationFrame(frame);
     }
-    if (scrollTimer) clearInterval(scrollTimer);
-    setTimeout(() => { scrollTimer = setInterval(doScroll, 30); }, 2000);
+    _todayScrollRAF[colId] = requestAnimationFrame(frame);
   });
 }
 
