@@ -478,6 +478,17 @@ html, body {
   overflow: hidden;
 }
 
+.today-grid > div {
+  overflow-y: auto;
+  padding-right: 4px;
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for today columns */
+.today-grid > div::-webkit-scrollbar { width: 4px; }
+.today-grid > div::-webkit-scrollbar-track { background: transparent; }
+.today-grid > div::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
 .today-col-head {
   font-size: 12px;
   font-weight: 700;
@@ -1185,7 +1196,7 @@ function renderTop5(list) {
         <div class="lb-meta">
           <span class="lb-tag tag-blue">${d.total} sesi</span>
           <span class="lb-tag tag-orange">${d.mkSet.size} MK</span>
-          ${d.terlambatW>0?`<span class="lb-tag tag-red">${d.terlambatW}× terlambat</span>`:`<span class="lb-tag tag-green">Tidak pernah terlambat</span>`}
+          ${d.terlambatW>0?`<span class="lb-tag tag-red">${d.terlambatW}× terlambat</span>`:`<span class="lb-tag tag-green">Tepat Waktu</span>`}
           ${d.terlambatA>0?`<span class="lb-tag tag-yellow">${d.terlambatA}× anomali</span>`:''}
         </div>
         <div class="lb-bar-wrap"><div class="lb-bar" style="width:${bar.toFixed(1)}%;background:var(--green)"></div></div>
@@ -1292,6 +1303,27 @@ function renderToday(hariIni, hadir, belum, presensiHariIni, jMap) {
   }
   hadirEl.innerHTML = hadir.length ? hadir.map(renderItem).join('') : '<div style="color:var(--muted);font-size:13px;padding:16px 0">Belum ada yang hadir</div>';
   belumEl.innerHTML = belum.length ? belum.map(renderItem).join('') : '<div style="color:var(--green);font-size:13px;padding:16px 0">✓ Semua sudah tercatat hadir</div>';
+
+  // Auto-scroll kolom jika konten melebihi tinggi — loop up/down untuk TV
+  [hadirEl, belumEl].forEach(el => {
+    el.scrollTop = 0;
+    let dir = 1;
+    let scrollTimer = null;
+    function doScroll() {
+      if (el.scrollHeight <= el.clientHeight) return;
+      el.scrollTop += dir;
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
+        // Tahan di bawah sejenak lalu balik
+        clearInterval(scrollTimer);
+        setTimeout(() => { dir = -1; scrollTimer = setInterval(doScroll, 30); }, 1500);
+      } else if (el.scrollTop <= 0 && dir === -1) {
+        clearInterval(scrollTimer);
+        setTimeout(() => { dir = 1; scrollTimer = setInterval(doScroll, 30); }, 1500);
+      }
+    }
+    if (scrollTimer) clearInterval(scrollTimer);
+    setTimeout(() => { scrollTimer = setInterval(doScroll, 30); }, 2000);
+  });
 }
 
 // ── RENDER TICKER ──
