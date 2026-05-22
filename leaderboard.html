@@ -636,6 +636,24 @@ footer b { color: var(--text); font-weight: 600; }
   .ao-row { grid-template-columns: 32px 1fr; }
   .ao-cat { display: none; }
 }
+
+/* ── MK TERLAMBAT LIST ── */
+.mk-late-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.mk-late-tag {
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(239,68,68,0.1);
+  color: #fca5a5;
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 6px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
 </style>
 </head>
 <body>
@@ -1003,16 +1021,24 @@ function renderDashboard(records, jMap, jadwals) {
     const hadirM   = toMin(String(p.waktuHadir || ''));
     const jInfo    = jMap && jMap[p.jadwalId || ''];
     const selesaiM = jInfo ? jInfo.selesai : null;
+    const mulaiM   = jInfo ? jInfo.mulai : null;
     const isAnomali = hadirM !== null && selesaiM !== null && hadirM > selesaiM;
 
+    // Hitung keterlambatan riil (menit hadir - menit mulai jadwal)
+    const lambatRiil = (hadirM !== null && mulaiM !== null) ? hadirM - mulaiM : diff;
+
     d.hadir++;
-    if (st === 'tepat waktu' || st.includes('tepat') || diff <= 0) {
+    // Tepat: status mengandung 'tepat', ATAU hadir sebelum/tepat jam mulai
+    if (st.includes('tepat') || (!st.includes('terlambat') && lambatRiil <= 0)) {
       d.tepat++;
     } else if (isAnomali) {
-      anomalyList.push({ nama: d.nama, tanggal: p.tanggal||'', mk: p.mk||'', kelas: p.kelas||'', waktuHadir: String(p.waktuHadir||''), jamMulai: jInfo ? minToJam(jInfo.mulai) : '?', jamSelesai: minToJam(selesaiM), lewatSelesai: hadirMin - selesaiM });
+      anomalyList.push({ nama: d.nama, tanggal: p.tanggal||'', mk: p.mk||'', kelas: p.kelas||'', waktuHadir: String(p.waktuHadir||''), jamMulai: jInfo ? minToJam(mulaiM) : '?', jamSelesai: minToJam(selesaiM), lewatSelesai: hadirM - selesaiM });
     } else {
       d.terlambat++;
-      d.totalLambat += Math.max(diff, 1);
+      d.totalLambat += lambatRiil > 0 ? lambatRiil : Math.max(diff, 1);
+      // Simpan detail MK terlambat
+      if (!d.mkTerlambat) d.mkTerlambat = [];
+      d.mkTerlambat.push({ mk: p.mk||'', kelas: p.kelas||'', menit: lambatRiil > 0 ? lambatRiil : Math.max(diff,1), waktuHadir: String(p.waktuHadir||''), jamMulai: jInfo ? minToJam(mulaiM) : '?' });
     }
   });
 
@@ -1121,6 +1147,15 @@ function renderPanel(panelId, list, type, maxVal) {
       score   = Math.round(avg) + ' mnt';
       subtext = `${d.terlambat}× terlambat · rata-rata ${Math.round(avg)} menit`;
       barPct  = maxVal > 0 ? ((d.skorBot || 0) / maxVal * 100) : 0;
+
+      // Daftar MK yang terlambat
+      if (d.mkTerlambat && d.mkTerlambat.length) {
+        breakdownHtml = `<div class="mk-late-list">${
+          d.mkTerlambat.map(m =>
+            `<span class="mk-late-tag">⏱ ${escHtml(m.mk)} · ${escHtml(m.kelas)} — hadir ${escHtml(m.waktuHadir)} (jadwal ${escHtml(m.jamMulai)}, +${m.menit} mnt)</span>`
+          ).join('')
+        }</div>`;
+      }
     }
 
     const color = avatarColor(d.nama);
