@@ -10,15 +10,48 @@ function fillBerandaDosen() {
   var bannerLiburEl = document.getElementById('beranda-banner-libur-sistem');
   if (bannerLiburEl) {
     if (!SISTEM_AKTIF) {
+      // Cek apakah dosen punya jadwal hari ini yang belum diganti
+      var hariIniCek = todayHari();
+      var jadwalTerdampak = J.filter(function(j) {
+        return j.dosenId === currentUser.id && j.hari === hariIniCek;
+      });
+      var todayYmd = (function(){
+        var d=new Date();
+        return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      })();
+      var sudahGanti = G.filter(function(g) {
+        return g.dosenId === currentUser.id && g.asli === todayYmd;
+      });
+      var belumGanti = jadwalTerdampak.filter(function(j) {
+        return !sudahGanti.some(function(g){ return g.mk === j.mk; });
+      });
+
+      var reminderHtml = '';
+      if (belumGanti.length > 0) {
+        reminderHtml =
+          '<div style="margin-top:10px;padding:10px 12px;background:rgba(255,255,255,.6);border-radius:8px;border:1px solid #f9c84a">'
+          + '<div style="font-size:12px;font-weight:700;color:#7a4f00;margin-bottom:6px">📋 Jadwal hari ini yang perlu diganti:</div>'
+          + belumGanti.map(function(j){
+              return '<div style="font-size:12px;color:#7a4f00;padding:2px 0">• ' + j.mk + (j.kelas?' · '+j.kelas:'') + ' · ' + (j.jamMulai||'?') + '–' + (j.jamSelesai||'?') + '</div>';
+            }).join('')
+          + '<button onclick="pg(\'ganti\', document.getElementById(\'tab-ganti\'))" '
+          + 'style="margin-top:8px;padding:6px 14px;border-radius:8px;border:none;background:#f9c84a;color:#5a3800;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'
+          + '🔄 Ajukan Jadwal Pengganti →</button>'
+          + '</div>';
+      }
+
       bannerLiburEl.innerHTML =
-        '<div style="background:#fff3cd;border:1.5px solid #f9c84a;border-radius:12px;padding:14px 16px;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:10px">'
-        + '<span style="font-size:24px;flex-shrink:0">🔕</span>'
-        + '<div>'
-          + '<div style="font-size:14px;font-weight:700;color:#7a4f00;margin-bottom:3px">Sistem Presensi Nonaktif</div>'
-          + '<div style="font-size:12px;color:#7a4f00;line-height:1.5">'
-            + (PESAN_LIBUR || 'Presensi sedang dinonaktifkan oleh Admin. Silakan hubungi Admin untuk informasi lebih lanjut.')
+        '<div style="background:#fff3cd;border:1.5px solid #f9c84a;border-radius:12px;padding:14px 16px;margin-bottom:1.25rem">'
+        + '<div style="display:flex;align-items:flex-start;gap:10px">'
+          + '<span style="font-size:24px;flex-shrink:0">🔕</span>'
+          + '<div style="flex:1">'
+            + '<div style="font-size:14px;font-weight:700;color:#7a4f00;margin-bottom:3px">Sistem Presensi Nonaktif</div>'
+            + '<div style="font-size:12px;color:#7a4f00;line-height:1.5">'
+              + (PESAN_LIBUR || 'Presensi sedang dinonaktifkan oleh Admin.')
+            + '</div>'
           + '</div>'
         + '</div>'
+        + reminderHtml
         + '</div>';
       bannerLiburEl.style.display = 'block';
     } else {

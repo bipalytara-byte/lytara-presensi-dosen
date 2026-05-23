@@ -529,12 +529,14 @@ function renderPengaturanSistem() {
 
   var isOn = SISTEM_AKTIF;
   el.innerHTML =
-    '<div style="margin-bottom:1rem">'
-      + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">Status Sistem Presensi</div>'
-      + '<div style="font-size:12px;color:#888;margin-bottom:14px">Nonaktifkan sistem saat ada libur khusus, rapat besar, atau kondisi darurat. Dosen tidak akan bisa merekam presensi selama sistem dimatikan.</div>'
 
-      // Toggle switch besar
-      + '<div style="display:flex;align-items:center;gap:16px;padding:16px;border-radius:12px;border:2px solid '+(isOn?'#97c459':'#f09595')+';background:'+(isOn?'#f4fce8':'#fff5f5')+';margin-bottom:1rem">'
+    // ── BAGIAN 1: Toggle ON/OFF ──
+    '<div style="margin-bottom:1.5rem">'
+      + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">🔌 Status Sistem Presensi</div>'
+      + '<div style="font-size:12px;color:#888;margin-bottom:14px">Nonaktifkan sistem saat ada libur khusus, cuti bersama, atau kondisi darurat. Dosen tidak akan bisa merekam presensi selama sistem dimatikan.</div>'
+
+      // Toggle switch
+      + '<div style="display:flex;align-items:center;gap:16px;padding:16px;border-radius:12px;border:2px solid '+(isOn?'#97c459':'#f09595')+';background:'+(isOn?'#f4fce8':'#fff5f5')+';margin-bottom:12px">'
         + '<div onclick="toggleSistemPresensi()" style="cursor:pointer;width:56px;height:30px;border-radius:20px;background:'+(isOn?'#639922':'#ccc')+';position:relative;transition:background .25s;flex-shrink:0">'
           + '<div style="position:absolute;top:3px;'+(isOn?'right:3px':'left:3px')+';width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:all .25s"></div>'
         + '</div>'
@@ -544,14 +546,38 @@ function renderPengaturanSistem() {
         + '</div>'
       + '</div>'
 
-      // Input pesan libur
-      + '<div style="margin-bottom:14px">'
-        + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Pesan yang ditampilkan ke dosen saat sistem nonaktif</label>'
+      // Pesan libur (banner di beranda dosen)
+      + '<div style="margin-bottom:10px">'
+        + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Pesan banner saat sistem nonaktif <span style="font-weight:400;color:#aaa">(muncul di beranda dosen)</span></label>'
         + '<textarea id="input-pesan-libur" rows="2" placeholder="Contoh: Libur Idul Adha — presensi diliburkan hari ini." style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical">'+PESAN_LIBUR+'</textarea>'
       + '</div>'
+      + '<button class="btn btn-primary" onclick="simpanPesanLibur()" style="font-size:13px">💾 Simpan Pesan Libur</button>'
+    + '</div>'
 
-      // Tombol simpan pesan
-      + '<button class="btn btn-primary" onclick="simpanPesanLibur()" style="font-size:13px">💾 Simpan Pesan</button>'
+    + '<div style="border-top:1px solid #f0f0ee;margin-bottom:1.5rem"></div>'
+
+    // ── BAGIAN 2: Pengumuman Login ──
+    + '<div>'
+      + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">📢 Pengumuman di Halaman Login</div>'
+      + '<div style="font-size:12px;color:#888;margin-bottom:14px">Pesan ini muncul di papan pengumuman halaman login — terlihat oleh semua dosen sebelum masuk, cocok untuk info cuti bersama, jadwal ujian, atau instruksi khusus.</div>'
+
+      // Preview
+      + (PENGUMUMAN_LOGIN
+        ? '<div style="background:#fff8e6;border:1.5px solid #f9c84a;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:#7a4f00;line-height:1.6">'
+            + '<b style="display:block;margin-bottom:4px">📢 Preview saat ini:</b>'
+            + '<span style="white-space:pre-wrap">'+PENGUMUMAN_LOGIN+'</span>'
+          + '</div>'
+        : '<div style="background:#f5f5f3;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#aaa;font-style:italic">Belum ada pengumuman aktif.</div>'
+      )
+
+      + '<div style="margin-bottom:10px">'
+        + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Isi pengumuman baru <span style="font-weight:400;color:#aaa">(kosongkan untuk menghapus)</span></label>'
+        + '<textarea id="input-pengumuman-login" rows="4" placeholder="Contoh: Senin 26 Mei libur Cuti Bersama. Dosen yang memiliki jadwal hari Senin harap segera mengajukan jadwal pengganti." style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical">'+PENGUMUMAN_LOGIN+'</textarea>'
+      + '</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+        + '<button class="btn btn-primary" onclick="simpanPengumumanLogin()" style="font-size:13px">💾 Simpan Pengumuman</button>'
+        + (PENGUMUMAN_LOGIN ? '<button class="btn btn-danger" onclick="hapusPengumumanLogin()" style="font-size:13px">🗑️ Hapus Pengumuman</button>' : '')
+      + '</div>'
     + '</div>';
 }
 
@@ -586,9 +612,39 @@ async function simpanPesanLibur() {
     await post({ action: 'saveSettings', data: { pesanLibur: pesan } });
     PESAN_LIBUR = pesan;
     setSB('ok');
-    alert('✅ Pesan berhasil disimpan.');
+    alert('✅ Pesan libur berhasil disimpan.');
   } catch(e) {
     setSB('er');
     alert('Gagal menyimpan pesan: ' + e.message);
+  }
+}
+
+async function simpanPengumumanLogin() {
+  var teks = (document.getElementById('input-pengumuman-login').value || '').trim();
+  setSB('sy');
+  try {
+    await post({ action: 'saveSettings', data: { pengumumanLogin: teks } });
+    PENGUMUMAN_LOGIN = teks;
+    setSB('ok');
+    renderPengaturanSistem();
+    alert('✅ Pengumuman berhasil disimpan.\nAkan muncul di halaman login untuk semua dosen.');
+  } catch(e) {
+    setSB('er');
+    alert('Gagal menyimpan pengumuman: ' + e.message);
+  }
+}
+
+async function hapusPengumumanLogin() {
+  if (!confirm('Hapus pengumuman dari halaman login?')) return;
+  setSB('sy');
+  try {
+    await post({ action: 'saveSettings', data: { pengumumanLogin: '' } });
+    PENGUMUMAN_LOGIN = '';
+    setSB('ok');
+    renderPengaturanSistem();
+    alert('✅ Pengumuman berhasil dihapus.');
+  } catch(e) {
+    setSB('er');
+    alert('Gagal menghapus pengumuman: ' + e.message);
   }
 }

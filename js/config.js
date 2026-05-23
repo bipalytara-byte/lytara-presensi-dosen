@@ -23,8 +23,9 @@ let isAdmin=false;
 let currentUser=null;
 
 // ── Status sistem presensi (diisi dari GAS Pengaturan) ──
-let SISTEM_AKTIF = true;   // true = presensi berjalan normal
-let PESAN_LIBUR  = '';     // pesan yang ditampilkan saat sistem nonaktif
+let SISTEM_AKTIF       = true;  // true = presensi berjalan normal
+let PESAN_LIBUR        = '';    // pesan banner saat sistem nonaktif (untuk dosen)
+let PENGUMUMAN_LOGIN   = '';    // pengumuman di halaman login (untuk semua)
 
 window.onload=function(){
   tick(); setInterval(tick,1000);
