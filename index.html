@@ -751,6 +751,10 @@
     <div class="field"><label>Nama lengkap</label><input type="text" id="mn" placeholder="Dr. Budi Santoso, M.Si"/></div>
     <div class="field"><label>NIP (opsional)</label><input type="text" id="mnip"/></div>
     <div class="field">
+      <label>No. WhatsApp <span style="font-size:11px;color:#888;font-weight:400">(untuk notifikasi — format: 08xx atau 628xx)</span></label>
+      <input type="tel" id="mnowa" placeholder="cth: 081234567890"/>
+    </div>
+    <div class="field">
       <label>Mata kuliah yang diampu</label>
       <div style="display:flex;gap:8px"><input type="text" id="mki" placeholder="Nama mata kuliah..." style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();addMk()}"/><button class="btn" onclick="addMk()">Tambah</button></div>
       <div id="mkt" style="margin-top:8px;min-height:28px"></div>

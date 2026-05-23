@@ -90,14 +90,29 @@ function renderD(){
   if(!f.length){el.innerHTML='<p class="empty">Tidak ditemukan.</p>';return;}
   el.innerHTML=f.map(function(d){
     var jd=J.filter(function(j){return j.dosenId===d.id;});
-    return '<div class="dc"><div class="ch2"><div><div class="en">'+d.nama+'</div>'+(d.nip?'<div class="es">NIP: '+d.nip+'</div>':'')+' </div><div class="bg"><button class="btn btn-warn btn-sm" onclick="openMD(\''+d.id+'\')">Edit</button><button class="btn btn-danger btn-sm" onclick="hapusDos(\''+d.id+'\')">Hapus</button></div></div><div style="margin-top:4px">'+( d.mk.length?d.mk.map(function(m){return'<span class="mk-tag">'+m+'</span>';}).join(''):'<span class="empty">Belum ada MK</span>')+'</div><div style="margin-top:6px;font-size:12px;color:#888">'+jd.length+' jadwal terdaftar</div></div>';
+    var waBadge = d.noWA
+      ? '<span style="font-size:11px;background:#eaf3de;color:#27500a;border-radius:20px;padding:1px 8px;margin-left:4px">📱 WA terdaftar</span>'
+      : '<span style="font-size:11px;background:#f5f5f3;color:#aaa;border-radius:20px;padding:1px 8px;margin-left:4px">📵 Belum ada WA</span>';
+    return '<div class="dc"><div class="ch2"><div><div class="en">'+d.nama+waBadge+'</div>'+(d.nip?'<div class="es">NIP: '+d.nip+'</div>':'')+' </div><div class="bg"><button class="btn btn-warn btn-sm" onclick="openMD(\''+d.id+'\')">Edit</button><button class="btn btn-danger btn-sm" onclick="hapusDos(\''+d.id+'\')">Hapus</button></div></div><div style="margin-top:4px">'+( d.mk.length?d.mk.map(function(m){return'<span class="mk-tag">'+m+'</span>';}).join(''):'<span class="empty">Belum ada MK</span>')+'</div><div style="margin-top:6px;font-size:12px;color:#888">'+jd.length+' jadwal terdaftar</div></div>';
   }).join('');
 }
+
 function openMD(id){
   eDos=id||null;tempMk=[];
-  document.getElementById('mn').value='';document.getElementById('mnip').value='';document.getElementById('mki').value='';
-  if(id){var d=D.find(function(x){return x.id===id;});if(!d)return;document.getElementById('mdt').textContent='Edit dosen';document.getElementById('mn').value=d.nama;document.getElementById('mnip').value=d.nip||'';tempMk=d.mk.slice();}
-  else document.getElementById('mdt').textContent='Tambah dosen baru';
+  document.getElementById('mn').value='';
+  document.getElementById('mnip').value='';
+  document.getElementById('mnowa').value='';
+  document.getElementById('mki').value='';
+  if(id){
+    var d=D.find(function(x){return x.id===id;});if(!d)return;
+    document.getElementById('mdt').textContent='Edit dosen';
+    document.getElementById('mn').value=d.nama;
+    document.getElementById('mnip').value=d.nip||'';
+    document.getElementById('mnowa').value=d.noWA||'';
+    tempMk=d.mk.slice();
+  } else {
+    document.getElementById('mdt').textContent='Tambah dosen baru';
+  }
   renderMk();document.getElementById('mdos').classList.add('open');
 }
 function addMk(){var i=document.getElementById('mki'),v=i.value.trim();if(!v||tempMk.indexOf(v)>-1){i.value='';return;}tempMk.push(v);renderMk();i.value='';i.focus();}
@@ -107,7 +122,13 @@ async function saveDos(){
   if(!isAdmin){alert('Hanya admin yang dapat mengubah data dosen.');return;}
   var nama=document.getElementById('mn').value.trim();if(!nama){alert('Nama wajib diisi.');return;}
   var btn=document.getElementById('bsd');btn.disabled=true;btn.textContent='Menyimpan...';
-  var data={id:eDos||('d'+Date.now()),nama:nama,nip:document.getElementById('mnip').value.trim(),mk:tempMk};
+  var data={
+    id:   eDos||('d'+Date.now()),
+    nama: nama,
+    nip:  document.getElementById('mnip').value.trim(),
+    mk:   tempMk,
+    noWA: document.getElementById('mnowa').value.trim()
+  };
   setSB('sy');
   try{
     await post({action:'saveDosen',data:data});
