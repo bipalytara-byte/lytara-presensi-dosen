@@ -118,7 +118,24 @@ function previewStatus(){
   if(j&&j.hari!==today && !isGantiValid && !isMajuValid){
      el.style.display='block';el.style.background='#fcebeb';el.style.color='#791f1f';el.textContent='❌ Tidak bisa presensi — jadwal hari '+j.hari+', bukan '+today;return;
   }
-  
+
+  // Cek batasan 15 menit sebelum jadwal
+  var jamParts = jam.split(':');
+  var jadwalMenit = parseInt(jamParts[0]) * 60 + parseInt(jamParts[1]);
+  var nowMenit = d.getHours() * 60 + d.getMinutes();
+  var selisihMenit = nowMenit - jadwalMenit;
+
+  if(selisihMenit < -15){
+    var sisaMenit = Math.abs(selisihMenit) - 15;
+    var jamBuka = new Date(d.getTime() + sisaMenit * 60000);
+    var jamBukaStr = jamBuka.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+    el.style.display='block';
+    el.style.background='#f0f4ff';
+    el.style.color='#3730a3';
+    el.textContent='🔒 Rekam belum bisa dibuka. Menunggu pukul '+jamBukaStr+' (15 menit sebelum jadwal '+jam+')';
+    return;
+  }
+
   var st=stH(jam),ns=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
   el.style.display='block';
   if(st.c==='green'){el.style.background='#eaf3de';el.style.color='#27500a';el.textContent='Sekarang '+ns+' · Jadwal '+jam+' → Tepat waktu';}
@@ -141,11 +158,27 @@ async function rekam(){
 
   if(!jid||!jam||!ruang){alert('Lengkapi semua field.');return;}
   var jad=J.find(function(j){return j.id===jid;});
-  
+
   var d = new Date();
   var ymd = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   var isGantiValid = G.find(function(g){ return g.dosenId === currentUser.id && g.mk === jad.mk && g.statusAcc === 'Disetujui' && g.ganti === ymd; });
   var isMajuValid  = M.find(function(m){ return m.dosenId === currentUser.id && m.mk === jad.mk && m.statusAcc === 'Disetujui' && m.tglRaw === ymd; });
+
+  // ── Cek batasan 15 menit sebelum jadwal ──
+  // Hitung selisih menit antara sekarang dan jam jadwal
+  var jamParts = jam.split(':');
+  var jadwalMenit = parseInt(jamParts[0]) * 60 + parseInt(jamParts[1]);
+  var nowMenit = d.getHours() * 60 + d.getMinutes();
+  var selisihMenit = nowMenit - jadwalMenit; // negatif = belum waktunya, positif = sudah lewat
+
+  // Blokir jika lebih dari 15 menit SEBELUM jadwal (selisih < -15)
+  if(selisihMenit < -15){
+    var sisaMenit = Math.abs(selisihMenit) - 15;
+    var jamBuka = new Date(d.getTime() + sisaMenit * 60000);
+    var jamBukaStr = jamBuka.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+    alert('⏰ Presensi belum bisa dibuka.\n\nJadwal mulai pukul ' + jam + ', rekam baru bisa dilakukan mulai pukul ' + jamBukaStr + ' (15 menit sebelum jadwal).');
+    return;
+  }
 
   if(jad.hari!==todayHari() && !isGantiValid && !isMajuValid){
     alert('❌ Presensi gagal!\nJadwal "'+jad.mk+'" adalah hari '+jad.hari+'.\nTidak ada pengajuan pengganti/maju yang di-ACC untuk hari ini.');
