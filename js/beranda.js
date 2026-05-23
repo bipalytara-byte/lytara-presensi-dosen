@@ -99,6 +99,8 @@ function pgAdminPengaturan() {
     if (btn) switchDashTab('pengaturan', btn);
   }, 100);
 }
+
+function fillBerandaDosen() {
   if (!currentUser) return;
 
   // ── Banner sistem nonaktif (libur khusus admin) ──
