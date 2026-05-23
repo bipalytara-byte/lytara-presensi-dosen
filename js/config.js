@@ -22,6 +22,10 @@ let actId=null,actJad=null;
 let isAdmin=false;
 let currentUser=null;
 
+// ── Status sistem presensi (diisi dari GAS Pengaturan) ──
+let SISTEM_AKTIF = true;   // true = presensi berjalan normal
+let PESAN_LIBUR  = '';     // pesan yang ditampilkan saat sistem nonaktif
+
 window.onload=function(){
   tick(); setInterval(tick,1000);
   

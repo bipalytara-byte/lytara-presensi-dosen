@@ -519,3 +519,76 @@ function promptTolakGanti(id) {
   if(alasan===null) return;
   aksiBuktGanti(id, 'Ditolak', alasan||'Tidak memenuhi ketentuan');
 }
+// =====================================================
+// PENGATURAN SISTEM — Toggle ON/OFF Presensi (Admin)
+// =====================================================
+
+function renderPengaturanSistem() {
+  var el = document.getElementById('panel-pengaturan-sistem');
+  if (!el || !isAdmin) return;
+
+  var isOn = SISTEM_AKTIF;
+  el.innerHTML =
+    '<div style="margin-bottom:1rem">'
+      + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">Status Sistem Presensi</div>'
+      + '<div style="font-size:12px;color:#888;margin-bottom:14px">Nonaktifkan sistem saat ada libur khusus, rapat besar, atau kondisi darurat. Dosen tidak akan bisa merekam presensi selama sistem dimatikan.</div>'
+
+      // Toggle switch besar
+      + '<div style="display:flex;align-items:center;gap:16px;padding:16px;border-radius:12px;border:2px solid '+(isOn?'#97c459':'#f09595')+';background:'+(isOn?'#f4fce8':'#fff5f5')+';margin-bottom:1rem">'
+        + '<div onclick="toggleSistemPresensi()" style="cursor:pointer;width:56px;height:30px;border-radius:20px;background:'+(isOn?'#639922':'#ccc')+';position:relative;transition:background .25s;flex-shrink:0">'
+          + '<div style="position:absolute;top:3px;'+(isOn?'right:3px':'left:3px')+';width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:all .25s"></div>'
+        + '</div>'
+        + '<div>'
+          + '<div style="font-size:15px;font-weight:700;color:'+(isOn?'#27500a':'#a32d2d')+'">'+(isOn?'🟢 Sistem AKTIF':'🔴 Sistem NONAKTIF')+'</div>'
+          + '<div style="font-size:11px;color:#888;margin-top:2px">'+(isOn?'Dosen dapat merekam presensi seperti biasa.':'Semua dosen tidak dapat merekam presensi.')+'</div>'
+        + '</div>'
+      + '</div>'
+
+      // Input pesan libur
+      + '<div style="margin-bottom:14px">'
+        + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Pesan yang ditampilkan ke dosen saat sistem nonaktif</label>'
+        + '<textarea id="input-pesan-libur" rows="2" placeholder="Contoh: Libur Idul Adha — presensi diliburkan hari ini." style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical">'+PESAN_LIBUR+'</textarea>'
+      + '</div>'
+
+      // Tombol simpan pesan
+      + '<button class="btn btn-primary" onclick="simpanPesanLibur()" style="font-size:13px">💾 Simpan Pesan</button>'
+    + '</div>';
+}
+
+async function toggleSistemPresensi() {
+  var targetAktif = !SISTEM_AKTIF;
+  var konfirmasi = confirm(
+    targetAktif
+      ? '✅ Aktifkan kembali sistem presensi?\nDosen akan bisa merekam presensi seperti biasa.'
+      : '🔴 Nonaktifkan sistem presensi?\nSemua dosen tidak akan bisa merekam presensi sampai diaktifkan kembali.'
+  );
+  if (!konfirmasi) return;
+
+  setSB('sy');
+  try {
+    // liburAktif=true berarti sistem MATI (libur), liburAktif=false berarti sistem AKTIF
+    await post({ action: 'saveSettings', data: { liburAktif: String(!targetAktif) } });
+    SISTEM_AKTIF = targetAktif;
+    setSB('ok');
+    renderPengaturanSistem();
+    // Refresh banner beranda jika ada dosen yang login
+    if (!isAdmin && currentUser) fillBerandaDosen();
+  } catch(e) {
+    setSB('er');
+    alert('Gagal mengubah status sistem: ' + e.message);
+  }
+}
+
+async function simpanPesanLibur() {
+  var pesan = (document.getElementById('input-pesan-libur').value || '').trim();
+  setSB('sy');
+  try {
+    await post({ action: 'saveSettings', data: { pesanLibur: pesan } });
+    PESAN_LIBUR = pesan;
+    setSB('ok');
+    alert('✅ Pesan berhasil disimpan.');
+  } catch(e) {
+    setSB('er');
+    alert('Gagal menyimpan pesan: ' + e.message);
+  }
+}

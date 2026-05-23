@@ -129,6 +129,11 @@ function previewStatus(){
 
 async function rekam(){
   if(!currentUser){alert('Hanya dosen yang bisa melakukan ini.');return;}
+  // Cek status sistem — blokir jika sedang libur / dimatikan admin
+  if(!SISTEM_AKTIF){
+    alert('🚫 Sistem presensi sedang dinonaktifkan oleh Admin.\n\n' + (PESAN_LIBUR || 'Presensi tidak dapat dilakukan saat ini. Hubungi Admin untuk informasi lebih lanjut.'));
+    return;
+  }
   var jid=document.getElementById('pj').value,
       jam=document.getElementById('pjam').value,
       ruang=document.getElementById('pruang').value,

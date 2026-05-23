@@ -126,8 +126,16 @@ async function refreshDataLokal() {
 async function loadThenShow(){
   setSB('sy');
   try{
-    var r=await Promise.all([get({action:'getDosen'}),get({action:'getJadwal'}),get({action:'getPresensi'}),get({action:'getGanti'}),get({action:'getMaju'})]);
+    var r=await Promise.all([
+      get({action:'getDosen'}),get({action:'getJadwal'}),
+      get({action:'getPresensi'}),get({action:'getGanti'}),
+      get({action:'getMaju'}),get({action:'getSettings'})
+    ]);
     D=r[0].data||[];J=r[1].data||[];P=r[2].data||[];G=r[3].data||[];M=r[4].data||[];
+    // Terapkan settings sistem
+    var cfg = r[5].data || {};
+    SISTEM_AKTIF = cfg.liburAktif === true ? false : true; // liburAktif=true berarti LIBUR (sistem mati)
+    PESAN_LIBUR  = cfg.pesanLibur || '';
     setSB('ok');fillAll();restoreSesi();
   }catch(e){setSB('er');}
 }

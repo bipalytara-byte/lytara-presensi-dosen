@@ -6,6 +6,26 @@
 function fillBerandaDosen() {
   if (!currentUser) return;
 
+  // ── Banner sistem nonaktif (libur khusus admin) ──
+  var bannerLiburEl = document.getElementById('beranda-banner-libur-sistem');
+  if (bannerLiburEl) {
+    if (!SISTEM_AKTIF) {
+      bannerLiburEl.innerHTML =
+        '<div style="background:#fff3cd;border:1.5px solid #f9c84a;border-radius:12px;padding:14px 16px;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:10px">'
+        + '<span style="font-size:24px;flex-shrink:0">🔕</span>'
+        + '<div>'
+          + '<div style="font-size:14px;font-weight:700;color:#7a4f00;margin-bottom:3px">Sistem Presensi Nonaktif</div>'
+          + '<div style="font-size:12px;color:#7a4f00;line-height:1.5">'
+            + (PESAN_LIBUR || 'Presensi sedang dinonaktifkan oleh Admin. Silakan hubungi Admin untuk informasi lebih lanjut.')
+          + '</div>'
+        + '</div>'
+        + '</div>';
+      bannerLiburEl.style.display = 'block';
+    } else {
+      bannerLiburEl.style.display = 'none';
+    }
+  }
+
   // Greeting
   var namaEl = document.getElementById('beranda-nama-dosen');
   var nipEl  = document.getElementById('beranda-nip-dosen');
@@ -112,6 +132,7 @@ function fillAll(){
   renderD();renderJ();renderHari();renderG();renderM();
   renderRiwayatSaya();
   cekNotifGanti();
+  renderNotifLiburHadir();
   // Fitur monitoring: render setelah data siap
   renderDailyDashboard();
   renderAlertAbsen();
@@ -119,6 +140,7 @@ function fillAll(){
   renderRiwayatGanti();
   renderRiwayatMaju();
   renderTren();
+  renderPengaturanSistem();
 }
 
 function pg(p,btn){
