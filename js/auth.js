@@ -186,8 +186,9 @@ function updateUserUI(){
     document.getElementById('user-avatar').textContent = 'AD';
     document.getElementById('user-name').textContent = 'Administrator';
     document.getElementById('login-info').style.display = 'none';
-    
-    btnBeranda.style.display = 'none';
+
+    btnBeranda.style.display = 'inline-block';
+    btnBeranda.textContent = '🏠 Beranda';
     btnH.style.display = 'none';
     btnR.style.display = 'none';
     btnRapor.style.display = 'none';
@@ -195,13 +196,14 @@ function updateUserUI(){
     btnJ.style.display = 'inline-block';
     btnL.style.display = 'inline-block';
     btnMaju.style.display = 'inline-block';
-    
+
     document.getElementById('form-pengajuan-ganti').style.display = 'none';
     document.getElementById('ganti-title-list').textContent = 'Daftar Seluruh Pengajuan (Admin)';
     document.getElementById('form-pengajuan-maju').style.display = 'none';
     document.getElementById('maju-title-list').textContent = 'Daftar Seluruh Pengajuan Jadwal Maju (Admin)';
-    
-    pg('report', btnL);
+
+    // Arahkan ke beranda admin, bukan langsung laporan
+    pg('beranda-admin', btnBeranda);
     
   } else if (currentUser) {
     var parts=currentUser.nama.split(' ');

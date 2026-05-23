@@ -3,7 +3,102 @@
 */
 
 
-function fillBerandaDosen() {
+function fillBerandaAdmin() {
+  if (!isAdmin) return;
+
+  // Tanggal
+  var tglEl = document.getElementById('admin-beranda-tgl');
+  if (tglEl) {
+    var n = new Date();
+    var HARI_ID = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    var BLN_ID  = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    tglEl.textContent = HARI_ID[n.getDay()] + ', ' + n.getDate() + ' ' + BLN_ID[n.getMonth()] + ' ' + n.getFullYear();
+  }
+
+  // Badge status sistem
+  var badgeEl = document.getElementById('admin-sistem-badge');
+  if (badgeEl) {
+    badgeEl.innerHTML = SISTEM_AKTIF
+      ? '<span style="background:#eaf3de;color:#27500a;font-size:12px;padding:4px 12px;border-radius:20px;font-weight:500">🟢 Sistem Aktif</span>'
+      : '<span style="background:#fcebeb;color:#a32d2d;font-size:12px;padding:4px 12px;border-radius:20px;font-weight:500">🔴 Sistem Nonaktif</span>';
+  }
+
+  // Statistik
+  var hariIni = todayHari();
+  var todayTs = new Date(); todayTs.setHours(0,0,0,0);
+
+  var jadwalHariIni = J.filter(function(j){ return j.hari === hariIni; });
+  var dosenPunyaJadwal = {};
+  jadwalHariIni.forEach(function(j){ dosenPunyaJadwal[j.dosenId] = true; });
+
+  var presensiHariIni = P.filter(function(p){
+    var ts = new Date(p.tanggal.split('/').reverse().join('-'));
+    return ts >= todayTs && ts < new Date(todayTs.getTime() + 86400000);
+  });
+  var dosenSudahPresensi = {};
+  presensiHariIni.forEach(function(p){ dosenSudahPresensi[p.dosenId] = true; });
+
+  var totalDosen   = D.length;
+  var jumlahHadir  = Object.keys(dosenSudahPresensi).filter(function(id){ return dosenPunyaJadwal[id]; }).length;
+  var jumlahBelum  = Object.keys(dosenPunyaJadwal).filter(function(id){ return !dosenSudahPresensi[id]; }).length;
+  var jumlahPending= G.filter(function(g){ return g.statusAcc === 'Menunggu'; }).length
+                   + M.filter(function(m){ return m.statusAcc === 'Menunggu'; }).length;
+
+  var el = function(id){ return document.getElementById(id); };
+  if(el('abs-dosen'))   el('abs-dosen').textContent   = totalDosen;
+  if(el('abs-hadir'))   el('abs-hadir').textContent   = jumlahHadir;
+  if(el('abs-belum'))   el('abs-belum').textContent   = jumlahBelum;
+  if(el('abs-pending')) el('abs-pending').textContent = jumlahPending;
+
+  // Alert pending
+  var alertEl = document.getElementById('admin-alert-pending');
+  var alertTxt = document.getElementById('admin-alert-pending-txt');
+  if (alertEl && jumlahPending > 0) {
+    alertTxt.textContent = 'Ada ' + jumlahPending + ' pengajuan jadwal yang menunggu persetujuan Anda.';
+    alertEl.style.display = 'flex';
+  } else if (alertEl) {
+    alertEl.style.display = 'none';
+  }
+
+  // Daftar pending
+  var pending = G.filter(function(g){ return g.statusAcc === 'Menunggu'; })
+    .concat(M.filter(function(m){ return m.statusAcc === 'Menunggu'; }));
+  var listWrap = document.getElementById('admin-beranda-pending-list');
+  var listCard = document.getElementById('admin-beranda-pending-card');
+  if (!listWrap || !listCard) return;
+
+  if (pending.length === 0) {
+    listWrap.style.display = 'none';
+  } else {
+    listWrap.style.display = 'block';
+    listCard.innerHTML = pending.slice(0, 5).map(function(item) {
+      var isMaju = !!item.tgl;
+      var tipe = isMaju ? '⏩ Jadwal Maju' : '🔄 Jadwal Pengganti';
+      var info = isMaju
+        ? item.tgl + ' · ' + item.jam
+        : item.asli + ' → ' + item.ganti;
+      var targetPage = isMaju ? 'maju' : 'ganti';
+      var targetTab  = isMaju ? 'tab-maju' : 'tab-ganti';
+      return '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:0.5px solid #f0f0ee;gap:10px">'
+        + '<div style="flex:1;min-width:0">'
+          + '<div style="font-size:13px;font-weight:500;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + item.dosen.split(',')[0] + ' — ' + item.mk + '</div>'
+          + '<div style="font-size:11px;color:#888;margin-top:2px">' + tipe + ' · ' + info + '</div>'
+        + '</div>'
+        + '<button onclick="pg(\'' + targetPage + '\', document.getElementById(\'' + targetTab + '\'))" style="padding:3px 10px;border-radius:6px;border:1px solid #ddd;background:#fff;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">Tinjau →</button>'
+        + '</div>';
+    }).join('')
+    + (pending.length > 5 ? '<div style="font-size:11px;color:#888;padding:8px 0;text-align:center">+ ' + (pending.length-5) + ' pengajuan lainnya</div>' : '');
+  }
+}
+
+// Shortcut ke tab Pengaturan di halaman Laporan
+function pgAdminPengaturan() {
+  pg('report', document.getElementById('tab-report'));
+  setTimeout(function(){
+    var btn = document.querySelector('.dash-tab[onclick*="pengaturan"]');
+    if (btn) switchDashTab('pengaturan', btn);
+  }, 100);
+}
   if (!currentUser) return;
 
   // ── Banner sistem nonaktif (libur khusus admin) ──
@@ -158,6 +253,7 @@ function fillBerandaDosen() {
 
 function fillAll(){
   updateUserUI();
+  if (isAdmin) fillBerandaAdmin();
   if (!isAdmin && currentUser) fillBerandaDosen();
   fillJadwalDosen();
   var rd=document.getElementById('rd');if(rd){rd.innerHTML='<option value="all">Semua dosen</option>';D.forEach(function(d){var o=document.createElement('option');o.value=d.id;o.textContent=d.nama;rd.appendChild(o);});}
@@ -166,7 +262,6 @@ function fillAll(){
   renderRiwayatSaya();
   cekNotifGanti();
   renderNotifLiburHadir();
-  // Fitur monitoring: render setelah data siap
   renderDailyDashboard();
   renderAlertAbsen();
   renderGantiAlert();
@@ -179,14 +274,16 @@ function fillAll(){
 function pg(p,btn){
   document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});
   document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
-  document.getElementById('page-'+p).classList.add('active');btn.classList.add('active');
-  // Sembunyikan tab-bar saat di halaman beranda dosen
+  document.getElementById('page-'+p).classList.add('active');
+  if(btn) btn.classList.add('active');
+  // Sembunyikan tab-bar saat di beranda
   var tabBar = document.querySelector('.tab-bar');
-  if (tabBar) { tabBar.style.display = (p === 'beranda') ? 'none' : 'flex'; }
-  // Tombol navigasi header
-  var btnBackBeranda = document.getElementById('btn-back-beranda');
-  if (btnBackBeranda) {
-    btnBackBeranda.style.display = (!isAdmin && p !== 'beranda') ? 'flex' : 'none';
+  if (tabBar) { tabBar.style.display = (p==='beranda'||p==='beranda-admin') ? 'none' : 'flex'; }
+  // Tombol back
+  var btnBack = document.getElementById('btn-back-beranda');
+  if (btnBack) {
+    var showBack = (isAdmin && p!=='beranda-admin') || (!isAdmin && p!=='beranda');
+    btnBack.style.display = showBack ? 'flex' : 'none';
   }
   if(p==='report'){
     var rd=document.getElementById('rd');if(rd){rd.innerHTML='<option value="all">Semua dosen</option>';D.forEach(function(d){var o=document.createElement('option');o.value=d.id;o.textContent=d.nama;rd.appendChild(o);});}
@@ -194,6 +291,8 @@ function pg(p,btn){
     renderR();
   }
   if(p==='rapor'){ if(!isAdmin) renderRapor(null); }
+  if(p==='hadir'){ renderNotifLiburHadir(); }
+  if(p==='beranda-admin'){ fillBerandaAdmin(); }
 }
 document.querySelectorAll('.mo').forEach(function(el){el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
 function cm(id){document.getElementById(id).classList.remove('open');}
