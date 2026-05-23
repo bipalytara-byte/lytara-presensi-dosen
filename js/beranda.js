@@ -156,6 +156,25 @@ function fillBerandaDosen() {
     }
   }
 
+  // ── Banner pengumuman dari admin ──
+  var bannerPengumumanEl = document.getElementById('beranda-banner-pengumuman');
+  if (bannerPengumumanEl) {
+    var teksPengumuman = (PENGUMUMAN_LOGIN || '').trim();
+    if (teksPengumuman) {
+      bannerPengumumanEl.innerHTML =
+        '<div style="background:#fff8e6;border:1.5px solid #f9c84a;border-radius:12px;padding:12px 16px;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:10px">'
+        + '<span style="font-size:20px;flex-shrink:0">📢</span>'
+        + '<div style="flex:1">'
+          + '<div style="font-size:11px;font-weight:700;color:#7a4f00;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Pengumuman</div>'
+          + '<div style="font-size:13px;color:#7a4f00;line-height:1.6;white-space:pre-wrap">' + teksPengumuman + '</div>'
+        + '</div>'
+        + '</div>';
+      bannerPengumumanEl.style.display = 'block';
+    } else {
+      bannerPengumumanEl.style.display = 'none';
+    }
+  }
+
   // Greeting
   var namaEl = document.getElementById('beranda-nama-dosen');
   var nipEl  = document.getElementById('beranda-nip-dosen');

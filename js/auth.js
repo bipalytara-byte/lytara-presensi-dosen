@@ -39,24 +39,7 @@ async function loadForLogin(){
       sel.appendChild(o);
     });
   } catch(e) {}
-  tampilkanPengumumanLogin();
   showLogin();
-}
-
-function tampilkanPengumumanLogin() {
-  var el = document.getElementById('papan-pengumuman-login');
-  if (!el) return;
-  var teks = PENGUMUMAN_LOGIN.trim();
-  if (!teks) { el.style.display = 'none'; return; }
-  el.innerHTML =
-    '<div style="display:flex;align-items:flex-start;gap:10px">'
-    + '<span style="font-size:20px;flex-shrink:0">📢</span>'
-    + '<div style="flex:1">'
-      + '<div style="font-size:12px;font-weight:700;color:#7a4f00;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em">Pengumuman</div>'
-      + '<div style="font-size:13px;color:#7a4f00;line-height:1.6;white-space:pre-wrap">' + teks + '</div>'
-    + '</div>'
-    + '</div>';
-  el.style.display = 'block';
 }
 
 function togglePass(){

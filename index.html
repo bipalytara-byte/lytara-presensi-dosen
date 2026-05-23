@@ -50,14 +50,7 @@
         </div>
       </div>
 
-      <!-- Papan Pengumuman — muncul di bawah tombol Portal Admin -->
-      <div id="papan-pengumuman-login" style="display:none;background:#fff8e6;border:1.5px solid #f9c84a;border-radius:10px;padding:12px 14px;margin-top:1rem;text-align:left"></div>
-
-      <!-- Footer versi di dalam login box -->
-      <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid #f0f0ee;text-align:center">
-        <div style="font-size:11px;color:#bbb">Powered by <b style="color:#999">Skuro Production</b></div>
-        <div style="font-size:10px;color:#ccc;margin-top:2px;letter-spacing:.05em;font-weight:500">LYTARA v5.5</div>
-      </div>
+      <!-- Papan Pengumuman dihapus dari sini — dipindah ke beranda dosen -->
 
     </div>
 
@@ -71,11 +64,6 @@
       <button class="btn btn-primary login-btn" onclick="doAdminLogin()">Masuk Portal Admin →</button>
       <div style="margin-top:1.5rem; border-top:1px solid #f0f0ee; padding-top:1rem">
         <button class="btn btn-sm" onclick="swapLogin('dosen')">← Kembali ke Login Dosen</button>
-      </div>
-      <!-- Footer versi di admin view -->
-      <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid #f0f0ee;text-align:center">
-        <div style="font-size:11px;color:#bbb">Powered by <b style="color:#999">Skuro Production</b></div>
-        <div style="font-size:10px;color:#ccc;margin-top:2px;letter-spacing:.05em;font-weight:500">LYTARA v5.5</div>
       </div>
     </div>
 
@@ -215,6 +203,9 @@
 
     <!-- Banner sistem nonaktif (diisi JS) -->
     <div id="beranda-banner-libur-sistem" style="display:none"></div>
+
+    <!-- Banner pengumuman dari admin (diisi JS) -->
+    <div id="beranda-banner-pengumuman" style="display:none"></div>
 
     <!-- Greeting -->
     <div class="beranda-greeting">
