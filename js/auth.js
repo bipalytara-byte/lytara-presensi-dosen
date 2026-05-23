@@ -172,7 +172,8 @@ async function loadThenShow(){
 }
 
 function updateUserUI(){
-  var btnBeranda = document.getElementById('tab-beranda');
+  var btnBeranda      = document.getElementById('tab-beranda');
+  var btnBerandaAdmin = document.getElementById('tab-beranda-admin');
   var btnH = document.getElementById('tab-hadir');
   var btnG = document.getElementById('tab-ganti');
   var btnMaju = document.getElementById('tab-maju');
@@ -187,8 +188,8 @@ function updateUserUI(){
     document.getElementById('user-name').textContent = 'Administrator';
     document.getElementById('login-info').style.display = 'none';
 
-    btnBeranda.style.display = 'inline-block';
-    btnBeranda.textContent = '🏠 Beranda';
+    btnBeranda.style.display = 'none';
+    btnBerandaAdmin.style.display = 'inline-block';
     btnH.style.display = 'none';
     btnR.style.display = 'none';
     btnRapor.style.display = 'none';
@@ -202,8 +203,7 @@ function updateUserUI(){
     document.getElementById('form-pengajuan-maju').style.display = 'none';
     document.getElementById('maju-title-list').textContent = 'Daftar Seluruh Pengajuan Jadwal Maju (Admin)';
 
-    // Arahkan ke beranda admin, bukan langsung laporan
-    pg('beranda-admin', btnBeranda);
+    pg('beranda-admin', btnBerandaAdmin);
     
   } else if (currentUser) {
     var parts=currentUser.nama.split(' ');
