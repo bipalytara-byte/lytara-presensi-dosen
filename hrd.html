@@ -531,19 +531,11 @@ function initFilters(){
     selDosen.appendChild(o);
   });
 
-  // Rapor dosen selector
-  var selRapor=document.getElementById('rapor-sel');
-  selRapor.innerHTML='<option value="">— Pilih dosen —</option>';
-  D.forEach(function(d){
-    var o=document.createElement('option');
-    o.value=d.id; o.textContent=d.nama.split(',')[0];
-    selRapor.appendChild(o);
-  });
-
-  // Semester — isi dropdown rapor & global
+  // Semester — isi dropdown rapor-sem & global-semester
+  // Sort terbaru dulu: "Semester Genap 2026/2027" > "Semester Ganjil 2025/2026"
   var semSet={};
-  P.forEach(function(p){if(p.semester)semSet[p.semester]=true;});
-  var semKeys=Object.keys(semSet).sort();
+  P.forEach(function(p){if(p.semester&&p.semester.trim())semSet[p.semester.trim()]=true;});
+  var semKeys=Object.keys(semSet).sort().reverse(); // terbaru di atas
 
   var selSem=document.getElementById('rapor-sem');
   selSem.innerHTML='<option value="all">Semua Semester</option>';
