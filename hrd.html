@@ -264,7 +264,7 @@ tr:hover td{background:#f8f9fa}
         </div>
 
         <div class="card">
-          <div class="card-title">⚡ Top Ketepatan Selesai</div>
+          <div class="card-title">🔴 Paling Sering Terlambat</div>
           <div id="lb-selesai"></div>
         </div>
 
@@ -273,6 +273,28 @@ tr:hover td{background:#f8f9fa}
       <div class="card" style="margin-top:0">
         <div class="card-title">⚠️ Perlu Perhatian — Kehadiran Rendah</div>
         <div id="lb-rendah"></div>
+      </div>
+
+      <!-- Keterangan metodologi -->
+      <div style="background:#f8f9fa;border:1px solid #e8eaed;border-radius:10px;padding:14px 16px;margin-top:0;font-size:12px;color:#666;line-height:1.8">
+        <div style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">ℹ️ Keterangan Metodologi</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div>
+            <div style="font-weight:700;color:#1a1a1a;margin-bottom:3px">🏆 Top Ketepatan Hadir</div>
+            Diurutkan berdasarkan persentase sesi yang direkam tepat waktu (status hijau). Minimum 3 sesi untuk masuk perhitungan.
+          </div>
+          <div>
+            <div style="font-weight:700;color:#1a1a1a;margin-bottom:3px">🔴 Paling Sering Terlambat</div>
+            Diurutkan berdasarkan <b>rata-rata menit keterlambatan</b> per sesi. Data dengan selisih &gt;120 menit dikecualikan karena dianggap anomali (kemungkinan lupa rekam, bukan keterlambatan murni).
+          </div>
+          <div>
+            <div style="font-weight:700;color:#1a1a1a;margin-bottom:3px">⚠️ Perlu Perhatian</div>
+            Dosen dengan persentase ketepatan hadir di bawah 70%. Ambang batas ini mengacu pada standar minimal kehadiran akademik yang umum berlaku.
+          </div>
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e8eaed;color:#999">
+          Status kehadiran ditentukan sistem berdasarkan selisih waktu rekam dengan jadwal: <span style="color:#2e7d32;font-weight:600">Tepat</span> = sesuai jadwal, <span style="color:#e65100;font-weight:600">Terlambat</span> = lewat jadwal, <span style="color:#c62828;font-weight:600">Sangat Terlambat</span> = jauh melewati jadwal.
+        </div>
       </div>
     </div>
 
@@ -549,16 +571,31 @@ function renderLeaderboard(){
   }).join(''):'<div class="empty">Belum ada data.</div>';
 
   // Top selesai
-  var topSelesai=dosenStats.slice().sort(function(a,b){return b.s.pctSelesai-a.s.pctSelesai;}).slice(0,10);
-  document.getElementById('lb-selesai').innerHTML=topSelesai.length?topSelesai.map(function(item,i){
-    var medals=['🥇','🥈','🥉'];
+  // Paling sering terlambat — rata-rata menit keterlambatan, exclude anomali >120 menit
+  var topTerlambat = dosenStats.map(function(item) {
+    // Ambil presensi yang terlambat, exclude anomali lupa rekam (>120 menit)
+    var lambatValid = item.s.myP.filter(function(p) {
+      return (p.color === 'yellow' || p.color === 'red') && Number(p.diff) <= 120;
+    });
+    var rataLambat = lambatValid.length > 0
+      ? Math.round(lambatValid.reduce(function(acc,p){ return acc + Number(p.diff); }, 0) / lambatValid.length)
+      : 0;
+    return { d: item.d, s: item.s, lambatValid: lambatValid, rataLambat: rataLambat };
+  }).filter(function(x){ return x.lambatValid.length > 0; })
+    .sort(function(a,b){ return b.rataLambat - a.rataLambat; })
+    .slice(0,10);
+
+  document.getElementById('lb-selesai').innerHTML = topTerlambat.length ? topTerlambat.map(function(item,i){
+    var mnt = item.rataLambat;
+    var warnColor = mnt >= 30 ? '#c62828' : mnt >= 15 ? '#e65100' : '#888';
     return '<div class="lb-row">'
-      +'<div class="'+(i<3?'lb-rank':'lb-rank-num')+'">'+(i<3?medals[i]:i+1)+'</div>'
+      +'<div class="lb-rank-num">'+(i+1)+'</div>'
       +'<div class="lb-avatar" style="background:'+avatarColor(item.d.id)+'">'+initials(item.d.nama)+'</div>'
-      +'<div class="lb-info"><div class="lb-name">'+item.d.nama.split(',')[0]+'</div><div class="lb-sub">'+item.s.total+' sesi · tepat selesai '+item.s.pctSelesai+'%</div></div>'
-      +'<div class="lb-pct" style="color:'+pctColor(item.s.pctSelesai)+'">'+item.s.pctSelesai+'%</div>'
+      +'<div class="lb-info"><div class="lb-name">'+item.d.nama.split(',')[0]+'</div>'
+        +'<div class="lb-sub">'+item.lambatValid.length+' sesi terlambat (dari '+item.s.total+' total) · exclude anomali >120 mnt</div></div>'
+      +'<div class="lb-pct" style="color:'+warnColor+';font-size:12px;white-space:nowrap">~'+mnt+' mnt</div>'
       +'</div>';
-  }).join(''):'<div class="empty">Belum ada data.</div>';
+  }).join('') : '<div class="empty">Tidak ada data keterlambatan valid.</div>';
 
   // Perlu perhatian
   var rendah=dosenStats.filter(function(x){return x.s.pctHadir<70;}).sort(function(a,b){return a.s.pctHadir-b.s.pctHadir;});
