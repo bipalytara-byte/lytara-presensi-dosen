@@ -109,6 +109,94 @@
   <button class="tab" id="tab-jadwal" onclick="pg('jadwal',this)" style="display:none">Kelola Jadwal</button>
 </div>
 
+<!-- ====== HALAMAN BERANDA ADMIN ====== -->
+<div id="page-beranda-admin" class="page">
+  <div class="beranda-wrap">
+
+    <!-- Header tanggal & status sistem -->
+    <div class="beranda-greeting">
+      <div class="beranda-greeting-left">
+        <div class="beranda-halo">Dashboard Admin 🛡️</div>
+        <div class="beranda-nama" id="admin-beranda-tgl">—</div>
+      </div>
+      <div id="admin-sistem-badge"></div>
+    </div>
+
+    <!-- Alert pengajuan pending -->
+    <div id="admin-alert-pending" class="aw" style="display:none;align-items:flex-start;gap:10px">
+      <span style="font-size:20px;flex-shrink:0">📬</span>
+      <div style="flex:1">
+        <b style="display:block;margin-bottom:2px">Ada Pengajuan Menunggu</b>
+        <span id="admin-alert-pending-txt"></span>
+      </div>
+    </div>
+
+    <!-- Statistik 4 kotak -->
+    <div class="beranda-stat-row" style="grid-template-columns:repeat(2,1fr)">
+      <div class="beranda-stat">
+        <div class="beranda-stat-num" id="abs-dosen">–</div>
+        <div class="beranda-stat-lbl">Total Dosen</div>
+      </div>
+      <div class="beranda-stat">
+        <div class="beranda-stat-num" id="abs-hadir">–</div>
+        <div class="beranda-stat-lbl">Sudah Presensi Hari Ini</div>
+      </div>
+      <div class="beranda-stat">
+        <div class="beranda-stat-num" id="abs-belum">–</div>
+        <div class="beranda-stat-lbl">Belum Presensi</div>
+      </div>
+      <div class="beranda-stat">
+        <div class="beranda-stat-num" id="abs-pending">–</div>
+        <div class="beranda-stat-lbl">Pengajuan Menunggu</div>
+      </div>
+    </div>
+
+    <!-- Menu 6 kartu -->
+    <div class="beranda-menu-title">Menu Admin</div>
+    <div class="beranda-grid">
+
+      <div class="beranda-menu-item" onclick="pg('report', document.getElementById('tab-report'))">
+        <div class="beranda-menu-icon" style="background:#fef3e2;">📊</div>
+        <div class="beranda-menu-label">Laporan &amp; Statistik</div>
+      </div>
+
+      <div class="beranda-menu-item" onclick="pg('dosen', document.getElementById('tab-dosen'))">
+        <div class="beranda-menu-icon" style="background:#e6f1fb;">👥</div>
+        <div class="beranda-menu-label">Kelola Dosen</div>
+      </div>
+
+      <div class="beranda-menu-item" onclick="pg('jadwal', document.getElementById('tab-jadwal'))">
+        <div class="beranda-menu-icon" style="background:#eaf3de;">📅</div>
+        <div class="beranda-menu-label">Kelola Jadwal</div>
+      </div>
+
+      <div class="beranda-menu-item" onclick="pg('ganti', document.getElementById('tab-ganti'))">
+        <div class="beranda-menu-icon" style="background:#f3e8ff;">🔄</div>
+        <div class="beranda-menu-label">Jadwal Pengganti</div>
+      </div>
+
+      <div class="beranda-menu-item" onclick="pg('maju', document.getElementById('tab-maju'))">
+        <div class="beranda-menu-icon" style="background:#fff0f0;">⏩</div>
+        <div class="beranda-menu-label">Jadwal Maju</div>
+      </div>
+
+      <div class="beranda-menu-item" onclick="pgAdminPengaturan()">
+        <div class="beranda-menu-icon" style="background:#f5f5f3;">⚙️</div>
+        <div class="beranda-menu-label">Pengaturan Sistem</div>
+      </div>
+
+    </div>
+
+    <!-- Daftar pengajuan pending -->
+    <div id="admin-beranda-pending-list" style="display:none">
+      <div class="beranda-menu-title">Pengajuan Menunggu Persetujuan</div>
+      <div class="card" id="admin-beranda-pending-card"></div>
+    </div>
+
+  </div>
+</div>
+<!-- ====== END BERANDA ADMIN ====== -->
+
 <!-- ====== HALAMAN BERANDA DOSEN ====== -->
 <div id="page-beranda" class="page">
   <div class="beranda-wrap">
