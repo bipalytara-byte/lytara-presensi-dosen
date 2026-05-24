@@ -1225,3 +1225,16 @@ tr:hover td { background: rgba(245,200,66,.08); }
 .beranda-stat-lbl { font-size: 10px; color: var(--text2); margin-top: 4px; line-height: 1.3; font-weight: 700; }
 
 .dosen-tab-hidden { display: none !important; }
+
+/* ── PAPAN PENGUMUMAN di beranda dosen ── */
+#papan-pengumuman-login {
+  background: #fef3c0;
+  border: 3px solid var(--yellow2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 1.1rem;
+  box-shadow: var(--shadow-sm);
+  font-weight: 600;
+  color: #3a2000;
+  border-left: 5px solid var(--yellow2);
+}

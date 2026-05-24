@@ -39,8 +39,7 @@ async function loadForLogin(){
       sel.appendChild(o);
     });
   } catch(e) {}
-  tampilkanPengumumanLogin();
-  showLogin();
+  showLogin(); // Login screen bersih, pengumuman muncul di beranda dosen setelah login
 }
 
 function tampilkanPengumumanLogin() {
@@ -172,6 +171,7 @@ async function loadThenShow(){
     if (isAdmin) {
       pg('beranda-admin', document.getElementById('tab-beranda'));
     } else if (currentUser) {
+      tampilkanPengumumanLogin(); // Tampilkan pengumuman di beranda dosen
       pg('beranda', document.getElementById('tab-beranda'));
     }
   }catch(e){setSB('er');}
