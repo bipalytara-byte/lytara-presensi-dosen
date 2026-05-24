@@ -5,7 +5,7 @@
 
 
 const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
-const PIN = '5678';
+const PIN = '1819';
 const HARI = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 const DOSEN_PASS = {
   "d001":"QAH276","d002":"XCK025","d003":"AFQ525","d004":"VAU631",
