@@ -85,7 +85,7 @@
     <button class="btn btn-sm" onclick="refreshDataLokal()" title="Tarik data terbaru dari server" style="display:flex;align-items:center;gap:5px">
       🔄 Refresh
     </button>
-    <button class="btn btn-sm" id="btn-back-beranda" style="display:none;align-items:center;gap:5px" onclick="pg('beranda', document.getElementById('tab-beranda'))">
+    <button class="btn btn-sm" id="btn-back-beranda" style="display:none;align-items:center;gap:5px" onclick="isAdmin ? pg('beranda-admin', document.getElementById('tab-beranda')) : pg('beranda', document.getElementById('tab-beranda'))">
       🏠 Beranda
     </button>
     <span class="sb" id="sb">Offline</span>
@@ -97,7 +97,7 @@
 </header>
 
 <div class="tab-bar">
-  <button class="tab" id="tab-beranda" onclick="pg('beranda',this)" style="display:none">🏠 Beranda</button>
+  <button class="tab" id="tab-beranda" onclick="isAdmin ? pg('beranda-admin',this) : pg('beranda',this)" style="display:none">🏠 Beranda</button>
   <button class="tab" id="tab-hadir" onclick="pg('hadir',this)">Presensi</button>
   <button class="tab" id="tab-ganti" onclick="pg('ganti',this)">Jadwal Pengganti</button>
   <button class="tab" id="tab-maju" onclick="pg('maju',this)">Jadwal Maju</button>
