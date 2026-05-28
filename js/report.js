@@ -49,9 +49,7 @@ function renderR(){
   
   var ml = data.filter(function(p){return !p.modeKuliah || p.modeKuliah.indexOf('Luring')>-1;}).length;
   var ms = data.filter(function(p){return p.modeKuliah && p.modeKuliah.indexOf('Sinkronus')>-1 && p.modeKuliah.indexOf('Asinkronus')===-1;}).length;
-  var maAll = data.filter(function(p){return p.modeKuliah && p.modeKuliah.indexOf('Asinkronus')>-1;});
-  var ma = maAll.filter(function(p){return !p.tipePertemuan||p.tipePertemuan==='Reguler';}).length;
-  var maUjian = maAll.filter(function(p){return p.tipePertemuan==='UTS'||p.tipePertemuan==='UAS';}).length;
+  var ma = data.filter(function(p){return p.modeKuliah && p.modeKuliah.indexOf('Asinkronus')>-1;}).length;
 
   var sd=data.filter(function(p){return p.waktuSelesai&&p.waktuSelesai!=='';});
   var sh=sd.filter(function(p){return p.colorSelesai==='blue';}).length;
@@ -66,7 +64,7 @@ function renderR(){
   
   document.getElementById('lml').textContent='Luring: '+ml;
   document.getElementById('lms').textContent='Daring Sinkronus: '+ms;
-  document.getElementById('lma').textContent='Daring Asinkronus: '+ma+(maUjian>0?' (+'+maUjian+'x UTS/UAS)':'');
+  document.getElementById('lma').textContent='Daring Asinkronus: '+ma;
 
   document.getElementById('lh').textContent='Tepat waktu: '+h;
   document.getElementById('lk').textContent='Terlambat: '+k;
@@ -104,13 +102,9 @@ function renderR(){
     var dm=dd.filter(function(p){return p.color==='red';}).length;
     var dml=dd.filter(function(p){return !p.modeKuliah||p.modeKuliah.indexOf('Luring')>-1;}).length;
     var dms=dd.filter(function(p){return p.modeKuliah&&p.modeKuliah.indexOf('Sinkronus')>-1&&p.modeKuliah.indexOf('Asinkronus')===-1;}).length;
-    var dmaAll=dd.filter(function(p){return p.modeKuliah&&p.modeKuliah.indexOf('Asinkronus')>-1;});
-    var dma=dmaAll.filter(function(p){return !p.tipePertemuan||p.tipePertemuan==='Reguler';}).length;
-    var dmaUjian=dmaAll.filter(function(p){return p.tipePertemuan==='UTS'||p.tipePertemuan==='UAS';}).length;
-    var duts=dd.filter(function(p){return p.tipePertemuan==='UTS';}).length;
-    var duas=dd.filter(function(p){return p.tipePertemuan==='UAS';}).length;
+    var dma=dd.filter(function(p){return p.modeKuliah&&p.modeKuliah.indexOf('Asinkronus')>-1;}).length;
     var pHadir=totPresensi?Math.round((dh/totPresensi)*100):0;
-    var pAsinkron=totPresensi?Math.round((dma/totPresensi)*100):0; // hanya reguler
+    var pAsinkron=totPresensi?Math.round((dma/totPresensi)*100):0;
     var pLuring=totPresensi?Math.round((dml/totPresensi)*100):0;
     var pSinkron=totPresensi?Math.round((dms/totPresensi)*100):0;
     var pGanti=totPresensi?Math.round((totGanti/totPresensi)*100):0;
@@ -150,10 +144,9 @@ function renderR(){
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-top:6px">'
       +'<div style="background:#f5f5f3;border-radius:5px;padding:4px 6px;font-size:10px;color:#555">🏫 Luring<br><b style="color:#1a1a1a">'+dml+'x ('+pLuring+'%)</b></div>'
       +'<div style="background:#f5f5f3;border-radius:5px;padding:4px 6px;font-size:10px;color:#555">💻 Sinkronus<br><b style="color:#1a1a1a">'+dms+'x ('+pSinkron+'%)</b></div>'
-      +'<div style="background:#f5f5f3;border-radius:5px;padding:4px 6px;font-size:10px;color:#555">📝 Asinkronus<br><b style="color:#1a1a1a">'+dma+'x ('+pAsinkron+'%)'+(dmaUjian>0?' <span style="color:#185fa5">+'+dmaUjian+'x UTS/UAS</span>':'')+'</b></div>'
+      +'<div style="background:#f5f5f3;border-radius:5px;padding:4px 6px;font-size:10px;color:#555">📝 Asinkronus<br><b style="color:#1a1a1a">'+dma+'x ('+pAsinkron+'%)</b></div>'
       +'<div style="background:#f5f5f3;border-radius:5px;padding:4px 6px;font-size:10px;color:#555">🔄 Ganti Jadwal<br><b style="color:#1a1a1a">'+totGanti+'x</b></div>'
       +(totMaju>0?'<div style="background:#fefce8;border:1px solid #fde68a;border-radius:5px;padding:4px 6px;font-size:10px;color:#92400e;grid-column:span 2">⏩ Jadwal Maju (ACC)<br><b style="color:#92400e">'+totMaju+'x pemajuan jam</b></div>':'')
-      +(duts>0||duas>0?'<div style="background:#e6f1fb;border:1px solid #85b7eb;border-radius:5px;padding:4px 6px;font-size:10px;color:#185fa5;grid-column:span 2">📋 UTS/UAS: '+(duts>0?duts+'x UTS ':'')+''+(duas>0?duas+'x UAS':'')+'<br><span style="font-size:9px;color:#185fa5;opacity:.8">tidak dihitung dalam batas asinkronus</span></div>':'')
       +'</div>';
 
     // FITUR 3: Target Kehadiran — hitung estimasi total sesi dari jadwal di rentang tanggal
@@ -359,7 +352,6 @@ function exportExcel() {
   table += '<th style="padding:8px">Luring (Jumlah & %)</th>';
   table += '<th style="padding:8px">Daring Sinkronus (Jumlah & %)</th>';
   table += '<th style="padding:8px">Daring Asinkronus (Jumlah & %)</th>';
-  table += '<th style="padding:8px">UTS / UAS</th>';
   table += '<th style="padding:8px">Pengajuan Ganti Jadwal (Jumlah & %)</th>';
   table += '<th style="padding:8px">Status SP / Peringatan Akademik</th>';
   table += '</tr></thead><tbody>';
@@ -385,15 +377,11 @@ function exportExcel() {
     
     var dml = dd.filter(function(p){return !p.modeKuliah || p.modeKuliah.indexOf('Luring')>-1;}).length;
     var dms = dd.filter(function(p){return p.modeKuliah && p.modeKuliah.indexOf('Sinkronus')>-1 && p.modeKuliah.indexOf('Asinkronus')===-1;}).length;
-    var dmaAll2 = dd.filter(function(p){return p.modeKuliah && p.modeKuliah.indexOf('Asinkronus')>-1;});
-    var dma = dmaAll2.filter(function(p){return !p.tipePertemuan||p.tipePertemuan==='Reguler';}).length;
-    var dmaUjian2 = dmaAll2.filter(function(p){return p.tipePertemuan==='UTS'||p.tipePertemuan==='UAS';}).length;
-    var duts2 = dd.filter(function(p){return p.tipePertemuan==='UTS';}).length;
-    var duas2 = dd.filter(function(p){return p.tipePertemuan==='UAS';}).length;
+    var dma = dd.filter(function(p){return p.modeKuliah && p.modeKuliah.indexOf('Asinkronus')>-1;}).length;
 
     var pLuring = totPresensi ? Math.round((dml/totPresensi)*100) : 0;
     var pSinkron = totPresensi ? Math.round((dms/totPresensi)*100) : 0;
-    var pAsinkron = totPresensi ? Math.round((dma/totPresensi)*100) : 0; // hanya reguler
+    var pAsinkron = totPresensi ? Math.round((dma/totPresensi)*100) : 0;
     var pGanti = totPresensi ? Math.round((totGanti/totPresensi)*100) : 0;
 
     var status = 'Aman';
@@ -408,7 +396,7 @@ function exportExcel() {
          statusStyle = 'color:#555; background:#f5f5f5;';
        }
     } else if (pAsinkron >= 50) {
-       status = '⚠️ TEGURAN (Asinkronus reguler '+pAsinkron+'%'+(dmaUjian2>0?', tidak termasuk '+dmaUjian2+'x UTS/UAS':'')+')';
+       status = '⚠️ TEGURAN (Asinkronus '+pAsinkron+'%)';
        statusStyle = 'color:#854f0b; font-weight:bold; background:#fff4e5;';
     }
 
@@ -419,15 +407,14 @@ function exportExcel() {
     table += '<td style="padding:5px; text-align:center">' + dh + ' / ' + dk + ' / ' + dm + '</td>';
     table += '<td style="padding:5px; text-align:center">' + dml + 'x (' + pLuring + '%)</td>';
     table += '<td style="padding:5px; text-align:center">' + dms + 'x (' + pSinkron + '%)</td>';
-    table += '<td style="padding:5px; text-align:center">' + dma + 'x (' + pAsinkron + '%)'+(dmaUjian2>0?' +'+dmaUjian2+'x UTS/UAS':'')+'</td>';
-    table += '<td style="padding:5px; text-align:center">' + duts2 + 'x UTS / ' + duas2 + 'x UAS</td>';
+    table += '<td style="padding:5px; text-align:center">' + dma + 'x (' + pAsinkron + '%)</td>';
     table += '<td style="padding:5px; text-align:center">' + totGanti + 'x (' + pGanti + '%)</td>';
     table += '<td style="padding:5px; ' + statusStyle + '">' + status + '</td>';
     table += '</tr>';
   });
 
   table += '<tr>';
-  table += '<td colspan="9" style="text-align:right; font-weight:bold; padding:10px; font-size:14px;">Total Dosen Melanggar (Ada Jadwal Tapi Tidak Presensi):</td>';
+  table += '<td colspan="8" style="text-align:right; font-weight:bold; padding:10px; font-size:14px;">Total Dosen Melanggar (Ada Jadwal Tapi Tidak Presensi):</td>';
   table += '<td style="font-weight:bold; color:#a32d2d; background:#fcebeb; padding:10px; text-align:center; font-size:14px;">' + totalPelanggaran + ' Dosen</td>';
   table += '</tr>';
 

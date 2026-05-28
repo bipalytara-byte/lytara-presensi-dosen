@@ -76,12 +76,6 @@ function doLogin(){
   }
   var dos=D.find(function(d){return d.id===did;});
   if(!dos){err.textContent='Dosen tidak ditemukan.';return;}
-  // Cek status aktif — blokir login jika dinonaktifkan admin
-  if(dos.aktif === false){
-    err.textContent='🚫 Akun Anda dinonaktifkan. Hubungi Admin untuk informasi lebih lanjut.';
-    document.getElementById('login-pass').value='';
-    return;
-  }
   
   currentUser=dos; isAdmin=false;
   sessionStorage.setItem('userRole', 'dosen');

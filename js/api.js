@@ -2,9 +2,83 @@
    Fungsi: get(), post(), setSB(), refreshDataLokal()
 */
 
+
 async function get(p){var r=await fetch(API+'?'+new URLSearchParams(p).toString(),{redirect:'follow'});return JSON.parse(await r.text());}
 async function post(b){var r=await fetch(API+'?method=POST&payload='+encodeURIComponent(JSON.stringify(b)),{redirect:'follow'});return JSON.parse(await r.text());}
 function setSB(s){var el=document.getElementById('sb');el.textContent=s==='ok'?'Tersinkron':s==='sy'?'Menyinkron...':'Error';el.className='sb'+(s==='sy'?' sy':s==='er'?' se':'');}
+
+function showLogin(){document.getElementById('login-screen').classList.add('show');}
+function hideLogin(){document.getElementById('login-screen').classList.remove('show');}
+
+function swapLogin(v) {
+  document.getElementById('login-err').textContent='';
+  if(v === 'admin') {
+    document.getElementById('login-dosen-view').style.display = 'none';
+    document.getElementById('login-admin-view').style.display = 'block';
+  } else {
+    document.getElementById('login-dosen-view').style.display = 'block';
+    document.getElementById('login-admin-view').style.display = 'none';
+  }
+}
+
+async function loadForLogin(){
+  try{var r=await get({action:'getDosen'});D=r.data||[];
+    var sel=document.getElementById('login-sel');
+    sel.innerHTML='<option value="">— Pilih nama —</option>';
+    D.forEach(function(d){var o=document.createElement('option');o.value=d.id;o.textContent=d.nama;sel.appendChild(o);});
+  }catch(e){}
+  showLogin();
+}
+
+function togglePass(){
+  var i=document.getElementById('login-pass'),e=document.getElementById('pass-eye');
+  if(i.type==='password'){i.type='text';e.textContent='🙈';}else{i.type='password';e.textContent='👁';}
+}
+
+function doLogin(){
+  var sel=document.getElementById('login-sel'),pass=document.getElementById('login-pass').value.trim();
+  var err=document.getElementById('login-err');err.textContent='';
+  var did=sel.value;
+  if(!did){err.textContent='Pilih nama terlebih dahulu.';return;}
+  if(!pass){err.textContent='Masukkan password.';return;}
+  if(!DOSEN_PASS[did]||pass!==DOSEN_PASS[did]){
+    err.textContent='❌ Password salah. Hubungi admin jika lupa.';
+    document.getElementById('login-pass').value='';
+    document.getElementById('login-pass').focus();return;
+  }
+  var dos=D.find(function(d){return d.id===did;});
+  if(!dos){err.textContent='Dosen tidak ditemukan.';return;}
+  
+  currentUser=dos; isAdmin=false;
+  sessionStorage.setItem('userRole', 'dosen');
+  sessionStorage.setItem('current_user',JSON.stringify(dos));
+  hideLogin();loadThenShow();
+}
+
+function doAdminLogin(){
+  var pin=document.getElementById('admin-pin').value.trim();
+  var err=document.getElementById('login-err');err.textContent='';
+  if(pin === PIN) {
+     isAdmin=true; currentUser=null;
+     sessionStorage.setItem('userRole', 'admin');
+     hideLogin(); loadThenShow();
+  } else {
+     err.textContent='❌ PIN Admin salah.';
+     document.getElementById('admin-pin').value='';
+  }
+}
+
+function logout(){
+  if(!confirm('Yakin ingin keluar dari aplikasi?'))return;
+  sessionStorage.removeItem('userRole');
+  sessionStorage.removeItem('current_user');
+  currentUser=null; actId=null; actJad=null; isAdmin=false;
+  document.getElementById('csel').style.display='none';
+  document.getElementById('resume-banner').style.display='none';
+  document.getElementById('admin-pin').value='';
+  document.getElementById('login-pass').value='';
+  loadForLogin();
+}
 
 async function refreshDataLokal() {
   setSB('sy');
