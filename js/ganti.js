@@ -82,6 +82,24 @@ function renderG(){
   }).join('');
 }
 
+async function toggleAktifDosen(id){
+  if(!isAdmin){alert('Hanya admin yang dapat mengubah status dosen.');return;}
+  var d = D.find(function(x){return x.id===id;});
+  if(!d) return;
+  var aktifBaru = (d.aktif === false) ? true : false;
+  var label = aktifBaru ? 'mengaktifkan' : 'menonaktifkan';
+  if(!confirm((aktifBaru ? '✅ Aktifkan' : '🚫 Nonaktifkan')+' akun dosen "'+d.nama+'"?\n\n'+(aktifBaru ? 'Dosen akan bisa login kembali.' : 'Dosen tidak akan bisa login ke aplikasi.'))) return;
+  var data = Object.assign({}, d, {aktif: aktifBaru});
+  setSB('sy');
+  try{
+    await post({action:'saveDosen', data:data});
+    var idx = D.findIndex(function(x){return x.id===id;});
+    if(idx > -1) D[idx].aktif = aktifBaru;
+    setSB('ok'); renderD();
+    alert((aktifBaru ? '✅ Dosen diaktifkan.' : '🚫 Dosen dinonaktifkan.') + '\n' + d.nama);
+  } catch(e){ setSB('er'); alert('Gagal: '+e.message); }
+}
+
 function renderD(){
   var q=(document.getElementById('cari').value||'').toLowerCase();
   var f=D.filter(function(d){return d.nama.toLowerCase().indexOf(q)>-1;});
@@ -90,10 +108,23 @@ function renderD(){
   if(!f.length){el.innerHTML='<p class="empty">Tidak ditemukan.</p>';return;}
   el.innerHTML=f.map(function(d){
     var jd=J.filter(function(j){return j.dosenId===d.id;});
+    var isAktif = (d.aktif !== false); // default true jika field belum ada
     var waBadge = d.noWA
       ? '<span style="font-size:11px;background:#eaf3de;color:#27500a;border-radius:20px;padding:1px 8px;margin-left:4px">📱 WA terdaftar</span>'
       : '<span style="font-size:11px;background:#f5f5f3;color:#aaa;border-radius:20px;padding:1px 8px;margin-left:4px">📵 Belum ada WA</span>';
-    return '<div class="dc"><div class="ch2"><div><div class="en">'+d.nama+waBadge+'</div>'+(d.nip?'<div class="es">NIP: '+d.nip+'</div>':'')+' </div><div class="bg"><button class="btn btn-warn btn-sm" onclick="openMD(\''+d.id+'\')">Edit</button><button class="btn btn-danger btn-sm" onclick="hapusDos(\''+d.id+'\')">Hapus</button></div></div><div style="margin-top:4px">'+( d.mk.length?d.mk.map(function(m){return'<span class="mk-tag">'+m+'</span>';}).join(''):'<span class="empty">Belum ada MK</span>')+'</div><div style="margin-top:6px;font-size:12px;color:#888">'+jd.length+' jadwal terdaftar</div></div>';
+    var aktifBadge = isAktif
+      ? '<span style="font-size:11px;background:#eaf3de;color:#27500a;border:1px solid #97c459;border-radius:4px;padding:2px 8px;margin-left:6px;font-weight:700">● Aktif</span>'
+      : '<span style="font-size:11px;background:#fcebeb;color:#a32d2d;border:1px solid #f5a5a5;border-radius:4px;padding:2px 8px;margin-left:6px;font-weight:700">● Nonaktif</span>';
+    var toggleBtn = isAktif
+      ? '<button class="btn btn-sm" style="background:#fcebeb;color:#a32d2d;border-color:#f5a5a5;font-size:11px" onclick="toggleAktifDosen(\''+d.id+'\')">🚫 Nonaktifkan</button>'
+      : '<button class="btn btn-sm" style="background:#eaf3de;color:#27500a;border-color:#97c459;font-size:11px" onclick="toggleAktifDosen(\''+d.id+'\')">✅ Aktifkan</button>';
+    var cardStyle = isAktif ? '' : 'opacity:0.6;';
+    return '<div class="dc" style="'+cardStyle+'">'
+      +'<div class="ch2"><div><div class="en">'+d.nama+aktifBadge+waBadge+'</div>'+(d.nip?'<div class="es">NIP: '+d.nip+'</div>':'')+'</div>'
+      +'<div class="bg">'+toggleBtn+'<button class="btn btn-warn btn-sm" onclick="openMD(\''+d.id+'\')">Edit</button><button class="btn btn-danger btn-sm" onclick="hapusDos(\''+d.id+'\')">Hapus</button></div></div>'
+      +'<div style="margin-top:4px">'+(d.mk.length?d.mk.map(function(m){return'<span class="mk-tag">'+m+'</span>';}).join(''):'<span class="empty">Belum ada MK</span>')+'</div>'
+      +'<div style="margin-top:6px;font-size:12px;color:#888">'+jd.length+' jadwal terdaftar'+(isAktif?'':' · <span style="color:#a32d2d;font-weight:600">Login diblokir</span>')+'</div>'
+      +'</div>';
   }).join('');
 }
 
@@ -127,7 +158,8 @@ async function saveDos(){
     nama: nama,
     nip:  document.getElementById('mnip').value.trim(),
     mk:   tempMk,
-    noWA: document.getElementById('mnowa').value.trim()
+    noWA: document.getElementById('mnowa').value.trim(),
+    aktif: eDos ? (D.find(function(d){return d.id===eDos;})||{}).aktif !== false : true
   };
   setSB('sy');
   try{
