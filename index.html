@@ -315,6 +315,13 @@
       </select>
       <div id="mode-hint" style="display:none;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:500"></div>
     </div>
+    <div class="field">
+      <label>Tipe Pertemuan</label>
+      <select id="ptipe">
+        <option value="Reguler">📚 Reguler</option>
+        <option value="UTS">📝 UTS (Ujian Tengah Semester)</option>
+        <option value="UAS">📋 UAS (Ujian Akhir Semester)</option>
+      </select>
     <div id="prev" style="display:none;margin-bottom:1rem;padding:10px 14px;border-radius:8px;font-size:14px;font-weight:500"></div>
     <button class="btn btn-primary" id="brek" onclick="rekam()">Rekam mulai mengajar</button>
   </div>
@@ -894,11 +901,14 @@
     </div>
 
     <!-- Mode highlight — bagian utama yang perlu dicek -->
-    <div id="rkf-mode-box" style="border-radius:10px;padding:12px 14px;margin-bottom:14px;border:2px solid">
+    <div id="rkf-mode-box" style="border-radius:10px;padding:12px 14px;margin-bottom:10px;border:2px solid">
       <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;opacity:.7">Mode Perkuliahan yang dipilih</div>
       <div id="rkf-mode-label" style="font-size:16px;font-weight:700"></div>
       <div id="rkf-mode-warn" style="font-size:12px;margin-top:6px;font-weight:500"></div>
     </div>
+
+    <!-- Tipe pertemuan — muncul hanya jika UTS / UAS -->
+    <div id="rkf-tipe-box" style="display:none;border-radius:10px;padding:10px 14px;margin-bottom:10px;border:2px solid;font-size:13px;font-weight:600"></div>
 
     <div style="background:#faeeda;border-left:3px solid #fac775;border-radius:0 8px 8px 0;padding:9px 12px;font-size:12px;color:#633806;margin-bottom:16px;font-weight:500">
       ⚠️ Pastikan mode sudah sesuai kondisi kelas hari ini sebelum menyimpan.
