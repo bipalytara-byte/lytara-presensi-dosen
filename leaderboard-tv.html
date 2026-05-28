@@ -660,6 +660,99 @@ html, body {
 .an-tv-detail .hl { color: var(--yellow); font-weight: 600; }
 .an-tv-cat { font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
 
+/* ── SLIDE JADWAL PERUBAHAN (slide 4) ── */
+.perubahan-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  height: calc(100% - 80px);
+  overflow: hidden;
+}
+.perubahan-col {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.perubahan-col-head {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.perubahan-col-inner {
+  flex: 1;
+  overflow: hidden;
+  will-change: transform;
+}
+.perubahan-item {
+  display: grid;
+  grid-template-columns: 42px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 8px;
+  animation: rowIn .5s both;
+  position: relative;
+  overflow: hidden;
+}
+.perubahan-item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  border-radius: 99px 0 0 99px;
+}
+.perubahan-item.item-maju::before { background: var(--gold); }
+.perubahan-item.item-ganti::before { background: var(--blue); }
+.perubahan-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  font-family: 'DM Serif Display', serif;
+}
+.perubahan-info { min-width: 0; }
+.perubahan-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+.perubahan-mk { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.perubahan-jam {
+  font-family: 'DM Serif Display', serif;
+  font-size: 18px;
+  color: var(--text);
+  text-align: right;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+.perubahan-jam-sub { font-size: 10px; color: var(--muted); font-family: 'DM Sans', sans-serif; }
+.badge-maju {
+  font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  background: var(--gold-dim); color: var(--gold);
+  border: 1px solid rgba(245,200,66,0.3);
+  border-radius: 6px; padding: 2px 7px;
+}
+.badge-ganti {
+  font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  background: var(--blue-dim); color: var(--blue);
+  border: 1px solid rgba(96,165,250,0.3);
+  border-radius: 6px; padding: 2px 7px;
+}
+.no-perubahan {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; color: var(--muted); font-size: 14px; gap: 8px;
+}
+
 /* ── REFRESH OVERLAY ── */
 #loading-overlay {
   position: fixed;
@@ -863,6 +956,7 @@ html, body {
       <div class="si-dot" id="si-1"></div>
       <div class="si-dot" id="si-2"></div>
       <div class="si-dot" id="si-3"></div>
+      <div class="si-dot" id="si-4"></div>
     </div>
 
     <div class="clock-box">
@@ -963,9 +1057,38 @@ html, body {
       </div>
     </div>
 
-  </div>
+    <!-- SLIDE 4: JADWAL MAJU & PENGGANTI -->
+    <div class="slide" id="slide-4">
+      <div class="slide-header">
+        <div class="slide-icon" style="background:rgba(245,200,66,0.1)">🔄</div>
+        <div>
+          <div class="slide-title" style="color:var(--gold)">Jadwal Berubah Hari Ini</div>
+          <div class="slide-sub" id="perubahan-sub-label">Jadwal maju & pengganti yang sudah disetujui Admin</div>
+        </div>
+      </div>
+      <div class="perubahan-grid">
+        <div class="perubahan-col">
+          <div class="perubahan-col-head" style="color:var(--gold)">
+            <span>⏩</span> Jadwal Maju
+            <span id="perubahan-maju-count" style="background:rgba(245,200,66,0.15);border-radius:20px;padding:1px 10px;font-size:11px">0</span>
+          </div>
+          <div style="overflow:hidden;flex:1;position:relative">
+            <div class="perubahan-col-inner" id="perubahan-maju-inner"></div>
+          </div>
+        </div>
+        <div class="perubahan-col">
+          <div class="perubahan-col-head" style="color:var(--blue)">
+            <span>🔄</span> Jadwal Pengganti
+            <span id="perubahan-ganti-count" style="background:var(--blue-dim);border-radius:20px;padding:1px 10px;font-size:11px">0</span>
+          </div>
+          <div style="overflow:hidden;flex:1;position:relative">
+            <div class="perubahan-col-inner" id="perubahan-ganti-inner"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <!-- TICKER -->
+  </div>
   <div class="ticker-bar">
     <div class="ticker-label">LIVE</div>
     <div class="ticker-track" id="ticker-track">
@@ -980,7 +1103,7 @@ const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4J
 const SLIDE_DUR   = 8000;  // ms per slide
 const REFRESH_SEC = 60;    // data refresh
 const MIN_SESI    = 1;
-const TOTAL_SLIDES= 4;
+const TOTAL_SLIDES= 5;
 
 let currentSlide  = 0;
 let slideTimer    = null;
@@ -1034,6 +1157,7 @@ function fmtDate(s){
 function goSlide(n) {
   const slides = document.querySelectorAll('.slide');
   const dots   = document.querySelectorAll('.si-dot');
+  const total  = window._activeSlides || TOTAL_SLIDES;
 
   slides[currentSlide].classList.remove('active');
   slides[currentSlide].classList.add('exit');
@@ -1042,7 +1166,11 @@ function goSlide(n) {
   dots[currentSlide].classList.remove('active');
   dots[currentSlide].style.width = '';
 
-  currentSlide = (n + TOTAL_SLIDES) % TOTAL_SLIDES;
+  // Hitung slide berikutnya, skip slide-4 jika disembunyikan
+  let next = (n + TOTAL_SLIDES) % TOTAL_SLIDES;
+  if(next === 4 && total < 5) next = 0;
+
+  currentSlide = next;
 
   slides[currentSlide].classList.add('active');
   // Restart scroll saat masuk slide Today
@@ -1068,13 +1196,15 @@ function fetchWithTimeout(url, ms=15000) {
 
 async function loadData() {
   try {
-    const [rP, rJ] = await Promise.all([
+    const [rP, rJ, rM, rG] = await Promise.all([
       fetchWithTimeout(`${API}?action=getPresensi&bulan=all`),
-      fetchWithTimeout(`${API}?action=getJadwal`)
+      fetchWithTimeout(`${API}?action=getJadwal`),
+      fetchWithTimeout(`${API}?action=getMaju`),
+      fetchWithTimeout(`${API}?action=getGanti`)
     ]);
     if(rP.error || rJ.error) throw new Error(rP.error||rJ.error);
     try {
-      process(rP.data||[], rJ.data||[]);
+      process(rP.data||[], rJ.data||[], rM.data||[], rG.data||[]);
     } catch(pe) {
       console.error('Process error:', pe);
     }
@@ -1085,7 +1215,7 @@ async function loadData() {
   }
 }
 
-function process(presensi, jadwals) {
+function process(presensi, jadwals, majuData, gantiData) {
   // Build jadwal lookup
   const jMap = {};
   const tvAnomalies = [];
@@ -1214,6 +1344,7 @@ function process(presensi, jadwals) {
   renderToday(hariIni, todayHadir, todayBelum, todayPresensi, jMap);
   renderTicker(top5, bot5, ratePct, tTotal);
   renderAnomalyOverlay(tvAnomalies);
+  renderPerubahan(majuData||[], gantiData||[], hariIni, now);
 
   // Update stat period label
   const BULAN_TV = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -1417,9 +1548,116 @@ function renderTicker(top5, bot5, rate, total) {
   bot5.forEach((d,i)=>{
     items.push(`<span class="ticker-item">⚠<span class="ti-name">${esc(shortName(d.nama))}</span><span class="ti-sep">·</span><span class="ti-val" style="color:var(--orange)">${d.terlambatW}× terlambat</span><span class="ti-sep">rata-rata ${Math.round(d.avgM)} mnt</span></span>`);
   });
+  // Tambahkan info jadwal perubahan ke ticker
+  if(window._tickerPerubahan && window._tickerPerubahan.length){
+    window._tickerPerubahan.forEach(t => items.push(t));
+  }
   // Duplicate for seamless loop
   const html = [...items,...items].join('<span class="ticker-item" style="color:var(--border)">◆</span>');
   document.getElementById('ticker-track').innerHTML = html;
+}
+
+// ── RENDER JADWAL PERUBAHAN ──
+function renderPerubahan(majuData, gantiData, hariIni, now) {
+  // Normalisasi tanggal hari ini ke format dd/MM/yyyy dan yyyy-MM-dd
+  const ymd = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  const dmy = String(now.getDate()).padStart(2,'0')+'/'+String(now.getMonth()+1).padStart(2,'0')+'/'+now.getFullYear();
+
+  // Filter jadwal maju hari ini yang sudah disetujui
+  const majuHariIni = majuData.filter(m => {
+    if(m.statusAcc !== 'Disetujui') return false;
+    // tglRaw bisa format yyyy-MM-dd atau dd/MM/yyyy
+    return m.tglRaw === ymd || m.tgl === dmy || (m.tglRaw||'').replace(/-/g,'/') === dmy;
+  });
+
+  // Filter jadwal pengganti hari ini yang sudah disetujui
+  const gantiHariIni = gantiData.filter(g => {
+    if(g.statusAcc !== 'Disetujui') return false;
+    // g.ganti adalah yyyy-MM-dd
+    return g.ganti === ymd;
+  });
+
+  // Simpan untuk ticker
+  window._tickerPerubahan = [];
+  majuHariIni.forEach(m => {
+    window._tickerPerubahan.push(`<span class="ticker-item">⏩<span class="ti-name">${esc(shortName(m.dosen))}</span><span class="ti-sep">·</span><span class="ti-val" style="color:var(--gold)">Jadwal Maju</span><span class="ti-sep">${esc(m.mk)} · ${esc(m.jam)}</span></span>`);
+  });
+  gantiHariIni.forEach(g => {
+    window._tickerPerubahan.push(`<span class="ticker-item">🔄<span class="ti-name">${esc(shortName(g.dosen))}</span><span class="ti-sep">·</span><span class="ti-val" style="color:var(--blue)">Jadwal Pengganti</span><span class="ti-sep">${esc(g.mk)} · ${esc(g.jam)}</span></span>`);
+  });
+
+  // Sembunyikan slide-4 jika tidak ada data sama sekali
+  const slide4 = document.getElementById('slide-4');
+  const dot4   = document.getElementById('si-4');
+  if(!majuHariIni.length && !gantiHariIni.length) {
+    slide4.style.display = 'none';
+    if(dot4) dot4.style.display = 'none';
+    // Kurangi total slide efektif
+    window._activeSlides = 4;
+  } else {
+    slide4.style.display = '';
+    if(dot4) dot4.style.display = '';
+    window._activeSlides = 5;
+  }
+
+  // Update count badge
+  document.getElementById('perubahan-maju-count').textContent = majuHariIni.length;
+  document.getElementById('perubahan-ganti-count').textContent = gantiHariIni.length;
+  document.getElementById('perubahan-sub-label').textContent =
+    `${majuHariIni.length + gantiHariIni.length} perubahan jadwal hari ${hariIni} · hanya yang sudah ACC Admin`;
+
+  // Render kolom Jadwal Maju
+  const majuEl = document.getElementById('perubahan-maju-inner');
+  if(!majuHariIni.length){
+    majuEl.innerHTML = '<div class="no-perubahan">✓ Tidak ada jadwal maju hari ini</div>';
+  } else {
+    majuEl.innerHTML = majuHariIni.map((m, i) => {
+      const color = avatarColor(m.dosenId||m.dosen||'');
+      const ini   = initials(m.dosen||'?');
+      const jamParts = (m.jam||'').split('-');
+      const jamMulai = jamParts[0] ? jamParts[0].trim() : m.jam;
+      const jamSel   = jamParts[1] ? jamParts[1].trim() : '';
+      return `<div class="perubahan-item item-maju" style="animation-delay:${i*0.08}s">
+        <div class="perubahan-avatar" style="background:${color}">${ini}</div>
+        <div class="perubahan-info">
+          <div class="perubahan-name">${esc(m.dosen||'?')}</div>
+          <div class="perubahan-mk">${esc(m.mk||'—')} &nbsp;<span class="badge-maju">⏩ MAJU</span></div>
+          ${m.tempat?`<div style="font-size:10px;color:var(--muted);margin-top:2px">📍 ${esc(m.tempat)}</div>`:''}
+        </div>
+        <div class="perubahan-jam">
+          ${esc(jamMulai)}
+          ${jamSel?`<div class="perubahan-jam-sub">${esc(jamSel)}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Render kolom Jadwal Pengganti
+  const gantiEl = document.getElementById('perubahan-ganti-inner');
+  if(!gantiHariIni.length){
+    gantiEl.innerHTML = '<div class="no-perubahan">✓ Tidak ada jadwal pengganti hari ini</div>';
+  } else {
+    gantiEl.innerHTML = gantiHariIni.map((g, i) => {
+      const color = avatarColor(g.dosenId||g.dosen||'');
+      const ini   = initials(g.dosen||'?');
+      const jamParts = (g.jam||'').split('-');
+      const jamMulai = jamParts[0] ? jamParts[0].trim() : g.jam;
+      const jamSel   = jamParts[1] ? jamParts[1].trim() : '';
+      const modeLabel = (g.mode||'').toLowerCase()==='daring' ? 'Daring' : 'Luring';
+      return `<div class="perubahan-item item-ganti" style="animation-delay:${i*0.08}s">
+        <div class="perubahan-avatar" style="background:${color}">${ini}</div>
+        <div class="perubahan-info">
+          <div class="perubahan-name">${esc(g.dosen||'?')}</div>
+          <div class="perubahan-mk">${esc(g.mk||'—')} &nbsp;<span class="badge-ganti">🔄 PENGGANTI</span></div>
+          ${g.tempat?`<div style="font-size:10px;color:var(--muted);margin-top:2px">📍 ${esc(g.tempat)} · ${modeLabel}</div>`:`<div style="font-size:10px;color:var(--muted);margin-top:2px">${modeLabel}</div>`}
+        </div>
+        <div class="perubahan-jam">
+          ${esc(jamMulai)}
+          ${jamSel?`<div class="perubahan-jam-sub">${esc(jamSel)}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
 }
 
 // ── UTILS ──
