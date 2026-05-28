@@ -270,11 +270,28 @@ function buildModeHTML(myP, total) {
   if(!total) return '<p class="empty" style="font-size:12px">Belum ada data.</p>';
   var ml=myP.filter(function(p){return !p.modeKuliah||p.modeKuliah.indexOf('Luring')>-1;}).length;
   var ms=myP.filter(function(p){return p.modeKuliah&&p.modeKuliah.indexOf('Sinkronus')>-1&&p.modeKuliah.indexOf('Asinkronus')===-1;}).length;
-  var ma=myP.filter(function(p){return p.modeKuliah&&p.modeKuliah.indexOf('Asinkronus')>-1;}).length;
-  return [['🏫','Luring',ml,'#639922'],['💻','Sinkronus',ms,'#185fa5'],['📝','Asinkronus',ma,'#BA7517']].map(function(x){
+  // Asinkronus hanya dihitung untuk sesi reguler (bukan UTS/UAS)
+  var maAll=myP.filter(function(p){return p.modeKuliah&&p.modeKuliah.indexOf('Asinkronus')>-1;});
+  var ma=maAll.filter(function(p){return !p.tipePertemuan||p.tipePertemuan==='Reguler';}).length;
+  var maUjian=maAll.filter(function(p){return p.tipePertemuan==='UTS'||p.tipePertemuan==='UAS';}).length;
+  var muts=myP.filter(function(p){return p.tipePertemuan==='UTS';}).length;
+  var muas=myP.filter(function(p){return p.tipePertemuan==='UAS';}).length;
+  var rows=[['🏫','Luring',ml,'#639922'],['💻','Sinkronus',ms,'#185fa5'],['📝','Asinkronus',ma,'#BA7517']];
+  if(muts>0) rows.push(['📋','UTS',muts,'#185fa5']);
+  if(muas>0) rows.push(['📋','UAS',muas,'#6d28d9']);
+  var html=rows.map(function(x){
     var pct=total?Math.round(x[2]/total*100):0;
     return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span>'+x[0]+'</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span style="color:#555">'+x[1]+'</span><span style="font-weight:700;color:'+x[3]+'">'+x[2]+'x ('+pct+'%)</span></div><div style="background:#f0f0ee;border-radius:10px;height:5px"><div style="width:'+pct+'%;height:5px;border-radius:10px;background:'+x[3]+'"></div></div></div></div>';
-  }).join('') + (myP.filter(function(p){return p.modeKuliah&&p.modeKuliah.indexOf('Asinkronus')>-1;}).length/total>=.5?'<div style="padding:5px 8px;background:#faeeda;border-radius:7px;font-size:10px;color:#633806;font-weight:600">⚠️ Asinkronus ≥50% — perlu perhatian</div>':'');
+  }).join('');
+  // Peringatan asinkronus hanya dari sesi reguler, bukan UTS/UAS
+  var pctAsinRegular = total ? ma/total : 0;
+  if(pctAsinRegular >= 0.5){
+    html += '<div style="padding:5px 8px;background:#faeeda;border-radius:7px;font-size:10px;color:#633806;font-weight:600">⚠️ Asinkronus reguler ≥50% — perlu perhatian</div>';
+  }
+  if(maUjian > 0){
+    html += '<div style="padding:5px 8px;background:#e6f1fb;border-radius:7px;font-size:10px;color:#185fa5;font-weight:600;margin-top:4px">ℹ️ '+maUjian+'x asinkronus UTS/UAS tidak dihitung dalam batas persentase</div>';
+  }
+  return html;
 }
 
 function buildSelesaiHTML(myP, total) {
