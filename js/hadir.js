@@ -250,9 +250,18 @@ async function eksekusiRekam(){
   setSB('sy');
   try{
     await post({action:'savePresensi',data:rec});
-    P.push(rec);setSB('ok');actId=rec.id;actJad=p.jad;
+    P.push(rec);setSB('ok');actId=rec.id;
+    // FIX: Override jamSelesai di actJad agar rekamSelesai() pakai jam selesai
+    // yang benar (dari jadwal maju/ganti), bukan jam selesai jadwal asli.
+    var jadEfektif = Object.assign({}, p.jad);
+    if(p.isMajuValid && p.isMajuValid.jam.indexOf('-') > -1) {
+      jadEfektif.jamSelesai = p.isMajuValid.jam.split('-')[1].trim();
+    } else if(p.isGantiValid && p.isGantiValid.jam.indexOf('-') > -1) {
+      jadEfektif.jamSelesai = p.isGantiValid.jam.split('-')[1].trim();
+    }
+    actJad = jadEfektif;
     document.getElementById('resume-banner').style.display='none';
-    tampilKartuSelesai(rec,p.jad);
+    tampilKartuSelesai(rec, jadEfektif);
     renderHari();
     renderRiwayatSaya();
     fillBerandaDosen();
@@ -270,7 +279,12 @@ async function eksekusiRekam(){
 
 function tampilKartuSelesai(rec,jad){
   var md = rec.modeKuliah || 'Luring';
-  document.getElementById('isel').innerHTML='<b>'+rec.dosen+'</b><br>'+rec.mk+(rec.kelas?' · '+rec.kelas:'')+' · '+rec.ruang+' <span class="badge mode-badge" style="font-size:10px; margin-left:6px">' + md + '</span><br>Hadir: <b>'+rec.waktuHadir+'</b> <span class="badge '+rec.color+'" style="font-size:11px">'+rec.status+'</span><br>Jam selesai jadwal: <b>'+(jad&&jad.jamSelesai?jStr(jad.jamSelesai):'—')+'</b>';
+  // FIX: Gunakan rec.jamSelesaiJadwal (sudah dihitung dari sumber maju/ganti/asli)
+  // agar kartu menampilkan jam selesai yang sesuai, bukan selalu jadwal asli.
+  var jamSelesaiTampil = rec.jamSelesaiJadwal
+    ? jStr(rec.jamSelesaiJadwal)
+    : (jad && jad.jamSelesai ? jStr(jad.jamSelesai) : '—');
+  document.getElementById('isel').innerHTML='<b>'+rec.dosen+'</b><br>'+rec.mk+(rec.kelas?' · '+rec.kelas:'')+' · '+rec.ruang+' <span class="badge mode-badge" style="font-size:10px; margin-left:6px">' + md + '</span><br>Hadir: <b>'+rec.waktuHadir+'</b> <span class="badge '+rec.color+'" style="font-size:11px">'+rec.status+'</span><br>Jam selesai jadwal: <b>'+jamSelesaiTampil+'</b>';
   document.getElementById('csel').style.display='block';
 }
 
