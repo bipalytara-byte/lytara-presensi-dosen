@@ -237,6 +237,7 @@ async function rekam(){
       tipeBadgeEl.style.display='none';
     }
   }
+}
 
 async function eksekusiRekam(){
   if(!_rekamPending) return;
