@@ -8,56 +8,6 @@
 */
 
 
-function cekNotifMaju() {
-  var w = document.getElementById('notif-ganti');
-  if(!w || !currentUser || isAdmin) return;
-
-  var today = new Date();
-  today.setHours(0,0,0,0);
-
-  var notifG = G.filter(function(g) {
-    return g.dosenId === currentUser.id &&
-           (g.statusAcc === 'Disetujui' || g.statusAcc === 'Ditolak') &&
-           new Date(g.ganti) >= today;
-  });
-  
-  var notifM = M.filter(function(m) {
-    return m.dosenId === currentUser.id &&
-           (m.statusAcc === 'Disetujui' || m.statusAcc === 'Ditolak') &&
-           new Date(m.tglRaw) >= today;
-  });
-
-  var all = [];
-  notifG.forEach(function(g){
-    var isAcc = g.statusAcc === 'Disetujui';
-    var bg = isAcc ? '#eaf3de' : '#fcebeb';
-    var border = isAcc ? '#97c459' : '#f09595';
-    var color = isAcc ? '#27500a' : '#791f1f';
-    var icon = isAcc ? '✅' : '❌';
-    all.push('<div style="background:'+bg+'; border:1px solid '+border+'; color:'+color+'; padding:10px 14px; border-radius:8px; margin-bottom:8px; font-size:13px; font-weight:500;">' +
-           icon + ' Jadwal <b>Pengganti</b> — <b>' + g.mk + '</b> (' + g.asli + ' → ' + g.ganti + ') telah <b>' + g.statusAcc + '</b>.' +
-           (g.alasanTolak ? ' Alasan: ' + g.alasanTolak : '') +
-           '</div>');
-  });
-  notifM.forEach(function(m){
-    var isAcc = m.statusAcc === 'Disetujui';
-    var bg = isAcc ? '#fef3c7' : '#fcebeb';
-    var border = isAcc ? '#fde68a' : '#f09595';
-    var color = isAcc ? '#92400e' : '#791f1f';
-    var icon = isAcc ? '⏩' : '❌';
-    all.push('<div style="background:'+bg+'; border:1px solid '+border+'; color:'+color+'; padding:10px 14px; border-radius:8px; margin-bottom:8px; font-size:13px; font-weight:500;">' +
-           icon + ' Jadwal <b>Maju</b> — <b>' + m.mk + '</b> (' + m.tgl + ' · ' + m.jam + ') telah <b>' + m.statusAcc + '</b>.' +
-           (m.alasanTolak ? ' Alasan: ' + m.alasanTolak : '') +
-           '</div>');
-  });
-
-  if(all.length === 0) { w.style.display='none'; return; }
-  w.innerHTML = all.join('');
-  w.style.display = 'block';
-}
-
-// =====================================================
-// RAPOR — Semester helper
 // =====================================================
 function getSemesterOptions(presensiBulan) {
   // Bangun daftar semester dari data bulan presensi (Ganjil: Agu-Jan, Genap: Feb-Jul)
@@ -283,14 +233,9 @@ function buildModeHTML(myP, total) {
     var pct=total?Math.round(x[2]/total*100):0;
     return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span>'+x[0]+'</span><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span style="color:#555">'+x[1]+'</span><span style="font-weight:700;color:'+x[3]+'">'+x[2]+'x ('+pct+'%)</span></div><div style="background:#f0f0ee;border-radius:10px;height:5px"><div style="width:'+pct+'%;height:5px;border-radius:10px;background:'+x[3]+'"></div></div></div></div>';
   }).join('');
-  // Peringatan asinkronus hanya dari sesi reguler, bukan UTS/UAS
   var pctAsinRegular = total ? ma/total : 0;
-  if(pctAsinRegular >= 0.5){
-    html += '<div style="padding:5px 8px;background:#faeeda;border-radius:7px;font-size:10px;color:#633806;font-weight:600">⚠️ Asinkronus reguler ≥50% — perlu perhatian</div>';
-  }
-  if(maUjian > 0){
-    html += '<div style="padding:5px 8px;background:#e6f1fb;border-radius:7px;font-size:10px;color:#185fa5;font-weight:600;margin-top:4px">ℹ️ '+maUjian+'x asinkronus UTS/UAS tidak dihitung dalam batas persentase</div>';
-  }
+  if(pctAsinRegular >= 0.5) html += '<div style="padding:5px 8px;background:#faeeda;border-radius:7px;font-size:10px;color:#633806;font-weight:600">⚠️ Asinkronus reguler ≥50% — perlu perhatian</div>';
+  if(maUjian > 0) html += '<div style="padding:5px 8px;background:#e6f1fb;border-radius:7px;font-size:10px;color:#185fa5;font-weight:600;margin-top:4px">ℹ️ '+maUjian+'x asinkronus UTS/UAS tidak dihitung dalam batas persentase</div>';
   return html;
 }
 
