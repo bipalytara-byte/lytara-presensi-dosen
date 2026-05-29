@@ -255,8 +255,21 @@ function renderJ(){
     // Panel paralel
     + '<div id="jpanel-paralel" style="display:none">'
     + (paralel.length > 0
-        ? '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e">'
-          + '💡 <b>Jadwal Paralel</b> — Gunakan tombol <b>▶ Aktifkan / ⏸ Nonaktifkan</b> untuk mengontrol batch yang sedang berjalan. '
+        ? // ── Panel aksi massal ──
+          '<div style="background:#fff;border:1px solid #e5e5e3;border-radius:10px;padding:12px 14px;margin-bottom:12px">'
+          + '<div style="font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:8px">⚡ Aksi Massal per Batch</div>'
+          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+          + '<select id="batch-massal-sel" style="font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:7px;min-width:110px">'
+          + getBatchOptions(paralel)
+          + '</select>'
+          + '<button onclick="toggleStatusParalelBatch(\'aktif\')" style="padding:6px 14px;border-radius:7px;border:1px solid #97c459;background:#eaf3de;color:#27500a;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🟢 Aktifkan Semua</button>'
+          + '<button onclick="toggleStatusParalelBatch(\'nonaktif\')" style="padding:6px 14px;border-radius:7px;border:1px solid #f09595;background:#fcebeb;color:#a32d2d;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🔴 Nonaktifkan Semua</button>'
+          + '</div>'
+          + '<div id="batch-massal-info" style="font-size:11px;color:#888;margin-top:6px"></div>'
+          + '</div>'
+          // ── Info ──
+          + '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e">'
+          + '💡 <b>Jadwal Paralel</b> — Gunakan tombol <b>▶ Aktifkan / ⏸ Nonaktifkan</b> untuk mengontrol per jadwal, atau gunakan <b>Aksi Massal</b> di atas untuk mengatur seluruh batch sekaligus. '
           + 'Progress bar menunjukkan jumlah pertemuan yang sudah terekam.'
           + '</div>'
           + htmlParalel
@@ -304,10 +317,69 @@ async function toggleStatusParalel(id) {
     j.statusParalel = newStatus;
     setSB('ok');
     renderJ();
-    // Langsung pindah ke tab paralel setelah toggle
     switchTabJadwal('paralel');
   } catch(e) {
     setSB('er');
+    alert('Gagal: ' + e.message);
+  }
+}
+
+// Kembalikan <option> unik batch dari data paralel
+function getBatchOptions(paralelList) {
+  var batches = [];
+  paralelList.forEach(function(j){
+    if (j.batch && batches.indexOf(j.batch) === -1) batches.push(j.batch);
+  });
+  batches.sort();
+  if (!batches.length) return '<option value="">— Tidak ada batch —</option>';
+  return batches.map(function(b){
+    var count = paralelList.filter(function(j){ return j.batch === b; }).length;
+    return '<option value="'+b+'">Batch '+b+' ('+count+' jadwal)</option>';
+  }).join('');
+}
+
+// Toggle massal — aktifkan/nonaktifkan semua jadwal paralel dalam satu batch
+async function toggleStatusParalelBatch(statusBaru) {
+  var sel   = document.getElementById('batch-massal-sel');
+  var info  = document.getElementById('batch-massal-info');
+  if (!sel) return;
+  var batch = sel.value;
+  if (!batch) { alert('Pilih batch terlebih dahulu.'); return; }
+
+  // Hitung jadwal yang akan terdampak
+  var terdampak = J.filter(function(j){
+    return j.tipe === 'paralel' && j.batch === batch;
+  });
+  if (!terdampak.length) { alert('Tidak ada jadwal paralel untuk Batch '+batch+'.'); return; }
+
+  var aksiLabel = statusBaru === 'aktif' ? '🟢 Aktifkan' : '🔴 Nonaktifkan';
+  var konfirm   = aksiLabel + ' SEMUA jadwal paralel Batch '+batch+'?\n\n'
+    + terdampak.length + ' jadwal akan diupdate sekaligus.\n\n'
+    + terdampak.slice(0,5).map(function(j){
+        return '• ' + j.mk + (j.kelas?' ['+j.kelas+']':'') + ' · ' + j.hari;
+      }).join('\n')
+    + (terdampak.length > 5 ? '\n• ... dan ' + (terdampak.length-5) + ' jadwal lainnya' : '');
+  if (!confirm(konfirm)) return;
+
+  if (info) { info.textContent = '⏳ Memproses '+terdampak.length+' jadwal...'; info.style.color = '#888'; }
+  setSB('sy');
+
+  try {
+    var r = await post({ action: 'updateStatusParalelBatch', batch: batch, statusParalel: statusBaru });
+    if (!r.success) throw new Error(r.error || 'Gagal update');
+
+    // Update data lokal J langsung tanpa fetch ulang
+    terdampak.forEach(function(j){ j.statusParalel = statusBaru; });
+
+    setSB('ok');
+    var pesanOk = aksiLabel + ' Batch '+batch+' selesai — '+r.updated+' jadwal diupdate.';
+    if (info) { info.textContent = '✅ ' + pesanOk; info.style.color = '#27500a'; }
+    renderJ();
+    switchTabJadwal('paralel');
+    alert('✅ ' + pesanOk);
+  } catch(e) {
+    setSB('er');
+    if (info) { info.textContent = '❌ Gagal: ' + e.message; info.style.color = '#a32d2d'; }
     alert('Gagal: ' + e.message);
   }
 }
