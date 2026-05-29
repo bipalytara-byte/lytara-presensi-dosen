@@ -116,14 +116,15 @@ async function refreshDataLokal() {
       get({action:'getJadwal'}), 
       get({action:'getPresensi'}), 
       get({action:'getGanti'}),
-      get({action:'getMaju'})
+      get({action:'getMaju'}),
+      get({action:'getMataKuliah'})
     ]);
-    
     D = r[0].data || [];
     J = r[1].data || [];
     P = r[2].data || [];
     G = r[3].data || [];
     M = r[4].data || [];
+    MK= r[5].data || [];
     setSB('ok'); 
     
     var oldRd = document.getElementById('rd') ? document.getElementById('rd').value : 'all';
@@ -142,6 +143,7 @@ async function refreshDataLokal() {
     renderG();
     renderM();
     renderRiwayatSaya();
+    renderMK();
     
     if(document.getElementById('page-report').classList.contains('active')) {
        renderR();
@@ -159,19 +161,22 @@ async function loadThenShow(){
     var r=await Promise.all([
       get({action:'getDosen'}),get({action:'getJadwal'}),
       get({action:'getPresensi'}),get({action:'getGanti'}),
-      get({action:'getMaju'}),get({action:'getSettings'})
+      get({action:'getMaju'}),get({action:'getSettings'}),
+      get({action:'getMataKuliah'})
     ]);
     D=r[0].data||[];J=r[1].data||[];P=r[2].data||[];G=r[3].data||[];M=r[4].data||[];
+    MK=r[6].data||[];
     var cfg = r[5].data || {};
     SISTEM_AKTIF     = cfg.liburAktif === true ? false : true;
     PESAN_LIBUR      = cfg.pesanLibur      || '';
     PENGUMUMAN_LOGIN = cfg.pengumumanLogin || '';
+    SEMESTER_AKTIF   = cfg.semesterAktif   || '';
+    TAHUN_AKADEMIK   = cfg.tahunAkademik   || '';
     setSB('ok');fillAll();restoreSesi();
-    // Arahkan ke halaman beranda sesuai role setelah semua data siap
     if (isAdmin) {
       pg('beranda-admin', document.getElementById('tab-beranda'));
     } else if (currentUser) {
-      tampilkanPengumumanLogin(); // Tampilkan pengumuman di beranda dosen
+      tampilkanPengumumanLogin();
       pg('beranda', document.getElementById('tab-beranda'));
     }
   }catch(e){setSB('er');}
@@ -186,6 +191,7 @@ function updateUserUI(){
   var btnRapor = document.getElementById('tab-rapor');
   var btnD = document.getElementById('tab-dosen');
   var btnJ = document.getElementById('tab-jadwal');
+  var btnMK = document.getElementById('tab-mk');
   var btnL = document.getElementById('tab-report');
   
   if (isAdmin) {
@@ -200,6 +206,7 @@ function updateUserUI(){
     btnRapor.style.display = 'none';
     btnD.style.display = 'inline-block';
     btnJ.style.display = 'inline-block';
+    if(btnMK) btnMK.style.display = 'inline-block';
     btnL.style.display = 'inline-block';
     btnMaju.style.display = 'inline-block';
 
@@ -242,6 +249,7 @@ function updateUserUI(){
     btnRapor.style.display = 'inline-block';
     btnD.style.display = 'none';
     btnJ.style.display = 'none';
+    if(btnMK) btnMK.style.display = 'none';
     btnL.style.display = 'none';
     btnMaju.style.display = 'inline-block';
     

@@ -15,8 +15,8 @@ const DOSEN_PASS = {
   "d017":"ZNZ807","d018":"RNG614","d019":"LYW251","d020":"XWH661",
   "d021":"TOU503"
 };
-let D=[],J=[],P=[],G=[],M=[];
-let eDos=null,eJad=null,tempMk=[];
+let D=[],J=[],P=[],G=[],M=[],MK=[];
+let eDos=null,eJad=null,eMk=null,tempMk=[];
 let actId=null,actJad=null;
 
 let isAdmin=false;
@@ -26,6 +26,8 @@ let currentUser=null;
 let SISTEM_AKTIF       = true;  // true = presensi berjalan normal
 let PESAN_LIBUR        = '';    // pesan banner saat sistem nonaktif (untuk dosen)
 let PENGUMUMAN_LOGIN   = '';    // pengumuman di halaman login (untuk semua)
+let SEMESTER_AKTIF     = '';    // misal: "2025/2026 Genap"
+let TAHUN_AKADEMIK     = '';    // misal: "2025/2026"
 
 window.onload=function(){
   tick(); setInterval(tick,1000);

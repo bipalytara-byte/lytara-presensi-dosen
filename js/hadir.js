@@ -278,7 +278,8 @@ async function eksekusiRekam(){
     jadwalId:p.jid,jam:p.jam,ruang:p.ruang,waktuHadir:now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}),
     tanggal:todayStr,bulan:now.getMonth()+1,status:st.l,color:st.c,diff:st.d,
     jamSelesaiJadwal:jamSelesaiAkhir,waktuSelesai:'',statusSelesai:'',colorSelesai:'',timestamp:ts,
-    modeKuliah:p.pmode, sumberJadwal:sumberJadwal};
+    modeKuliah:p.pmode, sumberJadwal:sumberJadwal,
+    semester: SEMESTER_AKTIF || p.jad.semester || ''};
 
   var btn=document.getElementById('brek');btn.disabled=true;btn.textContent='Menyimpan...';
   setSB('sy');

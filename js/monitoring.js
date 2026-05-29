@@ -530,12 +530,37 @@ function renderPengaturanSistem() {
   var isOn = SISTEM_AKTIF;
   el.innerHTML =
 
-    // ── BAGIAN 1: Toggle ON/OFF ──
+    // ── BAGIAN 1: Semester & Tahun Akademik ──
     '<div style="margin-bottom:1.5rem">'
+      + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">📅 Semester & Tahun Akademik Aktif</div>'
+      + '<div style="font-size:12px;color:#888;margin-bottom:14px">Digunakan otomatis saat dosen merekam presensi — tidak perlu input manual di spreadsheet lagi.</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
+        + '<div>'
+          + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Tahun Akademik</label>'
+          + '<input type="text" id="input-tahun-akademik" placeholder="cth: 2025/2026" value="'+TAHUN_AKADEMIK+'" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit"/>'
+        + '</div>'
+        + '<div>'
+          + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Semester</label>'
+          + '<select id="input-semester-aktif" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit">'
+          + ['2025/2026 Ganjil','2025/2026 Genap','2026/2027 Ganjil','2026/2027 Genap'].map(function(s){
+              return '<option value="'+s+'"'+(SEMESTER_AKTIF===s?' selected':'')+'>'+s+'</option>';
+            }).join('')
+          + '</select>'
+        + '</div>'
+      + '</div>'
+      + (SEMESTER_AKTIF
+        ? '<div style="background:#eaf3de;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#27500a">✅ Aktif: <b>'+SEMESTER_AKTIF+'</b> · Tahun Akademik: <b>'+(TAHUN_AKADEMIK||'–')+'</b></div>'
+        : '<div style="background:#faeeda;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#633806">⚠️ Semester aktif belum diset — presensi akan pakai data dari jadwal.</div>'
+      )
+      + '<button class="btn btn-primary" onclick="simpanSemesterAktif()" style="font-size:13px">💾 Simpan Semester Aktif</button>'
+    + '</div>'
+
+    + '<div style="border-top:1px solid #f0f0ee;margin-bottom:1.5rem"></div>'
+
+    // ── BAGIAN 2: Toggle ON/OFF ──
+    + '<div style="margin-bottom:1.5rem">'
       + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">🔌 Status Sistem Presensi</div>'
       + '<div style="font-size:12px;color:#888;margin-bottom:14px">Nonaktifkan sistem saat ada libur khusus, cuti bersama, atau kondisi darurat. Dosen tidak akan bisa merekam presensi selama sistem dimatikan.</div>'
-
-      // Toggle switch
       + '<div style="display:flex;align-items:center;gap:16px;padding:16px;border-radius:12px;border:2px solid '+(isOn?'#97c459':'#f09595')+';background:'+(isOn?'#f4fce8':'#fff5f5')+';margin-bottom:12px">'
         + '<div onclick="toggleSistemPresensi()" style="cursor:pointer;width:56px;height:30px;border-radius:20px;background:'+(isOn?'#639922':'#ccc')+';position:relative;transition:background .25s;flex-shrink:0">'
           + '<div style="position:absolute;top:3px;'+(isOn?'right:3px':'left:3px')+';width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:all .25s"></div>'
@@ -545,8 +570,6 @@ function renderPengaturanSistem() {
           + '<div style="font-size:11px;color:#888;margin-top:2px">'+(isOn?'Dosen dapat merekam presensi seperti biasa.':'Semua dosen tidak dapat merekam presensi.')+'</div>'
         + '</div>'
       + '</div>'
-
-      // Pesan libur (banner di beranda dosen)
       + '<div style="margin-bottom:10px">'
         + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Pesan banner saat sistem nonaktif <span style="font-weight:400;color:#aaa">(muncul di beranda dosen)</span></label>'
         + '<textarea id="input-pesan-libur" rows="2" placeholder="Contoh: Libur Idul Adha — presensi diliburkan hari ini." style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical">'+PESAN_LIBUR+'</textarea>'
@@ -556,12 +579,10 @@ function renderPengaturanSistem() {
 
     + '<div style="border-top:1px solid #f0f0ee;margin-bottom:1.5rem"></div>'
 
-    // ── BAGIAN 2: Pengumuman Login ──
+    // ── BAGIAN 3: Pengumuman Login ──
     + '<div>'
       + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">📢 Pengumuman di Halaman Login</div>'
-      + '<div style="font-size:12px;color:#888;margin-bottom:14px">Pesan ini muncul di papan pengumuman halaman login — terlihat oleh semua dosen sebelum masuk, cocok untuk info cuti bersama, jadwal ujian, atau instruksi khusus.</div>'
-
-      // Preview
+      + '<div style="font-size:12px;color:#888;margin-bottom:14px">Pesan ini muncul di papan pengumuman halaman login — terlihat oleh semua dosen sebelum masuk.</div>'
       + (PENGUMUMAN_LOGIN
         ? '<div style="background:#fff8e6;border:1.5px solid #f9c84a;border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:#7a4f00;line-height:1.6">'
             + '<b style="display:block;margin-bottom:4px">📢 Preview saat ini:</b>'
@@ -569,16 +590,34 @@ function renderPengaturanSistem() {
           + '</div>'
         : '<div style="background:#f5f5f3;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#aaa;font-style:italic">Belum ada pengumuman aktif.</div>'
       )
-
       + '<div style="margin-bottom:10px">'
         + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Isi pengumuman baru <span style="font-weight:400;color:#aaa">(kosongkan untuk menghapus)</span></label>'
-        + '<textarea id="input-pengumuman-login" rows="4" placeholder="Contoh: Senin 26 Mei libur Cuti Bersama. Dosen yang memiliki jadwal hari Senin harap segera mengajukan jadwal pengganti." style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical">'+PENGUMUMAN_LOGIN+'</textarea>'
+        + '<textarea id="input-pengumuman-login" rows="4" placeholder="Contoh: Senin 26 Mei libur Cuti Bersama." style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;resize:vertical">'+PENGUMUMAN_LOGIN+'</textarea>'
       + '</div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
         + '<button class="btn btn-primary" onclick="simpanPengumumanLogin()" style="font-size:13px">💾 Simpan Pengumuman</button>'
         + (PENGUMUMAN_LOGIN ? '<button class="btn btn-danger" onclick="hapusPengumumanLogin()" style="font-size:13px">🗑️ Hapus Pengumuman</button>' : '')
       + '</div>'
     + '</div>';
+}
+
+async function simpanSemesterAktif() {
+  var semester = (document.getElementById('input-semester-aktif').value || '').trim();
+  var tahun    = (document.getElementById('input-tahun-akademik').value  || '').trim();
+  if (!semester) { alert('Pilih semester terlebih dahulu.'); return; }
+  if (!tahun)    { alert('Isi tahun akademik terlebih dahulu.'); return; }
+  setSB('sy');
+  try {
+    await post({ action: 'saveSettings', data: { semesterAktif: semester, tahunAkademik: tahun } });
+    SEMESTER_AKTIF = semester;
+    TAHUN_AKADEMIK = tahun;
+    setSB('ok');
+    renderPengaturanSistem();
+    alert('✅ Semester aktif berhasil disimpan.\nSemester: ' + semester + '\nTahun Akademik: ' + tahun);
+  } catch(e) {
+    setSB('er');
+    alert('Gagal menyimpan: ' + e.message);
+  }
 }
 
 async function toggleSistemPresensi() {

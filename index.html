@@ -111,6 +111,7 @@
   <button class="tab" id="tab-report" onclick="pg('report',this)" style="display:none">Laporan Dashboard</button>
   <button class="tab" id="tab-dosen" onclick="pg('dosen',this)" style="display:none">Kelola Dosen</button>
   <button class="tab" id="tab-jadwal" onclick="pg('jadwal',this)" style="display:none">Kelola Jadwal</button>
+  <button class="tab" id="tab-mk" onclick="pg('mk',this)" style="display:none">Kelola MK</button>
 </div>
 
 <!-- ====== HALAMAN BERANDA ADMIN ====== -->
@@ -556,7 +557,46 @@
   <div id="jl"></div>
 </div>
 
-<div id="page-report" class="page">
+<!-- ====== HALAMAN KELOLA MATA KULIAH ====== -->
+<div id="page-mk" class="page">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-size:15px;font-weight:500">Master Mata Kuliah</div>
+      <div style="font-size:12px;color:#888" id="mk-cnt"></div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="openMMK()">+ Tambah MK</button>
+      <button class="btn" id="btn-import-mk" onclick="importMkDariJadwal()" style="background:#e6f1fb;border-color:#85b7eb;color:#185fa5;font-weight:600">📥 Import dari Jadwal</button>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem">
+    <div class="sw" style="flex:2;min-width:160px">
+      <span class="si">⌕</span>
+      <input type="text" id="mk-cari" placeholder="Cari nama atau kode MK..." oninput="renderMK()"/>
+    </div>
+    <select id="mk-prodi" onchange="renderMK()" style="flex:1;min-width:160px;font-size:13px;padding:8px 10px;border:1px solid #ddd;border-radius:8px">
+      <option value="all">Semua Prodi</option>
+      <option>S1 Teknik Informatika</option>
+      <option>S1 Sistem Informasi</option>
+      <option>D3 Manajemen Informatika</option>
+    </select>
+    <select id="mk-tahun" onchange="renderMK()" style="flex:1;min-width:140px;font-size:13px;padding:8px 10px;border:1px solid #ddd;border-radius:8px">
+      <option value="all">Semua Tahun Akademik</option>
+    </select>
+  </div>
+
+  <!-- Info banner jika ada MK belum lengkap -->
+  <div id="mk-alert-incomplete" style="display:none;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e">
+    ⚠️ Beberapa MK belum memiliki kode atau prodi. Klik <b>Edit</b> untuk melengkapinya.
+  </div>
+
+  <div id="mk-list">
+    <p class="empty">Memuat data...</p>
+  </div>
+</div>
+<!-- ====== END KELOLA MK ====== -->
 
   <!-- ===== FILTER BAR (sticky, selalu terlihat) ===== -->
   <div style="background:#fff;border:1px solid #e5e5e3;border-radius:12px;padding:12px 14px;margin-bottom:14px">
@@ -914,6 +954,39 @@
   </div>
 </div>
 
+<!-- Modal Tambah / Edit Mata Kuliah -->
+<div class="mo" id="modal-mk">
+  <div class="md">
+    <div class="mt" id="mmk-title">Tambah Mata Kuliah</div>
+    <div class="row">
+      <div class="field">
+        <label>Kode MK <span style="font-size:11px;color:#aaa;font-weight:400">(cth: TI603)</span></label>
+        <input type="text" id="mmk-kode" placeholder="TI603" style="text-transform:uppercase"/>
+      </div>
+      <div class="field">
+        <label>Prodi</label>
+        <select id="mmk-prodi">
+          <option>S1 Teknik Informatika</option>
+          <option>S1 Sistem Informasi</option>
+          <option>D3 Manajemen Informatika</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Nama Mata Kuliah</label>
+      <input type="text" id="mmk-nama" placeholder="cth: Broadcasting"/>
+    </div>
+    <div class="field">
+      <label>Tahun Akademik</label>
+      <input type="text" id="mmk-tahun" placeholder="cth: 2025/2026"/>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="cm('modal-mk')">Batal</button>
+      <button class="btn btn-primary" id="btn-save-mk" onclick="saveMMK()">Simpan</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Konfirmasi Rekam Presensi -->
 <div class="mo" id="modal-konfirmasi-rekam">
   <div class="md" style="max-width:420px">
@@ -975,6 +1048,7 @@
 <script src="js/report.js"></script>
 <script src="js/maju.js"></script>
 <script src="js/rapor.js"></script>
+<script src="js/mk.js"></script>
 <script src="js/notif.js"></script>
 <script src="js/beranda.js"></script>
 

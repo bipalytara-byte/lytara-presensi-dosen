@@ -260,8 +260,9 @@ function fillAll(){
   fillJadwalDosen();
   var rd=document.getElementById('rd');if(rd){rd.innerHTML='<option value="all">Semua dosen</option>';D.forEach(function(d){var o=document.createElement('option');o.value=d.id;o.textContent=d.nama;rd.appendChild(o);});}
   var jfd=document.getElementById('jfd');if(jfd){jfd.innerHTML='<option value="all">Semua dosen</option>';D.forEach(function(d){var o=document.createElement('option');o.value=d.id;o.textContent=d.nama;jfd.appendChild(o);});}
-  renderD();renderJ();renderHari();renderG();renderM();
+  renderD(); renderJ(); renderHari(); renderG(); renderM();
   renderRiwayatSaya();
+  renderMK();
   cekNotifGanti();
   renderNotifLiburHadir();
   renderDailyDashboard();
@@ -292,6 +293,7 @@ function pg(p,btn){
     fillAdminRaporDropdown();
     renderR();
   }
+  if(p==='mk'){ renderMK(); }
   if(p==='rapor'){ if(!isAdmin) renderRapor(null); }
   if(p==='hadir'){ renderNotifLiburHadir(); }
   if(p==='beranda-admin'){ fillBerandaAdmin(); }
