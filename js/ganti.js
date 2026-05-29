@@ -150,25 +150,166 @@ async function hapusDos(id){
 }
 
 function renderJ(){
-  var df=document.getElementById('jfd').value,hf=document.getElementById('jfh').value;
-  var data=J;
-  if(df!=='all')data=data.filter(function(j){return j.dosenId===df;});
-  if(hf!=='all')data=data.filter(function(j){return j.hari===hf;});
-  var cnt=document.getElementById('jcnt');if(cnt)cnt.textContent=J.length+' jadwal';
-  var el=document.getElementById('jl');
-  if(!data.length){el.innerHTML='<p class="empty">Belum ada jadwal.</p>';return;}
-  var today=todayHari();
-  var gr={};HARI.forEach(function(h){gr[h]=[];});
-  data.forEach(function(j){if(gr[j.hari])gr[j.hari].push(j);});
-  el.innerHTML=HARI.map(function(h){
-    var items=gr[h];if(!items||!items.length)return'';
-    var isT=h===today;
-    var rows=items.sort(function(a,b){return a.jamMulai.localeCompare(b.jamMulai);}).map(function(j){
-      var d=D.find(function(x){return x.id===j.dosenId;});
-      return '<tr><td>'+j.mk+'</td><td>'+(d?d.nama.split(',')[0]:'-')+'</td><td>'+(j.kelas||'-')+'</td><td>'+jStr(j.jamMulai)+(j.jamSelesai?' – '+jStr(j.jamSelesai):'')+'</td><td>'+j.ruang+'</td><td><div class="bg"><button class="btn btn-warn btn-sm" onclick="openMJ(\''+j.id+'\')">Edit</button><button class="btn btn-danger btn-sm" onclick="hapusJad(\''+j.id+'\')">Hapus</button></div></td></tr>';
+  var df  = document.getElementById('jfd').value;
+  var hf  = document.getElementById('jfh').value;
+  var tf  = document.getElementById('jtf') ? document.getElementById('jtf').value : 'semua';
+  var data = J.slice();
+  if (df !== 'all') data = data.filter(function(j){ return j.dosenId === df; });
+  if (hf !== 'all') data = data.filter(function(j){ return j.hari === hf; });
+
+  var cnt = document.getElementById('jcnt');
+  if (cnt) cnt.textContent = J.length + ' jadwal (' +
+    J.filter(function(j){ return j.tipe === 'paralel'; }).length + ' paralel)';
+
+  var el = document.getElementById('jl');
+  if (!data.length){ el.innerHTML = '<p class="empty">Belum ada jadwal.</p>'; return; }
+
+  var today    = todayHari();
+  var reguler  = data.filter(function(j){ return j.tipe !== 'paralel'; });
+  var paralel  = data.filter(function(j){ return j.tipe === 'paralel'; });
+
+  // Fungsi render tabel per grup hari
+  function renderGrupHari(list, isParalel) {
+    var gr = {}; HARI.forEach(function(h){ gr[h] = []; });
+    list.forEach(function(j){ if(gr[j.hari]) gr[j.hari].push(j); });
+    return HARI.map(function(h){
+      var items = gr[h]; if(!items || !items.length) return '';
+      var isT   = h === today;
+      var rows  = items.sort(function(a,b){ return a.jamMulai.localeCompare(b.jamMulai); }).map(function(j){
+        var d = D.find(function(x){ return x.id === j.dosenId; });
+
+        // Hitung counter pertemuan untuk paralel
+        var counterHtml = '';
+        if (isParalel) {
+          var counter = P.filter(function(p){ return p.jadwalId === j.id; }).length;
+          var max     = j.maxPertemuan || 8;
+          var pct     = Math.min(100, Math.round(counter / max * 100));
+          var barColor= counter >= max ? '#a32d2d' : counter >= max - 1 ? '#f59e0b' : '#639922';
+          counterHtml = '<div style="margin-top:4px;font-size:10px;color:#888">'
+            + counter + '/' + max + ' pertemuan'
+            + (counter >= max ? ' <span style="color:#a32d2d;font-weight:700">● SELESAI</span>' : '')
+            + '</div>'
+            + '<div style="height:4px;background:#f0f0ee;border-radius:4px;margin-top:2px;width:80px">'
+            + '<div style="height:4px;border-radius:4px;background:'+barColor+';width:'+pct+'%"></div>'
+            + '</div>';
+        }
+
+        // Badge tipe & status
+        var tipeBadge = '';
+        if (isParalel) {
+          var bLabel = j.batch ? 'Batch '+j.batch : 'Paralel';
+          var isAktif = j.statusParalel === 'aktif';
+          tipeBadge = '<div style="margin-bottom:2px">'
+            + '<span style="font-size:10px;background:#fef3c7;color:#92400e;border-radius:20px;padding:1px 7px;font-weight:600;margin-right:3px">👥 '+bLabel+'</span>'
+            + (isAktif
+              ? '<span style="font-size:10px;background:#eaf3de;color:#27500a;border-radius:20px;padding:1px 7px;font-weight:600">🟢 Aktif</span>'
+              : '<span style="font-size:10px;background:#fcebeb;color:#a32d2d;border-radius:20px;padding:1px 7px;font-weight:600">🔴 Nonaktif</span>')
+            + '</div>';
+        }
+
+        // Tombol toggle untuk paralel
+        var btnToggle = '';
+        if (isParalel) {
+          var isAktif2 = j.statusParalel === 'aktif';
+          btnToggle = '<button class="btn btn-sm" style="font-size:10px;background:'+(isAktif2?'#fcebeb':'#eaf3de')+';color:'+(isAktif2?'#a32d2d':'#27500a')+';border-color:'+(isAktif2?'#f09595':'#97c459')+'" onclick="toggleStatusParalel(\''+j.id+'\')">'
+            + (isAktif2 ? '⏸ Nonaktifkan' : '▶ Aktifkan') + '</button>';
+        }
+
+        return '<tr>'
+          + '<td><div>'+tipeBadge+j.mk+'</div>'+counterHtml+'</td>'
+          + '<td>'+(d ? d.nama.split(',')[0] : '-')+'</td>'
+          + '<td>'+(j.kelas||'-')+'</td>'
+          + '<td>'+jStr(j.jamMulai)+(j.jamSelesai?' – '+jStr(j.jamSelesai):'')+'</td>'
+          + '<td>'+j.ruang+'</td>'
+          + '<td><div class="bg">'
+            + btnToggle
+            + '<button class="btn btn-warn btn-sm" onclick="openMJ(\''+j.id+'\')">Edit</button>'
+            + '<button class="btn btn-danger btn-sm" onclick="hapusJad(\''+j.id+'\')">Hapus</button>'
+          + '</div></td>'
+          + '</tr>';
+      }).join('');
+      return '<div class="jg">'
+        + '<div class="jl"><span class="hb'+(isT?' ht':'')+'">'+h+(isT?' (hari ini)':'')+'</span></div>'
+        + '<table><thead><tr>'
+        + '<th>Mata Kuliah</th><th>Dosen</th><th>Kelas</th><th>Waktu</th><th>Ruang</th><th></th>'
+        + '</tr></thead><tbody>'+rows+'</tbody></table>'
+        + '</div>';
     }).join('');
-    return '<div class="jg"><div class="jl"><span class="hb'+(isT?' ht':'')+'">'+h+(isT?' (hari ini)':'')+'</span></div><table><thead><tr><th>Mata Kuliah</th><th>Dosen</th><th>Kelas</th><th>Waktu</th><th>Ruang</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
-  }).join('');
+  }
+
+  // Tab aktif — baca dari elemen tab
+  var activeTab = tf;
+  var htmlReguler = renderGrupHari(reguler, false);
+  var htmlParalel = renderGrupHari(paralel, true);
+
+  el.innerHTML =
+    // Tab switcher
+    '<div style="display:flex;gap:0;margin-bottom:12px;border-bottom:2px solid #f0f0ee">'
+    + '<button onclick="switchTabJadwal(\'reguler\')" id="jtab-reguler" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;border-bottom:2px solid transparent;margin-bottom:-2px;color:#888">📚 Reguler ('+reguler.length+')</button>'
+    + '<button onclick="switchTabJadwal(\'paralel\')" id="jtab-paralel" style="padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;border-bottom:2px solid transparent;margin-bottom:-2px;color:#888">👥 Paralel ('+paralel.length+')</button>'
+    + '</div>'
+    // Panel reguler
+    + '<div id="jpanel-reguler">'
+    + (htmlReguler || '<p class="empty">Tidak ada jadwal reguler.</p>')
+    + '</div>'
+    // Panel paralel
+    + '<div id="jpanel-paralel" style="display:none">'
+    + (paralel.length > 0
+        ? '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#92400e">'
+          + '💡 <b>Jadwal Paralel</b> — Gunakan tombol <b>▶ Aktifkan / ⏸ Nonaktifkan</b> untuk mengontrol batch yang sedang berjalan. '
+          + 'Progress bar menunjukkan jumlah pertemuan yang sudah terekam.'
+          + '</div>'
+          + htmlParalel
+        : '<p class="empty">Tidak ada jadwal paralel.</p>')
+    + '</div>';
+
+  // Set tab aktif
+  switchTabJadwal(activeTab === 'paralel' ? 'paralel' : 'reguler');
+}
+
+function switchTabJadwal(tab) {
+  var panels = ['reguler','paralel'];
+  panels.forEach(function(t){
+    var panel = document.getElementById('jpanel-'+t);
+    var btn   = document.getElementById('jtab-'+t);
+    if (!panel || !btn) return;
+    var isActive = t === tab;
+    panel.style.display = isActive ? 'block' : 'none';
+    btn.style.color       = isActive ? '#1a1a1a' : '#888';
+    btn.style.borderBottom = isActive ? '2px solid #1a1a1a' : '2px solid transparent';
+    btn.style.fontWeight   = isActive ? '700' : '600';
+  });
+  // Simpan tab aktif ke filter tersembunyi
+  var tf = document.getElementById('jtf');
+  if (tf) tf.value = tab;
+}
+
+async function toggleStatusParalel(id) {
+  var j = J.find(function(x){ return x.id === id; });
+  if (!j) return;
+  if (j.tipe !== 'paralel') { alert('Jadwal ini bukan tipe paralel.'); return; }
+
+  var isAktif  = j.statusParalel === 'aktif';
+  var newStatus = isAktif ? 'nonaktif' : 'aktif';
+  var label    = j.mk + (j.kelas ? ' ['+j.kelas+']' : '') + ' · ' + j.hari
+               + (j.batch ? ' · Batch '+j.batch : '');
+  var konfirm  = isAktif
+    ? '⏸ Nonaktifkan jadwal paralel ini?\n\n' + label + '\n\nDosen tidak bisa presensi untuk jadwal ini selama nonaktif.'
+    : '▶ Aktifkan jadwal paralel ini?\n\n' + label + '\n\nDosen bisa presensi untuk jadwal ini.';
+  if (!confirm(konfirm)) return;
+
+  setSB('sy');
+  try {
+    await post({ action: 'updateStatusParalel', id: id, statusParalel: newStatus });
+    j.statusParalel = newStatus;
+    setSB('ok');
+    renderJ();
+    // Langsung pindah ke tab paralel setelah toggle
+    switchTabJadwal('paralel');
+  } catch(e) {
+    setSB('er');
+    alert('Gagal: ' + e.message);
+  }
 }
 function openMJ(id){
   eJad=id||null;
@@ -177,6 +318,12 @@ function openMJ(id){
   document.getElementById('jmm').innerHTML='<option value="">— Pilih mata kuliah —</option>';
   ['jmk','jms','jme','jmr','jmsem'].forEach(function(x){document.getElementById(x).value='';});
   document.getElementById('jmh').value='Senin';
+  // Reset field paralel
+  document.getElementById('jmtipe').value='reguler';
+  document.getElementById('jmbatch').value='';
+  document.getElementById('jmstatus').value='aktif';
+  toggleFieldParalel();
+
   if(id){
     var j=J.find(function(x){return x.id===id;});if(!j)return;
     document.getElementById('mjt').textContent='Edit jadwal';
@@ -185,8 +332,19 @@ function openMJ(id){
     document.getElementById('jmh').value=j.hari;document.getElementById('jmk').value=j.kelas||'';
     document.getElementById('jms').value=jStr(j.jamMulai);document.getElementById('jme').value=jStr(j.jamSelesai);
     document.getElementById('jmr').value=j.ruang;document.getElementById('jmsem').value=j.semester||'';
+    // Isi field paralel
+    document.getElementById('jmtipe').value=j.tipe||'reguler';
+    document.getElementById('jmbatch').value=j.batch||'';
+    document.getElementById('jmstatus').value=j.statusParalel||'aktif';
+    toggleFieldParalel();
   }else document.getElementById('mjt').textContent='Tambah jadwal perkuliahan';
   document.getElementById('mjad').classList.add('open');
+}
+
+function toggleFieldParalel(){
+  var tipe  = document.getElementById('jmtipe').value;
+  var wrap  = document.getElementById('wrap-paralel-fields');
+  if (wrap) wrap.style.display = tipe === 'paralel' ? 'block' : 'none';
 }
 function onJmd(){
   var id=document.getElementById('jmd').value,mk=document.getElementById('jmm');
@@ -199,16 +357,27 @@ async function saveJad(){
   var did=document.getElementById('jmd').value,mk=document.getElementById('jmm').value;
   var jms=document.getElementById('jms').value,jmr=document.getElementById('jmr').value;
   if(!did||!mk||!jms||!jmr){alert('Lengkapi field wajib.');return;}
+
+  var tipe         = document.getElementById('jmtipe').value || 'reguler';
+  var batch        = tipe === 'paralel' ? (document.getElementById('jmbatch').value||'') : '';
+  var statusParalel= tipe === 'paralel' ? (document.getElementById('jmstatus').value||'aktif') : '';
+  var maxPertemuan = tipe === 'paralel' ? 8 : 14;
+
   var btn=document.getElementById('bsj');btn.disabled=true;btn.textContent='Menyimpan...';
-  var data={id:eJad||('j'+Date.now()),dosenId:did,mk:mk,hari:document.getElementById('jmh').value,
+  var data={
+    id:eJad||('j'+Date.now()),dosenId:did,mk:mk,hari:document.getElementById('jmh').value,
     kelas:document.getElementById('jmk').value,jamMulai:jms,jamSelesai:document.getElementById('jme').value,
-    ruang:jmr,semester:document.getElementById('jmsem').value};
+    ruang:jmr,semester:document.getElementById('jmsem').value,
+    tipe:tipe, batch:batch, statusParalel:statusParalel, maxPertemuan:maxPertemuan
+  };
   setSB('sy');
   try{
     await post({action:'saveJadwal',data:data});
     if(eJad){var idx=J.findIndex(function(j){return j.id===eJad;});if(idx>-1)J[idx]=data;}else J.push(data);
     setSB('ok');cm('mjad');renderJ();
     var cnt=document.getElementById('jcnt');if(cnt)cnt.textContent=J.length+' jadwal';
+    // Setelah simpan, pindah ke tab yang sesuai
+    if(tipe === 'paralel') switchTabJadwal('paralel');
   }catch(e){setSB('er');alert('Gagal: '+e.message);}
   btn.disabled=false;btn.textContent='Simpan';
 }

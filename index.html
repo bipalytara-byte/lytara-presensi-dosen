@@ -551,6 +551,8 @@
     <div class="field"><label>Filter dosen</label><select id="jfd" onchange="renderJ()"><option value="all">Semua dosen</option></select></div>
     <div class="field"><label>Filter hari</label><select id="jfh" onchange="renderJ()"><option value="all">Semua hari</option><option>Senin</option><option>Selasa</option><option>Rabu</option><option>Kamis</option><option>Jumat</option><option>Sabtu</option></select></div>
   </div>
+  <!-- Input tersembunyi untuk tracking tab aktif (reguler/paralel) -->
+  <input type="hidden" id="jtf" value="reguler"/>
   <div id="jl"></div>
 </div>
 
@@ -871,6 +873,43 @@
     </div>
     <div class="field"><label>Ruang</label><input type="text" id="jmr" placeholder="Ruang 301"/></div>
     <div class="field"><label>Semester</label><input type="text" id="jmsem" placeholder="Genap 2025/2026"/></div>
+
+    <!-- Tipe Jadwal -->
+    <div class="field">
+      <label>Tipe Jadwal</label>
+      <select id="jmtipe" onchange="toggleFieldParalel()">
+        <option value="reguler">📚 Reguler (14 pertemuan)</option>
+        <option value="paralel">👥 Paralel / Kelas Karyawan (8 pertemuan)</option>
+      </select>
+    </div>
+
+    <!-- Field khusus paralel — muncul hanya jika tipe = paralel -->
+    <div id="wrap-paralel-fields" style="display:none;background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="font-size:11px;font-weight:700;color:#92400e;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">⚙️ Pengaturan Kelas Paralel</div>
+      <div class="row">
+        <div class="field">
+          <label>Batch</label>
+          <select id="jmbatch">
+            <option value="">— Pilih batch —</option>
+            <option value="1">Batch 1</option>
+            <option value="2">Batch 2</option>
+            <option value="3">Batch 3</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Status Awal</label>
+          <select id="jmstatus">
+            <option value="aktif">🟢 Aktif</option>
+            <option value="nonaktif">🔴 Nonaktif</option>
+          </select>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#92400e;background:rgba(255,255,255,.5);border-radius:6px;padding:7px 10px;line-height:1.5">
+        💡 Jadwal paralel akan otomatis terkunci setelah <b>8 pertemuan</b> terekam (pertemuan ke-8 dianggap Ujian).
+        Status bisa diubah kapan saja dari halaman Kelola Jadwal.
+      </div>
+    </div>
+
     <div class="mf"><button class="btn" onclick="cm('mjad')">Batal</button><button class="btn btn-primary" id="bsj" onclick="saveJad()">Simpan</button></div>
   </div>
 </div>
