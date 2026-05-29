@@ -27,7 +27,15 @@ function fillBerandaAdmin() {
   var hariIni = todayHari();
   var todayTs = new Date(); todayTs.setHours(0,0,0,0);
 
-  var jadwalHariIni = J.filter(function(j){ return j.hari === hariIni; });
+  var jadwalHariIni = J.filter(function(j){
+    if (j.hari !== hariIni) return false;
+    if (j.tipe === 'paralel' && j.statusParalel !== 'aktif') return false;
+    if (j.tipe === 'paralel') {
+      var counter = P.filter(function(p){ return p.jadwalId === j.id; }).length;
+      if (counter >= (j.maxPertemuan || 8)) return false;
+    }
+    return true;
+  });
   var dosenPunyaJadwal = {};
   jadwalHariIni.forEach(function(j){ dosenPunyaJadwal[j.dosenId] = true; });
 
@@ -176,8 +184,18 @@ function fillBerandaDosen() {
   });
 
   // Jadwal hari ini milik dosen ini
+  // Filter: paralel nonaktif dan paralel counter penuh tidak ditampilkan
   var jadwalHariIni = J.filter(function(j) {
-    return j.dosenId === currentUser.id && j.hari === hariIni;
+    if (j.dosenId !== currentUser.id) return false;
+    if (j.hari !== hariIni) return false;
+    // Sembunyikan paralel nonaktif
+    if (j.tipe === 'paralel' && j.statusParalel !== 'aktif') return false;
+    // Sembunyikan paralel yang sudah penuh
+    if (j.tipe === 'paralel') {
+      var counter = P.filter(function(p){ return p.jadwalId === j.id; }).length;
+      if (counter >= (j.maxPertemuan || 8)) return false;
+    }
+    return true;
   }).sort(function(a,b){ return (a.jamMulai||'').localeCompare(b.jamMulai||''); });
 
   var listEl = document.getElementById('beranda-jadwal-list');
