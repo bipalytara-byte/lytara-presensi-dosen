@@ -66,29 +66,30 @@ function renderMK() {
     html += '<div style="margin-bottom:16px">'
       + '<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;padding:4px 0;border-bottom:1px solid #f0f0ee">'
       + prodi + ' <span style="font-weight:400;color:#aaa">('+items.length+')</span></div>'
-      + '<table style="width:100%;border-collapse:collapse">'
-      + '<thead><tr style="font-size:11px;color:#aaa">'
-      + '<th style="text-align:left;padding:4px 6px;font-weight:600">Kode</th>'
-      + '<th style="text-align:left;padding:4px 6px;font-weight:600">Nama MK</th>'
-      + '<th style="text-align:left;padding:4px 6px;font-weight:600">Tahun Akademik</th>'
-      + '<th style="padding:4px 6px"></th>'
+      + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0">'
+      + '<table style="width:100%;border-collapse:collapse;background:#fff">'
+      + '<thead><tr style="background:#f8f8f7">'
+      + '<th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;font-weight:600;border-bottom:1px solid #f0f0ee">Kode</th>'
+      + '<th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;font-weight:600;border-bottom:1px solid #f0f0ee">Nama MK</th>'
+      + '<th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;font-weight:600;border-bottom:1px solid #f0f0ee">Tahun Akademik</th>'
+      + '<th style="padding:8px 10px;border-bottom:1px solid #f0f0ee"></th>'
       + '</tr></thead><tbody>';
 
     items.sort(function(a,b){ return a.kode.localeCompare(b.kode); }).forEach(function(m){
       var hasKode = m.kode && m.kode.trim();
-      html += '<tr style="border-bottom:0.5px solid #f5f5f3;font-size:13px">'
-        + '<td style="padding:7px 6px;font-weight:700;color:'+(hasKode?'#185fa5':'#aaa')+';white-space:nowrap">'
-        + (hasKode ? m.kode : '<span style="font-style:italic;font-weight:400">Belum ada</span>') + '</td>'
-        + '<td style="padding:7px 6px;color:#1a1a1a">' + m.nama + '</td>'
-        + '<td style="padding:7px 6px;color:#888;font-size:12px">' + (m.tahunAkademik||'–') + '</td>'
-        + '<td style="padding:7px 6px;white-space:nowrap">'
+      html += '<tr style="border-bottom:0.5px solid #f0f0ee;background:#fff">'
+        + '<td style="padding:9px 10px;font-weight:700;color:'+(hasKode?'#185fa5':'#aaa')+';white-space:nowrap;font-size:13px">'
+        + (hasKode ? m.kode : '<span style="font-style:italic;font-weight:400;font-size:12px">Belum ada</span>') + '</td>'
+        + '<td style="padding:9px 10px;color:#1a1a1a;font-size:13px">' + m.nama + '</td>'
+        + '<td style="padding:9px 10px;color:#888;font-size:12px">' + (m.tahunAkademik||'–') + '</td>'
+        + '<td style="padding:9px 10px;white-space:nowrap">'
         + '<div class="bg">'
         + '<button class="btn btn-warn btn-sm" onclick="openMMK(\''+m.id+'\')">Edit</button>'
         + '<button class="btn btn-danger btn-sm" onclick="hapusMK(\''+m.id+'\')">Hapus</button>'
         + '</div></td>'
         + '</tr>';
     });
-    html += '</tbody></table></div>';
+    html += '</tbody></table></div></div>';
   });
 
   el.innerHTML = html;

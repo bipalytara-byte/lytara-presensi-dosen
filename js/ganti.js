@@ -215,24 +215,31 @@ function renderJ(){
             + (isAktif2 ? '⏸ Nonaktifkan' : '▶ Aktifkan') + '</button>';
         }
 
-        return '<tr>'
-          + '<td><div>'+tipeBadge+j.mk+'</div>'+counterHtml+'</td>'
-          + '<td>'+(d ? d.nama.split(',')[0] : '-')+'</td>'
-          + '<td>'+(j.kelas||'-')+'</td>'
-          + '<td>'+jStr(j.jamMulai)+(j.jamSelesai?' – '+jStr(j.jamSelesai):'')+'</td>'
-          + '<td>'+j.ruang+'</td>'
-          + '<td><div class="bg">'
+        return '<tr style="border-bottom:0.5px solid #f0f0ee;background:#fff">'
+          + '<td style="padding:9px 10px;font-size:13px;color:#1a1a1a"><div>'+tipeBadge+j.mk+'</div>'+counterHtml+'</td>'
+          + '<td style="padding:9px 10px;font-size:13px;color:#555">'+(d ? d.nama.split(',')[0] : '-')+'</td>'
+          + '<td style="padding:9px 10px;font-size:13px;color:#555">'+(j.kelas||'-')+'</td>'
+          + '<td style="padding:9px 10px;font-size:13px;color:#555;white-space:nowrap">'+jStr(j.jamMulai)+(j.jamSelesai?' – '+jStr(j.jamSelesai):'')+'</td>'
+          + '<td style="padding:9px 10px;font-size:13px;color:#555">'+j.ruang+'</td>'
+          + '<td style="padding:9px 10px"><div class="bg">'
             + btnToggle
             + '<button class="btn btn-warn btn-sm" onclick="openMJ(\''+j.id+'\')">Edit</button>'
             + '<button class="btn btn-danger btn-sm" onclick="hapusJad(\''+j.id+'\')">Hapus</button>'
           + '</div></td>'
           + '</tr>';
       }).join('');
-      return '<div class="jg">'
+    return '<div class="jg">'
         + '<div class="jl"><span class="hb'+(isT?' ht':'')+'">'+h+(isT?' (hari ini)':'')+'</span></div>'
-        + '<table><thead><tr>'
-        + '<th>Mata Kuliah</th><th>Dosen</th><th>Kelas</th><th>Waktu</th><th>Ruang</th><th></th>'
+        + '<div class="card" style="padding:0;overflow:hidden;margin-bottom:0">'
+        + '<table style="width:100%;border-collapse:collapse;background:#fff"><thead><tr style="background:#f8f8f7">'
+        + '<th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;font-weight:600;border-bottom:1px solid #f0f0ee">Mata Kuliah</th>'
+        + '<th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;font-weight:600;border-bottom:1px solid #f0f0ee">Dosen</th>'
+        + '<th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;font-weight:600;border-bottom:1px solid #f0f0ee">Kelas</th>'
+        + '<th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;font-weight:600;border-bottom:1px solid #f0f0ee">Waktu</th>'
+        + '<th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;font-weight:600;border-bottom:1px solid #f0f0ee">Ruang</th>'
+        + '<th style="padding:8px 10px;border-bottom:1px solid #f0f0ee"></th>'
         + '</tr></thead><tbody>'+rows+'</tbody></table>'
+        + '</div>'
         + '</div>';
     }).join('');
   }
