@@ -3,7 +3,8 @@
            doAdminLogin, logout, loadForLogin, loadThenShow,
            updateUserUI, restoreSesi, showSelesai,
            showAppLoading, hideAppLoading, showLoadError,
-           updateLoadStep, getWithTimeout, getWithRetry, retryLoad
+           updateLoadStep, getWithTimeout, getWithRetry, retryLoad,
+           resetPasswordDosen, jalankanMigrasiPassword
 */
 
 
@@ -32,16 +33,8 @@ async function loadForLogin(){
     SISTEM_AKTIF     = cfg.liburAktif === true ? false : true;
     PESAN_LIBUR      = cfg.pesanLibur      || '';
     PENGUMUMAN_LOGIN = cfg.pengumumanLogin || '';
-
-    var sel = document.getElementById('login-sel');
-    sel.innerHTML = '<option value="">— Pilih nama —</option>';
-    D.forEach(function(d){
-      var o = document.createElement('option');
-      o.value = d.id; o.textContent = d.nama;
-      sel.appendChild(o);
-    });
   } catch(e) {}
-  showLogin(); // Login screen bersih, pengumuman muncul di beranda dosen setelah login
+  showLogin();
 }
 
 function tampilkanPengumumanLogin() {
@@ -65,24 +58,95 @@ function togglePass(){
   if(i.type==='password'){i.type='text';e.textContent='🙈';}else{i.type='password';e.textContent='👁';}
 }
 
-function doLogin(){
-  var sel=document.getElementById('login-sel'),pass=document.getElementById('login-pass').value.trim();
-  var err=document.getElementById('login-err');err.textContent='';
-  var did=sel.value;
-  if(!did){err.textContent='Pilih nama terlebih dahulu.';return;}
-  if(!pass){err.textContent='Masukkan password.';return;}
-  if(!DOSEN_PASS[did]||pass!==DOSEN_PASS[did]){
-    err.textContent='❌ Password salah. Hubungi admin jika lupa.';
-    document.getElementById('login-pass').value='';
-    document.getElementById('login-pass').focus();return;
+async function doLogin(){
+  var idEl   = document.getElementById('login-id');
+  var passEl = document.getElementById('login-pass');
+  var err    = document.getElementById('login-err');
+  err.textContent = '';
+
+  var id   = idEl.value.trim().toLowerCase();
+  var pass = passEl.value.trim();
+
+  if (!id)   { err.textContent = 'Masukkan ID dosen.'; return; }
+  if (!pass) { err.textContent = 'Masukkan password.'; return; }
+
+  var btn = document.getElementById('btn-login-dosen');
+  btn.disabled = true;
+  btn.textContent = 'Memeriksa...';
+
+  try {
+    var r = await get({ action: 'doLogin', id: id, pass: pass });
+    if (!r.success) {
+      err.textContent = '❌ ' + (r.error || 'Login gagal.');
+      passEl.value = '';
+      passEl.focus();
+      return;
+    }
+    currentUser = r.data;
+    isAdmin = false;
+    sessionStorage.setItem('userRole', 'dosen');
+    sessionStorage.setItem('current_user', JSON.stringify(r.data));
+    hideLogin();
+    loadThenShow();
+  } catch(e) {
+    err.textContent = '❌ Gagal terhubung ke server. Coba lagi.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Masuk →';
   }
-  var dos=D.find(function(d){return d.id===did;});
-  if(!dos){err.textContent='Dosen tidak ditemukan.';return;}
-  
-  currentUser=dos; isAdmin=false;
-  sessionStorage.setItem('userRole', 'dosen');
-  sessionStorage.setItem('current_user',JSON.stringify(dos));
-  hideLogin();loadThenShow();
+}
+
+// Reset password dosen oleh admin
+async function resetPasswordDosen(dosenId, namaDosen) {
+  if (!isAdmin) { alert('Hanya admin yang dapat mereset password.'); return; }
+  var pw = prompt('Reset password untuk:\n' + namaDosen + ' (' + dosenId + ')\n\nMasukkan password baru (minimal 4 karakter):');
+  if (pw === null) return;
+  pw = pw.trim();
+  if (pw.length < 4) { alert('❌ Password minimal 4 karakter.'); return; }
+  var konfirmasi = prompt('Konfirmasi — masukkan ulang password baru:');
+  if (konfirmasi === null) return;
+  if (konfirmasi.trim() !== pw) { alert('❌ Password tidak cocok. Reset dibatalkan.'); return; }
+
+  setSB('sy');
+  try {
+    var r = await post({ action: 'resetPassword', dosenId: dosenId, passwordBaru: pw });
+    if (!r.success) throw new Error(r.error || 'Gagal reset');
+    setSB('ok');
+    alert('✅ Password ' + namaDosen + ' berhasil direset.\nSampaikan password baru ke dosen yang bersangkutan.');
+  } catch(e) {
+    setSB('er');
+    alert('❌ Gagal: ' + e.message);
+  }
+}
+
+// Migrasi password lama → dipanggil SEKALI oleh admin setelah deploy V8.0
+async function jalankanMigrasiPassword() {
+  if (!isAdmin) return;
+  if (!confirm('Migrasi password dari config lama ke server?\n\nLakukan ini SEKALI saja setelah pertama deploy V8.0.')) return;
+
+  // Password lama dari config.js — hanya ada di sini untuk keperluan migrasi
+  var PASS_LAMA = {
+    "d001":"QAH276","d002":"XCK025","d003":"AFQ525","d004":"VAU631",
+    "d005":"YIC086","d006":"USN935","d007":"VQW570","d008":"FHC212",
+    "d009":"QJJ229","d010":"QPE713","d011":"ZQO687","d012":"FAI229",
+    "d013":"WIR394","d014":"GGO258","d015":"KFZ500","d016":"CQU403",
+    "d017":"ZNZ807","d018":"RNG614","d019":"LYW251","d020":"XWH661",
+    "d021":"TOU503"
+  };
+
+  var data = Object.keys(PASS_LAMA).map(function(id) {
+    return { id: id, password: PASS_LAMA[id] };
+  });
+
+  setSB('sy');
+  try {
+    var r = await post({ action: 'migrasiPassword', data: data });
+    setSB('ok');
+    alert('✅ Migrasi selesai!\nBerhasil: ' + r.berhasil + ' dosen\nGagal: ' + r.gagal);
+  } catch(e) {
+    setSB('er');
+    alert('❌ Migrasi gagal: ' + e.message);
+  }
 }
 
 function doAdminLogin(){

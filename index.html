@@ -57,18 +57,26 @@
       <div class="login-sub" style="font-size:11px;color:#aaa;margin-bottom:4px">Layanan Tracking Aktivitas dan Realisasi Akademik</div>
       <div class="login-sub">Masuk dengan akun yang diberikan</div>
       <div class="field">
-        <label>Nama dosen</label>
-        <select id="login-sel"><option value="">— Pilih nama —</option></select>
+        <label>ID Dosen</label>
+        <input type="text" id="login-id" placeholder="Contoh: d001"
+          autocomplete="username"
+          onkeydown="if(event.key==='Enter') document.getElementById('login-pass').focus()"
+          style="text-transform:lowercase"/>
       </div>
       <div class="field">
         <label>Password</label>
         <div style="position:relative">
           <input type="password" id="login-pass" placeholder="Masukkan password..."
-            onkeydown="if(event.key==='Enter') doLogin()" style="padding-right:42px"/>
+            autocomplete="current-password"
+            onkeydown="if(event.key==='Enter') doLogin()"
+            style="padding-right:42px"/>
           <button onclick="togglePass()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:#888;font-size:14px" id="pass-eye">👁</button>
         </div>
       </div>
-      <button class="btn btn-primary login-btn" onclick="doLogin()">Masuk →</button>
+      <div style="font-size:11px;color:#aaa;margin-bottom:12px;text-align:right">
+        Lupa password? Hubungi admin untuk reset.
+      </div>
+      <button class="btn btn-primary login-btn" id="btn-login-dosen" onclick="doLogin()">Masuk →</button>
       
       <div style="margin-top:1.5rem; border-top:1px solid #f0f0ee; padding-top:1rem; display:flex; flex-direction:column; gap:8px;">
         <div style="font-size:11px;color:#aaa;font-weight:500;margin-bottom:2px;text-align:left">Akses Publik</div>
@@ -576,7 +584,13 @@
 <div id="page-dosen" class="page">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
     <div><div style="font-size:15px;font-weight:500">Data dosen</div><div style="font-size:12px;color:#888" id="dcnt"></div></div>
-    <button class="btn btn-primary" onclick="openMD()">+ Tambah dosen</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm" style="background:#fef3c7;color:#92400e;border-color:#fde68a;font-size:11px" 
+        onclick="jalankanMigrasiPassword()" title="Jalankan SEKALI setelah deploy V8.0">
+        🔑 Migrasi Password
+      </button>
+      <button class="btn btn-primary" onclick="openMD()">+ Tambah dosen</button>
+    </div>
   </div>
   <div class="sw"><span class="si">⌕</span><input type="text" id="cari" placeholder="Cari nama dosen..." oninput="renderD()"/></div>
   <div id="dl"></div>
