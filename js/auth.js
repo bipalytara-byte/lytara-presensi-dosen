@@ -1,7 +1,9 @@
 /* auth.js — Login, logout, session management
    Fungsi: showLogin, hideLogin, swapLogin, togglePass, doLogin,
            doAdminLogin, logout, loadForLogin, loadThenShow,
-           updateUserUI, restoreSesi, showSelesai
+           updateUserUI, restoreSesi, showSelesai,
+           showAppLoading, hideAppLoading, showLoadError,
+           updateLoadStep, getWithTimeout, getWithRetry, retryLoad
 */
 
 
@@ -155,31 +157,134 @@ async function refreshDataLokal() {
   }
 }
 
-async function loadThenShow(){
+// ── Loading overlay helpers ──
+function showAppLoading(msg) {
+  var el = document.getElementById('app-loading');
+  if (!el) return;
+  el.style.display = 'flex';
+  document.getElementById('load-msg').textContent = msg || 'Memuat data...';
+  document.getElementById('load-steps').innerHTML = '';
+  document.getElementById('load-error').style.display = 'none';
+  document.getElementById('load-spinner').style.display = 'flex';
+}
+
+function updateLoadStep(text) {
+  var el = document.getElementById('load-steps');
+  if (!el) return;
+  var line = document.createElement('div');
+  line.textContent = text;
+  line.style.cssText = 'animation:fadeIn .2s ease';
+  el.appendChild(line);
+  while (el.children.length > 5) el.removeChild(el.firstChild);
+}
+
+function hideAppLoading() {
+  var el = document.getElementById('app-loading');
+  if (!el) return;
+  el.style.opacity = '0';
+  el.style.transition = 'opacity .3s ease';
+  setTimeout(function() {
+    el.style.display = 'none';
+    el.style.opacity = '1';
+    el.style.transition = '';
+  }, 300);
+}
+
+function showLoadError(msg) {
+  document.getElementById('load-spinner').style.display = 'none';
+  document.getElementById('load-msg').textContent = 'Gagal memuat';
+  document.getElementById('load-err-msg').textContent = msg;
+  document.getElementById('load-error').style.display = 'block';
+}
+
+function getWithTimeout(params, ms) {
+  ms = ms || 15000;
+  return Promise.race([
+    get(params),
+    new Promise(function(_, reject) {
+      setTimeout(function() { reject(new Error('Timeout')); }, ms);
+    })
+  ]);
+}
+
+function getWithRetry(params) {
+  return getWithTimeout(params, 15000).catch(function() {
+    updateLoadStep('⚠️ Server lambat, mencoba ulang...');
+    return getWithTimeout(params, 20000);
+  });
+}
+
+function retryLoad() {
+  document.getElementById('load-error').style.display = 'none';
+  document.getElementById('load-spinner').style.display = 'flex';
+  document.getElementById('load-msg').textContent = 'Mencoba ulang...';
+  document.getElementById('load-steps').innerHTML = '';
+  loadThenShow();
+}
+
+async function loadThenShow() {
+  showAppLoading('Menghubungi server...');
   setSB('sy');
-  try{
-    var r=await Promise.all([
-      get({action:'getDosen'}),get({action:'getJadwal'}),
-      get({action:'getPresensi'}),get({action:'getGanti'}),
-      get({action:'getMaju'}),get({action:'getSettings'}),
-      get({action:'getMataKuliah'})
-    ]);
-    D=r[0].data||[];J=r[1].data||[];P=r[2].data||[];G=r[3].data||[];M=r[4].data||[];
-    MK=r[6].data||[];
-    var cfg = r[5].data || {};
+
+  var STEPS = [
+    { action:'getDosen',      label:'Data dosen' },
+    { action:'getJadwal',     label:'Data jadwal' },
+    { action:'getPresensi',   label:'Data presensi' },
+    { action:'getGanti',      label:'Jadwal pengganti' },
+    { action:'getMaju',       label:'Jadwal maju' },
+    { action:'getSettings',   label:'Pengaturan sistem' },
+    { action:'getMataKuliah', label:'Mata kuliah' }
+  ];
+
+  try {
+    updateLoadStep('🔄 Menghubungi Google Apps Script...');
+
+    var results = await Promise.all(
+      STEPS.map(function(s) {
+        return getWithRetry({ action: s.action })
+          .then(function(r) {
+            updateLoadStep('✅ ' + s.label);
+            return r;
+          });
+      })
+    );
+
+    D  = results[0].data || [];
+    J  = results[1].data || [];
+    P  = results[2].data || [];
+    G  = results[3].data || [];
+    M  = results[4].data || [];
+    MK = results[6].data || [];
+
+    var cfg          = results[5].data || {};
     SISTEM_AKTIF     = cfg.liburAktif === true ? false : true;
     PESAN_LIBUR      = cfg.pesanLibur      || '';
     PENGUMUMAN_LOGIN = cfg.pengumumanLogin || '';
     SEMESTER_AKTIF   = cfg.semesterAktif   || '';
     TAHUN_AKADEMIK   = cfg.tahunAkademik   || '';
-    setSB('ok');fillAll();restoreSesi();
-    if (isAdmin) {
-      pg('beranda-admin', document.getElementById('tab-beranda'));
-    } else if (currentUser) {
-      tampilkanPengumumanLogin();
-      pg('beranda', document.getElementById('tab-beranda'));
-    }
-  }catch(e){setSB('er');}
+
+    updateLoadStep('✅ Siap! Membuka aplikasi...');
+    setSB('ok');
+
+    setTimeout(function() {
+      hideAppLoading();
+      fillAll();
+      restoreSesi();
+      if (isAdmin) {
+        pg('beranda-admin', document.getElementById('tab-beranda'));
+      } else if (currentUser) {
+        tampilkanPengumumanLogin();
+        pg('beranda', document.getElementById('tab-beranda'));
+      }
+    }, 500);
+
+  } catch(e) {
+    setSB('er');
+    var msg = e.message === 'Timeout'
+      ? 'Server tidak merespons. Periksa koneksi internet, lalu coba lagi.'
+      : 'Gagal memuat data: ' + (e.message || 'Error tidak diketahui');
+    showLoadError(msg);
+  }
 }
 
 function updateUserUI(){
