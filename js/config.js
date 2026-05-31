@@ -5,16 +5,9 @@
 
 
 const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
-const PIN = '1819';
+
 const HARI = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-const DOSEN_PASS = {
-  "d001":"QAH276","d002":"XCK025","d003":"AFQ525","d004":"VAU631",
-  "d005":"YIC086","d006":"USN935","d007":"VQW570","d008":"FHC212",
-  "d009":"QJJ229","d010":"QPE713","d011":"ZQO687","d012":"FAI229",
-  "d013":"WIR394","d014":"GGO258","d015":"KFZ500","d016":"CQU403",
-  "d017":"ZNZ807","d018":"RNG614","d019":"LYW251","d020":"XWH661",
-  "d021":"TOU503"
-};
+
 let D=[],J=[],P=[],G=[],M=[],MK=[];
 let eDos=null,eJad=null,eMk=null,tempMk=[];
 let actId=null,actJad=null;
