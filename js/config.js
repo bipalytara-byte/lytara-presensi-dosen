@@ -5,9 +5,7 @@
 
 
 const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
-const PIN = '1819';
 const HARI = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-
 let D=[],J=[],P=[],G=[],M=[],MK=[];
 let eDos=null,eJad=null,eMk=null,tempMk=[];
 let actId=null,actJad=null;

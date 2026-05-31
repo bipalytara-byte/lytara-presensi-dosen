@@ -149,16 +149,33 @@ async function jalankanMigrasiPassword() {
   }
 }
 
-function doAdminLogin(){
-  var pin=document.getElementById('admin-pin').value.trim();
-  var err=document.getElementById('login-err');err.textContent='';
-  if(pin === PIN) {
-     isAdmin=true; currentUser=null;
-     sessionStorage.setItem('userRole', 'admin');
-     hideLogin(); loadThenShow();
-  } else {
-     err.textContent='❌ PIN Admin salah.';
-     document.getElementById('admin-pin').value='';
+async function doAdminLogin(){
+  var pin = document.getElementById('admin-pin').value.trim();
+  var err = document.getElementById('login-err');
+  err.textContent = '';
+  if (!pin) { err.textContent = 'Masukkan PIN.'; return; }
+
+  var btn = document.getElementById('btn-admin-login');
+  btn.disabled = true;
+  btn.textContent = 'Memeriksa...';
+
+  try {
+    var r = await get({ action: 'doAdminLogin', pin: pin });
+    if (!r.success) {
+      err.textContent = '❌ ' + (r.error || 'PIN salah.');
+      document.getElementById('admin-pin').value = '';
+      document.getElementById('admin-pin').focus();
+      return;
+    }
+    isAdmin = true; currentUser = null;
+    sessionStorage.setItem('userRole', 'admin');
+    hideLogin();
+    loadThenShow();
+  } catch(e) {
+    err.textContent = '❌ Gagal terhubung ke server. Coba lagi.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Masuk Portal Admin →';
   }
 }
 
