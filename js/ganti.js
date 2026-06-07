@@ -23,26 +23,25 @@ async function kirimGanti(){
   if(new Date(ganti)<=new Date(asli)){alert('Tanggal pengganti harus setelah tanggal asli.');return;}
 
   // ── LOCK: cek apakah ada jadwal ganti MK ini yang sudah Disetujui tapi belum presensi ──
+  var today0Lock = new Date(); today0Lock.setHours(0,0,0,0);
   var gantiDisetujui = G.filter(function(g){
     return g.dosenId === currentUser.id && g.mk === mk
       && (g.statusAcc === 'Disetujui' || g.statusAcc === 'Menunggu Batal');
   });
   for(var i=0; i<gantiDisetujui.length; i++){
     var gd = gantiDisetujui[i];
-    // Cek apakah sudah ada presensi untuk jadwal ganti ini (cocok MK + tanggal ganti)
-    var sudahPresensi = P.some(function(p){
-      return p.dosenId === currentUser.id && p.mk === mk
-        && p.sumberJadwal === 'Jadwal Pengganti'
-        && (function(){
-          // Bandingkan tanggal presensi dengan tanggal ganti
-          var tglPresensi = p.tanggal; // format DD/MM/YYYY
-          var tglGanti    = gd.ganti;  // format YYYY-MM-DD
-          // Konversi tglGanti ke DD/MM/YYYY untuk dibandingkan
-          var parts = tglGanti.split('-');
-          var tglGantiFormatted = parts[2]+'/'+parts[1]+'/'+parts[0];
-          return tglPresensi === tglGantiFormatted;
-        })();
+
+    // Tanggal ganti sudah lewat? Kalau sudah lewat, skip — tidak perlu lock
+    var tglGantiDate = gd.ganti ? new Date(gd.ganti+'T00:00:00') : null;
+    if(tglGantiDate && tglGantiDate < today0Lock) continue;
+
+    // Cek apakah sudah ada presensi untuk jadwal ganti ini (cocok MK + tanggal)
+    var parts0 = gd.ganti ? gd.ganti.split('-') : [];
+    var tglGantiFormatted0 = parts0.length === 3 ? parts0[2]+'/'+parts0[1]+'/'+parts0[0] : '';
+    var sudahPresensi = tglGantiFormatted0 && P.some(function(p){
+      return p.dosenId === currentUser.id && p.mk === mk && p.tanggal === tglGantiFormatted0;
     });
+
     if(!sudahPresensi){
       var pesanLock = gd.statusAcc === 'Menunggu Batal'
         ? '🔒 Pengajuan jadwal pengganti untuk MK "'+mk+'" terkunci.\n\nAnda sudah mengajukan pembatalan jadwal pengganti ('+gd.ganti+') dan sedang menunggu ACC Admin.\n\nTunggu hingga Admin menyetujui pembatalan sebelum mengajukan ulang.'
@@ -136,28 +135,43 @@ function renderG(){
                                         '<span class="badge yellow">⏳ Menunggu ACC</span>';
 
     // Cek apakah jadwal ganti ini sudah dipresensi
+    // Robust: cek via tanggal AND via MK+dosenId (fallback untuk data lama tanpa sumberJadwal)
     var sudahPresensi = false;
-    if(g.statusAcc === 'Disetujui') {
+    var tglGantiFormatted = '';
+    var tglGantiDate = null;
+    if(g.statusAcc === 'Disetujui' || g.statusAcc === 'Menunggu Batal') {
       var parts = g.ganti ? g.ganti.split('-') : [];
-      var tglGantiFormatted = parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0] : '';
-      sudahPresensi = P.some(function(p){
-        return p.dosenId === g.dosenId && p.mk === g.mk
-          && p.sumberJadwal === 'Jadwal Pengganti'
-          && p.tanggal === tglGantiFormatted;
-      });
+      tglGantiFormatted = parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0] : '';
+      tglGantiDate = parts.length === 3 ? new Date(g.ganti+'T00:00:00') : null;
+      if(tglGantiFormatted) {
+        sudahPresensi = P.some(function(p){
+          return p.dosenId === g.dosenId && p.mk === g.mk && p.tanggal === tglGantiFormatted;
+        });
+      }
     }
+
+    // Apakah tanggal ganti sudah lewat (hari ini atau sebelumnya)?
+    var today0 = new Date(); today0.setHours(0,0,0,0);
+    var tglGantiSudahLewat = tglGantiDate ? tglGantiDate < today0 : false;
 
     // Tombol aksi DOSEN
     var btnDosen = '';
     if(!isAdmin && currentUser && g.dosenId === currentUser.id) {
-      if(g.statusAcc === 'Disetujui' && !sudahPresensi) {
-        btnDosen = '<div style="margin-top:8px">'
-          + '<button class="btn btn-sm btn-danger" style="font-size:11px" onclick="ajukanBatalGanti(\''+g.id+'\')">'
-          + '🚫 Ajukan Pembatalan</button>'
-          + '<span style="font-size:10px;color:#888;margin-left:8px">Tidak bisa hadir? Ajukan pembatalan agar bisa mengajukan ulang.</span>'
-          + '</div>';
-      } else if(g.statusAcc === 'Disetujui' && sudahPresensi) {
-        btnDosen = '<div style="margin-top:6px;font-size:11px;color:#27500a;background:#eaf3de;padding:4px 8px;border-radius:6px;display:inline-block">✅ Sudah dilaksanakan</div>';
+      if(g.statusAcc === 'Disetujui') {
+        if(sudahPresensi) {
+          // Sudah presensi → tuntas
+          btnDosen = '<div style="margin-top:6px;font-size:11px;color:#27500a;background:#eaf3de;padding:4px 10px;border-radius:6px;display:inline-block">✅ Sudah dilaksanakan</div>';
+        } else if(tglGantiSudahLewat) {
+          // Tanggal sudah lewat tapi tidak ada presensi → info saja, tidak bisa ajukan batal
+          btnDosen = '<div style="margin-top:6px;font-size:11px;color:#888;background:#f5f5f3;padding:4px 10px;border-radius:6px;display:inline-block">📅 Tanggal ganti sudah lewat</div>';
+        } else {
+          // Belum presensi, tanggal belum lewat → bisa ajukan pembatalan
+          btnDosen = '<div style="margin-top:8px">'
+            + '<button class="btn btn-sm btn-danger" style="font-size:11px" onclick="ajukanBatalGanti(\''+g.id+'\')">'
+            + '🚫 Ajukan Pembatalan</button>'
+            + '<span style="font-size:10px;color:#888;margin-left:8px">Tidak bisa hadir? Ajukan pembatalan agar bisa mengajukan ulang.</span>'
+            + '</div>';
+        }
       } else if(g.statusAcc === 'Menunggu Batal') {
         btnDosen = '<div style="margin-top:6px;font-size:11px;color:#92400e;background:#fef3c7;padding:4px 10px;border-radius:6px;display:inline-block">⏳ Menunggu persetujuan Admin untuk pembatalan</div>';
       }
