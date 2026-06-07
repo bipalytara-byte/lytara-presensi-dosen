@@ -21,6 +21,36 @@ async function kirimGanti(){
   
   if(!mk||!asli||!ganti||!jMulai||!jSelesai){alert('Lengkapi field wajib (Mata kuliah, Tanggal, Jam Mulai & Selesai).');return;}
   if(new Date(ganti)<=new Date(asli)){alert('Tanggal pengganti harus setelah tanggal asli.');return;}
+
+  // ── LOCK: cek apakah ada jadwal ganti MK ini yang sudah Disetujui tapi belum presensi ──
+  var gantiDisetujui = G.filter(function(g){
+    return g.dosenId === currentUser.id && g.mk === mk
+      && (g.statusAcc === 'Disetujui' || g.statusAcc === 'Menunggu Batal');
+  });
+  for(var i=0; i<gantiDisetujui.length; i++){
+    var gd = gantiDisetujui[i];
+    // Cek apakah sudah ada presensi untuk jadwal ganti ini (cocok MK + tanggal ganti)
+    var sudahPresensi = P.some(function(p){
+      return p.dosenId === currentUser.id && p.mk === mk
+        && p.sumberJadwal === 'Jadwal Pengganti'
+        && (function(){
+          // Bandingkan tanggal presensi dengan tanggal ganti
+          var tglPresensi = p.tanggal; // format DD/MM/YYYY
+          var tglGanti    = gd.ganti;  // format YYYY-MM-DD
+          // Konversi tglGanti ke DD/MM/YYYY untuk dibandingkan
+          var parts = tglGanti.split('-');
+          var tglGantiFormatted = parts[2]+'/'+parts[1]+'/'+parts[0];
+          return tglPresensi === tglGantiFormatted;
+        })();
+    });
+    if(!sudahPresensi){
+      var pesanLock = gd.statusAcc === 'Menunggu Batal'
+        ? '🔒 Pengajuan jadwal pengganti untuk MK "'+mk+'" terkunci.\n\nAnda sudah mengajukan pembatalan jadwal pengganti ('+gd.ganti+') dan sedang menunggu ACC Admin.\n\nTunggu hingga Admin menyetujui pembatalan sebelum mengajukan ulang.'
+        : '🔒 Pengajuan jadwal pengganti untuk MK "'+mk+'" terkunci.\n\nSudah ada jadwal pengganti yang disetujui ('+gd.ganti+') namun belum dilaksanakan.\n\nJika tidak bisa melaksanakan, ajukan Pembatalan terlebih dahulu dan tunggu ACC Admin.';
+      alert(pesanLock);
+      return;
+    }
+  }
   
   var jamGabung = jMulai + ' - ' + jSelesai;
   
@@ -53,7 +83,38 @@ async function setStatusGanti(id, status) {
     await post({action:'updateStatusGanti', id:id, status:status, alasan:alasan});
     var idx = G.findIndex(function(g){return g.id === id;});
     if (idx > -1) { G[idx].statusAcc = status; G[idx].alasanTolak = alasan; }
-    setSB('ok'); renderG();
+    setSB('ok'); renderG(); cekNotifGanti();
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
+}
+
+// Dosen mengajukan request pembatalan jadwal pengganti yang sudah disetujui
+async function ajukanBatalGanti(id) {
+  var g = G.find(function(x){ return x.id === id; });
+  if (!g) return;
+  if (!confirm('Ajukan pembatalan jadwal pengganti ini?\n\n📚 ' + g.mk + '\n📅 Tanggal ganti: ' + g.ganti + '\n\nSetelah diajukan, Admin perlu menyetujui pembatalan sebelum Anda bisa mengajukan jadwal pengganti baru untuk MK ini.')) return;
+
+  setSB('sy');
+  try {
+    await post({action:'updateStatusGanti', id:id, status:'Menunggu Batal', alasan:''});
+    var idx = G.findIndex(function(x){ return x.id === id; });
+    if (idx > -1) G[idx].statusAcc = 'Menunggu Batal';
+    setSB('ok'); renderG(); cekNotifGanti();
+    alert('✅ Pengajuan pembatalan berhasil dikirim.\nMenunggu persetujuan Admin.');
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
+}
+
+// Admin menyetujui pembatalan jadwal pengganti
+async function accBatalGanti(id) {
+  var alasan = prompt('Alasan pembatalan (opsional, akan ditampilkan ke dosen):') ;
+  if (alasan === null) return; // batal klik
+  if (!confirm('Setujui pembatalan jadwal pengganti ini?\nDosen akan bisa mengajukan jadwal pengganti baru untuk MK tersebut.')) return;
+
+  setSB('sy');
+  try {
+    await post({action:'updateStatusGanti', id:id, status:'Dibatalkan', alasan:alasan});
+    var idx = G.findIndex(function(x){ return x.id === id; });
+    if (idx > -1) { G[idx].statusAcc = 'Dibatalkan'; G[idx].alasanTolak = alasan; }
+    setSB('ok'); renderG(); cekNotifGanti();
   } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
 }
 
@@ -66,19 +127,77 @@ function renderG(){
   w.style.display='block';
   
   el.innerHTML=data.slice().reverse().map(function(g){
-    var stBadge = g.statusAcc === 'Disetujui' ? '<span class="badge green">Disetujui</span>' :
-                  g.statusAcc === 'Ditolak' ? '<span class="badge red">Ditolak</span>' :
-                  '<span class="badge yellow">Menunggu ACC</span>';
+    // Badge status
+    var stBadge =
+      g.statusAcc === 'Disetujui'     ? '<span class="badge green">✅ Disetujui</span>' :
+      g.statusAcc === 'Ditolak'       ? '<span class="badge red">❌ Ditolak</span>' :
+      g.statusAcc === 'Menunggu Batal'? '<span class="badge yellow" style="background:#fef3c7;color:#92400e">⏳ Menunggu Batal</span>' :
+      g.statusAcc === 'Dibatalkan'    ? '<span class="badge" style="background:#f5f5f3;color:#888;border:1px solid #e5e5e3">🚫 Dibatalkan</span>' :
+                                        '<span class="badge yellow">⏳ Menunggu ACC</span>';
 
+    // Cek apakah jadwal ganti ini sudah dipresensi
+    var sudahPresensi = false;
+    if(g.statusAcc === 'Disetujui') {
+      var parts = g.ganti ? g.ganti.split('-') : [];
+      var tglGantiFormatted = parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0] : '';
+      sudahPresensi = P.some(function(p){
+        return p.dosenId === g.dosenId && p.mk === g.mk
+          && p.sumberJadwal === 'Jadwal Pengganti'
+          && p.tanggal === tglGantiFormatted;
+      });
+    }
+
+    // Tombol aksi DOSEN
+    var btnDosen = '';
+    if(!isAdmin && currentUser && g.dosenId === currentUser.id) {
+      if(g.statusAcc === 'Disetujui' && !sudahPresensi) {
+        btnDosen = '<div style="margin-top:8px">'
+          + '<button class="btn btn-sm btn-danger" style="font-size:11px" onclick="ajukanBatalGanti(\''+g.id+'\')">'
+          + '🚫 Ajukan Pembatalan</button>'
+          + '<span style="font-size:10px;color:#888;margin-left:8px">Tidak bisa hadir? Ajukan pembatalan agar bisa mengajukan ulang.</span>'
+          + '</div>';
+      } else if(g.statusAcc === 'Disetujui' && sudahPresensi) {
+        btnDosen = '<div style="margin-top:6px;font-size:11px;color:#27500a;background:#eaf3de;padding:4px 8px;border-radius:6px;display:inline-block">✅ Sudah dilaksanakan</div>';
+      } else if(g.statusAcc === 'Menunggu Batal') {
+        btnDosen = '<div style="margin-top:6px;font-size:11px;color:#92400e;background:#fef3c7;padding:4px 10px;border-radius:6px;display:inline-block">⏳ Menunggu persetujuan Admin untuk pembatalan</div>';
+      }
+    }
+
+    // Tombol aksi ADMIN
     var btnAdmin = '';
-    if(isAdmin && g.statusAcc === 'Menunggu') {
-       btnAdmin = '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e5e3;display:flex;gap:8px"><button class="btn btn-sm btn-primary" onclick="setStatusGanti(\''+g.id+'\', \'Disetujui\')">Setujui</button><button class="btn btn-sm btn-danger" onclick="setStatusGanti(\''+g.id+'\', \'Ditolak\')">Tolak</button></div>';
+    if(isAdmin) {
+      if(g.statusAcc === 'Menunggu') {
+        btnAdmin = '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e5e3;display:flex;gap:8px">'
+          + '<button class="btn btn-sm btn-primary" onclick="setStatusGanti(\''+g.id+'\', \'Disetujui\')">✅ Setujui</button>'
+          + '<button class="btn btn-sm btn-danger" onclick="setStatusGanti(\''+g.id+'\', \'Ditolak\')">❌ Tolak</button>'
+          + '</div>';
+      } else if(g.statusAcc === 'Menunggu Batal') {
+        btnAdmin = '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e5e5e3">'
+          + '<div style="font-size:11px;color:#92400e;margin-bottom:6px;font-weight:600">🚫 Dosen mengajukan pembatalan jadwal pengganti ini</div>'
+          + '<div style="display:flex;gap:8px">'
+          + '<button class="btn btn-sm btn-danger" onclick="accBatalGanti(\''+g.id+'\')" style="font-size:11px">✅ ACC Pembatalan</button>'
+          + '</div></div>';
+      }
     }
 
     var buktiLink = g.bukti ? '<br><a href="'+g.bukti+'" target="_blank" style="color:#185fa5;text-decoration:none;font-weight:500">Lihat Lampiran Bukti ↗</a>' : '<br><span style="color:#aaa">Tidak ada lampiran bukti</span>';
-    var tolakMsg = g.statusAcc === 'Ditolak' && g.alasanTolak ? '<div style="margin-top:4px;font-size:12px;color:#a32d2d;background:#fcebeb;padding:4px 8px;border-radius:4px">Alasan: '+g.alasanTolak+'</div>' : '';
+    var tolakMsg = (g.statusAcc === 'Ditolak'||g.statusAcc === 'Dibatalkan') && g.alasanTolak ? '<div style="margin-top:4px;font-size:12px;color:#a32d2d;background:#fcebeb;padding:4px 8px;border-radius:4px">'+(g.statusAcc==='Dibatalkan'?'Alasan batal: ':'Alasan: ')+g.alasanTolak+'</div>' : '';
 
-    return '<div class="entry"><div class="em"><div class="en" style="display:flex;justify-content:space-between;align-items:flex-start"><span>'+g.mk+'<br><span style="font-size:12px;color:#888;font-weight:normal">'+g.dosen+'</span></span> '+stBadge+'</div><div class="es">Asli: '+g.asli+' → Ganti: '+g.ganti+' '+g.jam+' · <b>'+(g.mode==='daring'?'Daring':'Luring')+'</b>'+(g.tempat?' · '+g.tempat:'')+buktiLink+'</div>'+(g.ket?'<div class="es">Ket: '+g.ket+'</div>':'')+tolakMsg+btnAdmin+'</div></div>';
+    // Highlight card jika Menunggu Batal (admin perlu action)
+    var cardStyle = g.statusAcc === 'Menunggu Batal' && isAdmin
+      ? 'border-left:3px solid #f59e0b;background:#fffbeb'
+      : '';
+
+    return '<div class="entry" style="'+cardStyle+'"><div class="em">'
+      + '<div class="en" style="display:flex;justify-content:space-between;align-items:flex-start">'
+      + '<span>'+g.mk+'<br><span style="font-size:12px;color:#888;font-weight:normal">'+g.dosen+'</span></span> '+stBadge
+      + '</div>'
+      + '<div class="es">Asli: '+g.asli+' → Ganti: '+g.ganti+' '+g.jam+' · <b>'+(g.mode==='daring'?'Daring':'Luring')+'</b>'+(g.tempat?' · '+g.tempat:'')+buktiLink+'</div>'
+      + (g.ket?'<div class="es">Ket: '+g.ket+'</div>':'')
+      + tolakMsg
+      + btnDosen
+      + btnAdmin
+      + '</div></div>';
   }).join('');
 }
 

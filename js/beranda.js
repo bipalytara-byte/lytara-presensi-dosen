@@ -1,6 +1,102 @@
 /* beranda.js — Halaman beranda dosen (home screen mobile)
-   Fungsi: fillBerandaDosen, fillAll, pg (navigasi halaman), cm (tutup modal)
+   Fungsi: fillBerandaDosen, fillAll, pg (navigasi halaman), cm (tutup modal),
+           renderInfoMekanismeGanti
 */
+
+// =====================================================
+// INFO MEKANISME JADWAL PENGGANTI — tampil di beranda dosen
+// =====================================================
+function renderInfoMekanismeGanti() {
+  var el = document.getElementById('info-mekanisme-ganti');
+  if (!el || !currentUser || isAdmin) return;
+
+  // Cek apakah dosen punya jadwal ganti yang perlu perhatian
+  var adaMenungguBatal = G.some(function(g){
+    return g.dosenId === currentUser.id && g.statusAcc === 'Menunggu Batal';
+  });
+  var adaDisetujuiBelumPresensi = G.some(function(g){
+    if(g.dosenId !== currentUser.id || g.statusAcc !== 'Disetujui') return false;
+    var parts = g.ganti ? g.ganti.split('-') : [];
+    var tglGantiFormatted = parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0] : '';
+    return !P.some(function(p){
+      return p.dosenId === currentUser.id && p.mk === g.mk
+        && p.sumberJadwal === 'Jadwal Pengganti' && p.tanggal === tglGantiFormatted;
+    });
+  });
+
+  // Banner status terkini (muncul di atas info mekanisme jika ada kondisi aktif)
+  var statusBanner = '';
+  if(adaMenungguBatal) {
+    statusBanner = '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e;font-weight:500">'
+      + '⏳ Ada pengajuan <b>pembatalan jadwal pengganti</b> yang sedang menunggu ACC Admin.'
+      + ' <span style="font-weight:400">Anda belum bisa mengajukan jadwal pengganti baru untuk MK tersebut sampai Admin menyetujui pembatalan.</span>'
+      + '</div>';
+  } else if(adaDisetujuiBelumPresensi) {
+    statusBanner = '<div style="background:#e6f1fb;border:1px solid #85b7eb;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#185fa5;font-weight:500">'
+      + '🔒 Ada jadwal pengganti yang sudah <b>disetujui</b> namun <b>belum dilaksanakan</b>.'
+      + ' <span style="font-weight:400">Jika tidak bisa hadir, ajukan <b>Pembatalan</b> di tab Jadwal Pengganti.</span>'
+      + '</div>';
+  }
+
+  // Toggle info mekanisme (collapsible)
+  el.innerHTML = statusBanner
+    + '<div style="border:1px solid #e5e5e3;border-radius:10px;overflow:hidden">'
+    + '<button onclick="toggleInfoMekanisme(this)" style="width:100%;padding:10px 14px;background:#f8f8f7;border:none;cursor:pointer;font-family:inherit;display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:#555">'
+    + '<span>ℹ️ Cara Kerja Jadwal Pengganti</span>'
+    + '<span id="info-mekanisme-arrow" style="font-size:10px;color:#aaa;transition:transform .2s">▼</span>'
+    + '</button>'
+    + '<div id="info-mekanisme-body" style="display:none;padding:12px 14px;background:#fff;font-size:12px;color:#555;line-height:1.7">'
+    // Alur visual
+    + '<div style="display:flex;flex-direction:column;gap:0;margin-bottom:12px">'
+    + _stepInfo('1', '#185fa5', '#e6f1fb', '📝 Ajukan', 'Isi form Jadwal Pengganti → pilih MK, tanggal asli, tanggal pengganti, jam, dan tempat.')
+    + _arrowDown()
+    + _stepInfo('2', '#92400e', '#fef3c7', '⏳ Menunggu ACC', 'Admin akan meninjau pengajuan Anda. Notifikasi akan muncul di beranda saat sudah diproses.')
+    + _arrowDown()
+    + _stepInfo('3', '#27500a', '#eaf3de', '✅ Disetujui → Hadir', 'Jika disetujui, lakukan presensi pada tanggal pengganti. Sistem otomatis mengenali jadwal pengganti yang aktif.')
+    + _arrowDown()
+    + '<div style="display:flex;gap:10px">'
+    + '<div style="flex:1">'
+    + _stepInfo('4a', '#27500a', '#eaf3de', '✅ Selesai', 'Setelah presensi terekam, pengajuan dianggap tuntas. Anda bisa mengajukan pengganti baru jika diperlukan.')
+    + '</div>'
+    + '<div style="flex:1">'
+    + _stepInfo('4b', '#a32d2d', '#fcebeb', '🚫 Tidak bisa hadir?', 'Klik <b>Ajukan Pembatalan</b> di card jadwal pengganti → tunggu ACC Admin → baru bisa ajukan ulang.')
+    + '</div>'
+    + '</div>'
+    + '</div>'
+    // Poin penting
+    + '<div style="background:#f8f8f7;border-radius:8px;padding:10px 12px;font-size:11px;color:#666">'
+    + '<div style="font-weight:700;color:#1a1a1a;margin-bottom:5px">📌 Penting diketahui:</div>'
+    + '<div style="display:flex;flex-direction:column;gap:4px">'
+    + '<div>🔒 Selama ada jadwal pengganti <b>Disetujui</b> yang belum dilaksanakan, <b>tidak bisa mengajukan pengganti baru</b> untuk MK yang sama.</div>'
+    + '<div>🚫 Untuk mengajukan ulang: ajukan <b>Pembatalan</b> terlebih dahulu dan tunggu ACC Admin.</div>'
+    + '<div>📋 Semua riwayat (termasuk yang dibatalkan) tetap tersimpan sebagai jejak audit.</div>'
+    + '</div></div>'
+    + '</div></div>';
+
+  el.style.display = 'block';
+}
+
+function _stepInfo(num, color, bg, label, desc) {
+  return '<div style="display:flex;gap:10px;align-items:flex-start;background:'+bg+';border-radius:8px;padding:8px 12px">'
+    + '<div style="width:20px;height:20px;border-radius:50%;background:'+color+';color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">'+num+'</div>'
+    + '<div><div style="font-size:12px;font-weight:700;color:'+color+'">'+label+'</div>'
+    + '<div style="font-size:11px;color:#555;margin-top:1px">'+desc+'</div></div>'
+    + '</div>';
+}
+
+function _arrowDown() {
+  return '<div style="text-align:center;color:#ccc;font-size:14px;line-height:1.2;margin:2px 0">↓</div>';
+}
+
+function toggleInfoMekanisme(btn) {
+  var body  = document.getElementById('info-mekanisme-body');
+  var arrow = document.getElementById('info-mekanisme-arrow');
+  if (!body) return;
+  var isOpen = body.style.display !== 'none';
+  body.style.display  = isOpen ? 'none' : 'block';
+  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
 
 
 function fillBerandaAdmin() {
@@ -49,7 +145,7 @@ function fillBerandaAdmin() {
   var totalDosen   = D.length;
   var jumlahHadir  = Object.keys(dosenSudahPresensi).filter(function(id){ return dosenPunyaJadwal[id]; }).length;
   var jumlahBelum  = Object.keys(dosenPunyaJadwal).filter(function(id){ return !dosenSudahPresensi[id]; }).length;
-  var jumlahPending= G.filter(function(g){ return g.statusAcc === 'Menunggu'; }).length
+  var jumlahPending= G.filter(function(g){ return g.statusAcc === 'Menunggu' || g.statusAcc === 'Menunggu Batal'; }).length
                    + M.filter(function(m){ return m.statusAcc === 'Menunggu'; }).length;
 
   var el = function(id){ return document.getElementById(id); };
@@ -69,7 +165,7 @@ function fillBerandaAdmin() {
   }
 
   // Daftar pending
-  var pending = G.filter(function(g){ return g.statusAcc === 'Menunggu'; })
+  var pending = G.filter(function(g){ return g.statusAcc === 'Menunggu' || g.statusAcc === 'Menunggu Batal'; })
     .concat(M.filter(function(m){ return m.statusAcc === 'Menunggu'; }));
   var listWrap = document.getElementById('admin-beranda-pending-list');
   var listCard = document.getElementById('admin-beranda-pending-card');
@@ -81,7 +177,9 @@ function fillBerandaAdmin() {
     listWrap.style.display = 'block';
     listCard.innerHTML = pending.slice(0, 5).map(function(item) {
       var isMaju = !!item.tgl;
-      var tipe = isMaju ? '⏩ Jadwal Maju' : '🔄 Jadwal Pengganti';
+      var tipe = isMaju ? '⏩ Jadwal Maju'
+               : item.statusAcc === 'Menunggu Batal' ? '🚫 Pembatalan Ganti'
+               : '🔄 Jadwal Pengganti';
       var info = isMaju
         ? item.tgl + ' · ' + item.jam
         : item.asli + ' → ' + item.ganti;
@@ -315,6 +413,7 @@ function fillAll(){
   renderMK();
   cekNotifGanti();
   renderNotifLiburHadir();
+  renderInfoMekanismeGanti();
   renderDailyDashboard();
   renderAlertAbsen();
   renderGantiAlert();
@@ -346,6 +445,7 @@ function pg(p,btn){
   if(p==='mk'){ renderMK(); }
   if(p==='rapor'){ if(!isAdmin) renderRapor(null); }
   if(p==='hadir'){ renderNotifLiburHadir(); }
+  if(p==='beranda'||p==='beranda-admin'){ renderInfoMekanismeGanti(); }
   if(p==='beranda-admin'){ fillBerandaAdmin(); }
 }
 document.querySelectorAll('.mo').forEach(function(el){el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
