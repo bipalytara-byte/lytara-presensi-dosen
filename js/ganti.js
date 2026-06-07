@@ -27,32 +27,37 @@ async function simpanGantiPassword() {
   var ok      = document.getElementById('gp-ok');
   err.textContent = ''; ok.style.display = 'none';
 
-  if (!lama) { err.textContent = 'Masukkan password lama.'; return; }
+  if (!lama)  { err.textContent = 'Masukkan password lama.'; return; }
   if (!baru)  { err.textContent = 'Masukkan password baru.'; return; }
   if (baru.length < 4) { err.textContent = 'Password baru minimal 4 karakter.'; return; }
   if (baru !== konfirm) { err.textContent = 'Konfirmasi password tidak cocok.'; return; }
-
-  // Verifikasi password lama
-  if (!DOSEN_PASS[currentUser.id] || lama !== DOSEN_PASS[currentUser.id]) {
-    err.textContent = '❌ Password lama salah.';
-    document.getElementById('gp-lama').value = '';
-    document.getElementById('gp-lama').focus();
-    return;
-  }
   if (lama === baru) { err.textContent = 'Password baru tidak boleh sama dengan password lama.'; return; }
 
   var btn = document.getElementById('btn-simpan-gp');
-  btn.disabled = true; btn.textContent = 'Menyimpan...';
+  btn.disabled = true; btn.textContent = 'Memverifikasi...';
   setSB('sy');
+
   try {
+    // Verifikasi password lama via GAS (server-side auth V8.0)
+    var cek = await get({ action: 'doLogin', id: currentUser.id, pass: lama });
+    if (!cek.success) {
+      err.textContent = '❌ Password lama salah.';
+      document.getElementById('gp-lama').value = '';
+      document.getElementById('gp-lama').focus();
+      btn.disabled = false; btn.textContent = 'Simpan Password Baru';
+      setSB('ok');
+      return;
+    }
+
+    // Password lama benar — simpan password baru
+    btn.textContent = 'Menyimpan...';
     await post({ action: 'resetPassword', dosenId: currentUser.id, passwordBaru: baru });
-    DOSEN_PASS[currentUser.id] = baru;
     setSB('ok');
     ok.style.display = 'block';
     document.getElementById('gp-lama').value = '';
     document.getElementById('gp-baru').value = '';
     document.getElementById('gp-konfirm').value = '';
-    setTimeout(function(){ cm('modal-ganti-pass'); }, 1500);
+    setTimeout(function(){ cm('modal-ganti-pass'); }, 1800);
   } catch(e) {
     setSB('er');
     err.textContent = 'Gagal menyimpan: ' + e.message;

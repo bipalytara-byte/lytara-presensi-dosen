@@ -1094,31 +1094,26 @@
 
 <!-- Modal Ganti Password — dosen mandiri -->
 <div class="mo" id="modal-ganti-pass">
-  <div class="mc" style="max-width:380px">
-    <div class="mh">
-      <span class="mt">🔐 Ganti Password</span>
-      <button class="mx" onclick="cm('modal-ganti-pass')">✕</button>
-    </div>
+  <div class="md" style="max-width:380px">
+    <div class="mt">🔐 Ganti Password</div>
     <div style="font-size:12px;color:#888;margin-bottom:1rem;line-height:1.6">Ganti password login kamu. Pastikan tidak ada orang lain yang mengetahuinya.</div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#555;display:block;margin-bottom:4px">Password Lama</label>
-        <input type="password" id="gp-lama" placeholder="Password saat ini" class="inp" style="width:100%"/>
-      </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#555;display:block;margin-bottom:4px">Password Baru</label>
-        <input type="password" id="gp-baru" placeholder="Min. 4 karakter" class="inp" style="width:100%"/>
-      </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#555;display:block;margin-bottom:4px">Konfirmasi Password Baru</label>
-        <input type="password" id="gp-konfirm" placeholder="Ketik ulang password baru" class="inp" style="width:100%"/>
-      </div>
+    <div class="field">
+      <label>Password Lama</label>
+      <input type="password" id="gp-lama" placeholder="Password saat ini"/>
     </div>
-    <div id="gp-err" style="font-size:12px;color:#a32d2d;margin-top:8px;min-height:16px;font-weight:500"></div>
+    <div class="field">
+      <label>Password Baru</label>
+      <input type="password" id="gp-baru" placeholder="Min. 4 karakter"/>
+    </div>
+    <div class="field">
+      <label>Konfirmasi Password Baru</label>
+      <input type="password" id="gp-konfirm" placeholder="Ketik ulang password baru"/>
+    </div>
+    <div id="gp-err" style="font-size:12px;color:#a32d2d;margin-top:4px;min-height:16px;font-weight:500"></div>
     <div id="gp-ok" style="display:none;font-size:12px;color:#27500a;background:#eaf3de;border-radius:8px;padding:8px 12px;margin-top:8px;font-weight:600">✅ Password berhasil diubah!</div>
-    <div style="display:flex;gap:8px;margin-top:1rem">
-      <button class="btn btn-primary" id="btn-simpan-gp" onclick="simpanGantiPassword()" style="flex:1">Simpan Password Baru</button>
+    <div class="mf">
       <button class="btn" onclick="cm('modal-ganti-pass')">Batal</button>
+      <button class="btn btn-primary" id="btn-simpan-gp" onclick="simpanGantiPassword()">Simpan Password Baru</button>
     </div>
   </div>
 </div>
