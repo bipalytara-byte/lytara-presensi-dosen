@@ -1100,7 +1100,9 @@ html, body {
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
-const SLIDE_DUR   = 8000;  // ms per slide
+// Durasi per slide (ms): [0] Top5, [1] Bot5, [2] Statistik, [3] Kelas Hari Ini, [4] Perubahan Jadwal
+const SLIDE_DURS  = [8000, 8000, 8000, 18000, 18000];
+const SLIDE_DUR   = 8000;  // default fallback (untuk CSS variable)
 const REFRESH_SEC = 60;    // data refresh
 const MIN_SESI    = 1;
 const TOTAL_SLIDES= 5;
@@ -1172,6 +1174,10 @@ function goSlide(n) {
 
   currentSlide = next;
 
+  // Set CSS variable durasi sesuai slide aktif
+  const dur = SLIDE_DURS[currentSlide] || SLIDE_DUR;
+  document.documentElement.style.setProperty('--slide-dur', (dur/1000)+'s');
+
   slides[currentSlide].classList.add('active');
   // Restart scroll saat masuk slide Today
   if (currentSlide === 3) setTimeout(startTodayScroll, 400);
@@ -1184,8 +1190,16 @@ function goSlide(n) {
 }
 
 function startSlideShow() {
-  if(slideTimer) clearInterval(slideTimer);
-  slideTimer = setInterval(()=>{ goSlide(currentSlide+1); }, SLIDE_DUR);
+  if(slideTimer) clearTimeout(slideTimer);
+  // Gunakan durasi slide saat ini, lalu reschedule tiap pergantian
+  function scheduleNext() {
+    const dur = SLIDE_DURS[currentSlide] || SLIDE_DUR;
+    slideTimer = setTimeout(()=>{
+      goSlide(currentSlide + 1);
+      scheduleNext();
+    }, dur);
+  }
+  scheduleNext();
 }
 
 // ── DATA LOAD ──
@@ -1678,7 +1692,7 @@ let anomalyData = [];
 function openAnomalyOverlay() {
   document.getElementById('anomaly-overlay').classList.add('open');
   document.getElementById('paused-label').style.display = 'block';
-  if (slideTimer) { clearInterval(slideTimer); slideTimer = null; }
+  if (slideTimer) { clearTimeout(slideTimer); slideTimer = null; }
 }
 
 function closeAnomalyOverlay() {
@@ -1743,8 +1757,8 @@ window.addEventListener('DOMContentLoaded', async ()=>{
   setInterval(updateClock, 1000);
   updateClock();
 
-  // Set CSS variable for slide duration
-  document.documentElement.style.setProperty('--slide-dur', (SLIDE_DUR/1000)+'s');
+  // Set CSS variable for slide duration (slide pertama = index 0)
+  document.documentElement.style.setProperty('--slide-dur', (SLIDE_DURS[0]/1000)+'s');
 
   await loadData();
   startSlideShow();
