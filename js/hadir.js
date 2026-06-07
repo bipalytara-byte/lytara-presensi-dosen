@@ -5,6 +5,10 @@
 */
 
 
+// actJamSelesai menyimpan jam selesai yang berlaku (bisa dari jadwal ganti/maju/asli)
+// diset saat eksekusiRekam(), dipakai di rekamSelesai()
+var actJamSelesai = '';
+
 function showSelesai(){
   document.getElementById('resume-banner').style.display='none';
   document.getElementById('csel').style.display='block';
@@ -39,6 +43,22 @@ function fillJadwalDosen(){
 
   var jadwalHariIniAsli = jd.filter(function(j){return j.hari===today;});
   
+  // Bug 1 fix: tambahkan jadwal pengganti (G) yang disetujui untuk hari ini
+  // agar muncul di dropdown meski jadwal aslinya hari lain
+  var d0 = new Date();
+  var ymd0 = d0.getFullYear() + '-' + String(d0.getMonth()+1).padStart(2,'0') + '-' + String(d0.getDate()).padStart(2,'0');
+  var gantiHariIni = G.filter(function(g){
+    return g.dosenId === currentUser.id && g.statusAcc === 'Disetujui' && g.ganti === ymd0;
+  });
+  // Temukan jadwal asli untuk setiap ganti yang disetujui hari ini (jadwal asli bukan hari ini)
+  var jadwalGantiVirtual = [];
+  gantiHariIni.forEach(function(g){
+    var jAsli = jd.find(function(j){ return j.mk === g.mk && j.hari !== today; });
+    if(jAsli && jadwalSelesai.indexOf(jAsli.id) === -1) {
+      jadwalGantiVirtual.push({ j: jAsli, g: g });
+    }
+  });
+  
   var todJ=jadwalHariIniAsli.filter(function(j){
     return jadwalSelesai.indexOf(j.id) === -1;
   }).sort(function(a,b){return a.jamMulai.localeCompare(b.jamMulai);});
@@ -58,12 +78,21 @@ function fillJadwalDosen(){
     return prefix + j.mk + tipeLabel + (j.kelas?' ['+j.kelas+']':'') + ' · ' + jStr(j.jamMulai) + (j.jamSelesai?'–'+jStr(j.jamSelesai):'') + ' · ' + j.ruang;
   }
   
-  if(todJ.length>0){
+  if(todJ.length>0 || jadwalGantiVirtual.length>0){
     var g=document.createElement('optgroup');g.label='── Hari ini ('+today+') ──';
     todJ.forEach(function(j){
       var o=document.createElement('option');
       o.value=j.id;
       o.textContent=labelJadwal(j,'✅ ');
+      g.appendChild(o);
+    });
+    // Tambahkan jadwal pengganti (dari hari lain tapi ganti-nya hari ini)
+    jadwalGantiVirtual.forEach(function(item){
+      var j=item.j; var ganti=item.g;
+      var jamLabel = ganti.jam || (jStr(j.jamMulai)+(j.jamSelesai?'–'+jStr(j.jamSelesai):''));
+      var o=document.createElement('option');
+      o.value=j.id;
+      o.textContent='🔄 '+j.mk+(j.kelas?' ['+j.kelas+']':'') + ' (Pengganti) · '+jamLabel+' · '+(ganti.tempat||j.ruang);
       g.appendChild(o);
     });
     sel.appendChild(g);
@@ -86,7 +115,8 @@ function fillJadwalDosen(){
   
   if(jd.length===0){var o=document.createElement('option');o.disabled=true;o.textContent='Belum ada jadwal terdaftar';sel.appendChild(o);}
   
-  if(todJ.length===1){sel.value=todJ[0].id;onJadwal();}
+  if(todJ.length===1 && jadwalGantiVirtual.length===0){sel.value=todJ[0].id;onJadwal();}
+  else if(todJ.length===0 && jadwalGantiVirtual.length===1){sel.value=jadwalGantiVirtual[0].j.id;onJadwal();}
 }
 
 function onJadwal(){
@@ -146,7 +176,11 @@ function previewStatus(){
 
   var d = new Date();
   var ymd = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-  var isGantiValid = G.find(function(g){ return g.dosenId === currentUser.id && g.mk === j.mk && g.statusAcc === 'Disetujui' && g.ganti === ymd; });
+  // Bug 3 fix: isGantiValid hanya berlaku jika jadwal ini BUKAN jadwal asli hari ini
+  // (cegah jadwal asli hari Jumat ikut pakai jam ganti hanya karena MK-nya sama)
+  var isGantiValid = (j.hari !== today)
+    ? G.find(function(g){ return g.dosenId === currentUser.id && g.mk === j.mk && g.statusAcc === 'Disetujui' && g.ganti === ymd; })
+    : null;
   var isMajuValid  = M.find(function(m){ return m.dosenId === currentUser.id && m.mk === j.mk && m.statusAcc === 'Disetujui' && m.tglRaw === ymd; });
 
   if(j&&j.hari!==today && !isGantiValid && !isMajuValid){
@@ -195,7 +229,10 @@ async function rekam(){
 
   var d = new Date();
   var ymd = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-  var isGantiValid = G.find(function(g){ return g.dosenId === currentUser.id && g.mk === jad.mk && g.statusAcc === 'Disetujui' && g.ganti === ymd; });
+  // Bug 3 fix: isGantiValid hanya berlaku jika jadwal ini bukan jadwal asli hari ini
+  var isGantiValid = (jad.hari !== todayHari())
+    ? G.find(function(g){ return g.dosenId === currentUser.id && g.mk === jad.mk && g.statusAcc === 'Disetujui' && g.ganti === ymd; })
+    : null;
   var isMajuValid  = M.find(function(m){ return m.dosenId === currentUser.id && m.mk === jad.mk && m.statusAcc === 'Disetujui' && m.tglRaw === ymd; });
 
   // ── Cek batasan 15 menit sebelum jadwal ──
@@ -286,8 +323,10 @@ async function eksekusiRekam(){
   try{
     await post({action:'savePresensi',data:rec});
     P.push(rec);setSB('ok');actId=rec.id;actJad=p.jad;
+    // Bug 2 fix: simpan jam selesai yang berlaku agar rekamSelesai pakai jam yang tepat
+    actJamSelesai = jamSelesaiAkhir;
     document.getElementById('resume-banner').style.display='none';
-    tampilKartuSelesai(rec,p.jad);
+    tampilKartuSelesai(rec,p.jad,jamSelesaiAkhir);
     renderHari();
     renderRiwayatSaya();
     fillBerandaDosen();
@@ -303,16 +342,21 @@ async function eksekusiRekam(){
   btn.disabled=false;btn.textContent='Rekam mulai mengajar';
 }
 
-function tampilKartuSelesai(rec,jad){
+function tampilKartuSelesai(rec,jad,jamSelesaiOverride){
   var md = rec.modeKuliah || 'Luring';
-  document.getElementById('isel').innerHTML='<b>'+rec.dosen+'</b><br>'+rec.mk+(rec.kelas?' · '+rec.kelas:'')+' · '+rec.ruang+' <span class="badge mode-badge" style="font-size:10px; margin-left:6px">' + md + '</span><br>Hadir: <b>'+rec.waktuHadir+'</b> <span class="badge '+rec.color+'" style="font-size:11px">'+rec.status+'</span><br>Jam selesai jadwal: <b>'+(jad&&jad.jamSelesai?jStr(jad.jamSelesai):'—')+'</b>';
+  // Gunakan jamSelesaiOverride jika ada (dari jadwal ganti/maju), fallback ke jadwal asli
+  var jamSelesaiTampil = jamSelesaiOverride || (jad&&jad.jamSelesai ? jStr(jad.jamSelesai) : '');
+  document.getElementById('isel').innerHTML='<b>'+rec.dosen+'</b><br>'+rec.mk+(rec.kelas?' · '+rec.kelas:'')+' · '+rec.ruang+' <span class="badge mode-badge" style="font-size:10px; margin-left:6px">' + md + '</span><br>Hadir: <b>'+rec.waktuHadir+'</b> <span class="badge '+rec.color+'" style="font-size:11px">'+rec.status+'</span><br>Jam selesai jadwal: <b>'+(jamSelesaiTampil||'—')+'</b>';
   document.getElementById('csel').style.display='block';
 }
 
 async function rekamSelesai(){
   if(!actId){alert('Tidak ada sesi aktif.');return;}
   var now=new Date(),ws=now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-  var st=stS(actJad?jStr(actJad.jamSelesai):'');
+  // Bug 2 fix: gunakan actJamSelesai (bisa dari jadwal ganti/maju) jika tersedia,
+  // fallback ke jam selesai jadwal asli
+  var jamSelesaiRef = actJamSelesai || (actJad ? jStr(actJad.jamSelesai) : '');
+  var st=stS(jamSelesaiRef);
   var selAlasan=document.getElementById('alasan-sel').value;
   var txtAlasan=document.getElementById('alasan-txt').value.trim();
   var alasan=(selAlasan==='Lainnya')?txtAlasan:selAlasan;
@@ -328,7 +372,7 @@ async function rekamSelesai(){
     document.getElementById('resume-banner').style.display='none';
     renderHari();
     renderRiwayatSaya();
-    actId=null;actJad=null;
+    actId=null;actJad=null;actJamSelesai='';
     document.getElementById('alasan-sel').value='';
     document.getElementById('alasan-txt').value='';
     document.getElementById('alasan-txt').style.display='none';

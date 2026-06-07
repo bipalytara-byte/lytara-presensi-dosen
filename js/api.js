@@ -72,7 +72,7 @@ function logout(){
   if(!confirm('Yakin ingin keluar dari aplikasi?'))return;
   sessionStorage.removeItem('userRole');
   sessionStorage.removeItem('current_user');
-  currentUser=null; actId=null; actJad=null; isAdmin=false;
+  currentUser=null; actId=null; actJad=null; actJamSelesai=''; isAdmin=false;
   document.getElementById('csel').style.display='none';
   document.getElementById('resume-banner').style.display='none';
   document.getElementById('admin-pin').value='';

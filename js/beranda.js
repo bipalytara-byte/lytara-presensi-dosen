@@ -196,14 +196,44 @@ function fillBerandaDosen() {
       if (counter >= (j.maxPertemuan || 8)) return false;
     }
     return true;
-  }).sort(function(a,b){ return (a.jamMulai||'').localeCompare(b.jamMulai||''); });
+  });
+
+  // Bug 1 fix: cari jadwal pengganti yang disetujui untuk hari ini
+  // (jadwal aslinya hari lain, tapi hari penggantinya = hari ini)
+  var todayYmdBeranda = (function(){
+    var d=new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  })();
+  var gantiDisetujuiHariIni = G.filter(function(g){
+    return g.dosenId === currentUser.id && g.statusAcc === 'Disetujui' && g.ganti === todayYmdBeranda;
+  });
+  // Buat "virtual jadwal" dari jadwal asli dengan jam/tempat override dari data ganti
+  var jadwalGantiTambahan = [];
+  gantiDisetujuiHariIni.forEach(function(g){
+    var jAsli = J.find(function(j){ return j.mk === g.mk && j.dosenId === currentUser.id && j.hari !== hariIni; });
+    if(jAsli) {
+      // Buat salinan dengan jam dan ruang dari jadwal ganti
+      var jamMulaiG = g.jam && g.jam.indexOf('-') > -1 ? g.jam.split('-')[0].trim() : (g.jam||jAsli.jamMulai);
+      var jamSelesaiG = g.jam && g.jam.indexOf('-') > -1 ? g.jam.split('-')[1].trim() : jAsli.jamSelesai;
+      jadwalGantiTambahan.push(Object.assign({}, jAsli, {
+        jamMulai: jamMulaiG,
+        jamSelesai: jamSelesaiG,
+        ruang: g.tempat || jAsli.ruang,
+        _isGanti: true,
+        _gantiRef: g
+      }));
+    }
+  });
+
+  var jadwalHariIniKombined = jadwalHariIni.concat(jadwalGantiTambahan)
+    .sort(function(a,b){ return (a.jamMulai||'').localeCompare(b.jamMulai||''); });
 
   var listEl = document.getElementById('beranda-jadwal-list');
   if (listEl) {
-    if (jadwalHariIni.length === 0) {
+    if (jadwalHariIniKombined.length === 0) {
       listEl.innerHTML = '<div class="beranda-empty-hari" style="color:#e74c3c">Tidak ada jadwal hari ini</div>';
     } else {
-      listEl.innerHTML = jadwalHariIni.map(function(j) {
+      listEl.innerHTML = jadwalHariIniKombined.map(function(j) {
         // Cari presensi yang cocok dengan jadwal ini
         // Prioritas 1: cocok jadwalId; Prioritas 2: fallback via MK (untuk data lama tanpa jadwalId)
         var pres = presensiHariIni.find(function(p){ return p.jadwalId && p.jadwalId === j.id; });
@@ -248,7 +278,9 @@ function fillBerandaDosen() {
           + '<div style="display:flex;gap:10px;align-items:flex-start">'
           + '<span class="beranda-jadwal-time">' + (j.jamMulai||'?') + ' – ' + (j.jamSelesai||'?') + '</span>'
           + '<div class="beranda-jadwal-info">'
-          + '<div class="beranda-jadwal-mk">' + j.mk + '</div>'
+          + '<div class="beranda-jadwal-mk">' + j.mk
+            + (j._isGanti ? ' <span style="display:inline-block;background:#e6f1fb;color:#185fa5;border:1px solid #85b7eb;border-radius:20px;padding:1px 7px;font-size:10px;font-weight:600;margin-left:4px">🔄 Pengganti</span>' : '')
+          + '</div>'
           + '<div class="beranda-jadwal-sub">' + (j.kelas ? j.kelas + ' · ' : '') + (j.ruang||'') + (j.semester ? ' · ' + j.semester : '') + '</div>'
           + '</div>'
           + '</div>'
