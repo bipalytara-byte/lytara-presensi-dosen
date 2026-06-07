@@ -206,6 +206,7 @@ tr:hover td{background:#f8f9fa}
       <button class="hrd-tab" onclick="switchTab('leaderboard',this)">🏆 Leaderboard</button>
       <button class="hrd-tab" onclick="switchTab('detail',this)">👥 Detail Per Dosen</button>
       <button class="hrd-tab" onclick="switchTab('rapor',this)">📄 Rapor Evaluasi</button>
+      <button class="hrd-tab" onclick="switchTab('semester',this)">📊 Rekap Semester</button>
     </div>
 
     <!-- ══ PANEL 1: REKAP KEHADIRAN ══ -->
@@ -362,6 +363,86 @@ tr:hover td{background:#f8f9fa}
       </div>
     </div>
 
+    <!-- ══ PANEL 5: REKAP SEMESTER ══ -->
+    <div class="hrd-panel" id="panel-semester">
+
+      <!-- Stat summary per semester -->
+      <div class="stat-grid" id="sem-stat-grid" style="margin-bottom:1rem"></div>
+
+      <!-- Filter & Export -->
+      <div class="filter-bar" style="margin-bottom:1rem">
+        <div class="filter-group">
+          <span class="filter-label">Semester</span>
+          <select class="filter-input" id="sem-filter-sem" onchange="renderRekapSemester()">
+            <option value="all">Semua Semester</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Urutkan</span>
+          <select class="filter-input" id="sem-sort" onchange="renderRekapSemester()">
+            <option value="pct-desc">% Tepat ↓ Terbaik</option>
+            <option value="pct-asc">% Tepat ↑ Terburuk</option>
+            <option value="nama">Nama A–Z</option>
+            <option value="sesi-desc">Sesi Terbanyak</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <span class="filter-label">Cari</span>
+          <input class="filter-input" type="text" id="sem-cari" placeholder="Nama dosen..." oninput="renderRekapSemester()"/>
+        </div>
+        <button class="btn-export" onclick="exportRekapSemester()">⬇ Export Excel</button>
+        <button class="btn-export" style="background:#1e3a5f" onclick="exportRekapSemesterLengkap()">⬇ Export Lengkap</button>
+      </div>
+
+      <!-- Kartu ringkasan per dosen -->
+      <div id="sem-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px;margin-bottom:1rem"></div>
+
+      <!-- Tabel detail -->
+      <div class="card">
+        <div class="card-title" style="justify-content:space-between">
+          <span>📋 Tabel Rekap Per Dosen</span>
+          <span id="sem-count" style="font-size:11px;color:#888;font-weight:500"></span>
+        </div>
+        <div class="tbl-wrap">
+          <table id="sem-table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama Dosen</th>
+                <th>NIP</th>
+                <th style="text-align:center">Total Sesi</th>
+                <th style="text-align:center">Tepat Waktu</th>
+                <th style="text-align:center">Terlambat</th>
+                <th style="text-align:center">Sangat Terlambat</th>
+                <th style="text-align:center">% Tepat Hadir</th>
+                <th style="text-align:center">% Tepat Selesai</th>
+                <th style="text-align:center">Grade</th>
+                <th style="text-align:center">Jadwal Ganti</th>
+                <th style="text-align:center">Tren</th>
+              </tr>
+            </thead>
+            <tbody id="sem-tbody">
+              <tr><td colspan="12" class="loading">Pilih semester atau muat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Keterangan grade -->
+      <div style="background:#f8f9fa;border:1px solid #e8eaed;border-radius:10px;padding:12px 16px;font-size:12px;color:#666;line-height:1.8">
+        <div style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">ℹ️ Keterangan Grade</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <span><b style="color:#2e7d32">A</b> = ≥ 90% tepat waktu</span>
+          <span><b style="color:#1565c0">B</b> = 80–89%</span>
+          <span><b style="color:#e65100">C</b> = 70–79%</span>
+          <span><b style="color:#c62828">D</b> = 60–69%</span>
+          <span><b style="color:#880e4f">E</b> = &lt; 60%</span>
+          <span style="color:#999">· Minimum 3 sesi untuk mendapat grade</span>
+        </div>
+      </div>
+
+    </div>
+
   </div><!-- /hrd-main -->
 </div><!-- /app -->
 
@@ -457,6 +538,7 @@ async function loadData(){
     renderLeaderboard();
     renderDetail();
     initRapor();
+    initRekapSemester();
   }catch(e){
     console.error('Gagal load data:',e);
   }
@@ -916,6 +998,220 @@ function openRapor(did){
 function closeMoRapor(){document.getElementById('mo-rapor').classList.remove('open');}
 document.getElementById('mo-rapor').addEventListener('click',function(e){if(e.target===this)closeMoRapor();});
 
+// ── PANEL 5: REKAP SEMESTER ──
+function initRekapSemester() {
+  var sel = document.getElementById('sem-filter-sem');
+  if (!sel) return;
+  var semSet = {};
+  P.forEach(function(p){ if(p.semester&&p.semester.trim()) semSet[p.semester.trim()] = true; });
+  var semKeys = Object.keys(semSet).sort().reverse();
+  sel.innerHTML = '<option value="all">Semua Semester</option>';
+  semKeys.forEach(function(s){
+    var o = document.createElement('option');
+    o.value = s; o.textContent = s; sel.appendChild(o);
+  });
+  // Auto-select semester terbaru
+  if (semKeys.length) sel.value = semKeys[0];
+  renderRekapSemester();
+}
+
+function renderRekapSemester() {
+  var sem   = document.getElementById('sem-filter-sem').value;
+  var sort  = document.getElementById('sem-sort').value;
+  var cari  = (document.getElementById('sem-cari').value || '').toLowerCase();
+
+  // Hitung per dosen
+  var rows = D.map(function(d) {
+    var myP = P.filter(function(p){
+      if (p.dosenId !== d.id) return false;
+      if (sem !== 'all' && p.semester !== sem) return false;
+      return true;
+    });
+    if (!myP.length) return null;
+
+    var total  = myP.length;
+    var tepat  = myP.filter(function(p){ return p.color === 'green'; }).length;
+    var lambat = myP.filter(function(p){ return p.color === 'yellow'; }).length;
+    var sangat = myP.filter(function(p){ return p.color === 'red'; }).length;
+    var selesaiTepat = myP.filter(function(p){ return p.colorSelesai === 'green' && p.waktuSelesai; }).length;
+    var pctH = total > 0 ? Math.round(tepat / total * 100) : 0;
+    var pctS = total > 0 ? Math.round(selesaiTepat / total * 100) : 0;
+    var grade = total < 3 ? '–' : pctH >= 90 ? 'A' : pctH >= 80 ? 'B' : pctH >= 70 ? 'C' : pctH >= 60 ? 'D' : 'E';
+
+    // Tren per bulan (max 6 bulan terakhir dari data ini)
+    var bulanMap = {};
+    myP.forEach(function(p){ var b = String(p.bulan||''); if(b) { if(!bulanMap[b]) bulanMap[b]={tepat:0,total:0}; bulanMap[b].total++; if(p.color==='green') bulanMap[b].tepat++; } });
+    var bulanKeys = Object.keys(bulanMap).sort().slice(-6);
+
+    // Jadwal ganti terkait (dari data G jika ada — fallback cek di P sumberJadwal)
+    var gantiCount = myP.filter(function(p){ return p.sumberJadwal === 'Jadwal Pengganti'; }).length;
+
+    return { d, total, tepat, lambat, sangat, pctH, pctS, grade, bulanMap, bulanKeys, gantiCount };
+  }).filter(Boolean);
+
+  // Filter nama
+  if (cari) rows = rows.filter(function(r){ return r.d.nama.toLowerCase().indexOf(cari) > -1; });
+
+  // Sort
+  rows.sort(function(a, b) {
+    if (sort === 'pct-asc')  return a.pctH - b.pctH;
+    if (sort === 'nama')     return a.d.nama.localeCompare(b.d.nama);
+    if (sort === 'sesi-desc') return b.total - a.total;
+    return b.pctH - a.pctH; // pct-desc default
+  });
+
+  // ── STAT SUMMARY ──
+  var semLabel = sem === 'all' ? 'semua semester' : sem;
+  var totSesi  = rows.reduce(function(s,r){ return s+r.total; }, 0);
+  var totTepat = rows.reduce(function(s,r){ return s+r.tepat; }, 0);
+  var avgPct   = rows.length ? Math.round(rows.reduce(function(s,r){ return s+r.pctH; }, 0) / rows.length) : 0;
+  var gradeA   = rows.filter(function(r){ return r.grade==='A'; }).length;
+  var perlu    = rows.filter(function(r){ return r.pctH < 70 && r.total >= 3; }).length;
+
+  document.getElementById('sem-stat-grid').innerHTML =
+    statCard('blue',  rows.length,  'Dosen aktif') +
+    statCard('',      totSesi,      'Total sesi · '+semLabel) +
+    statCard('green', avgPct+'%',   'Rata-rata ketepatan') +
+    statCard('orange',gradeA,       'Dosen grade A') +
+    statCard('red',   perlu,        'Perlu perhatian (<70%)');
+
+  document.getElementById('sem-count').textContent = rows.length + ' dosen · ' + semLabel;
+
+  // ── KARTU PER DOSEN ──
+  var gradeColor = { A:'#2e7d32', B:'#1565c0', C:'#e65100', D:'#c62828', E:'#880e4f', '–':'#888' };
+  document.getElementById('sem-cards').innerHTML = rows.slice(0, 12).map(function(r) {
+    var ac = avatarColor(r.d.id);
+    var ini = initials(r.d.nama);
+    var bc = pctColor(r.pctH);
+    var gc = gradeColor[r.grade] || '#888';
+    var trenHtml = r.bulanKeys.map(function(b){
+      var bd = r.bulanMap[b];
+      var pct = bd.total ? Math.round(bd.tepat/bd.total*100) : 0;
+      var h = Math.max(3, Math.round(pct * 0.3));
+      return '<div class="tren-col">'
+        + '<div class="tren-pct" style="color:'+pctColor(pct)+'">'+pct+'%</div>'
+        + '<div class="tren-bar" style="height:'+h+'px;background:'+pctColor(pct)+'"></div>'
+        + '<div class="tren-lbl">'+bulanNama(Number(b)%100||Number(b))+'</div>'
+        + '</div>';
+    }).join('');
+
+    return '<div class="dosen-card">'
+      + '<div class="dosen-card-header">'
+        + '<div class="dosen-avatar" style="background:'+ac+'">'+ini+'</div>'
+        + '<div style="flex:1;min-width:0">'
+          + '<div class="dosen-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+r.d.nama.split(',')[0]+'</div>'
+          + '<div class="dosen-nip">'+(r.d.nip||'Tanpa NIP')+'</div>'
+        + '</div>'
+        + '<div style="text-align:center;flex-shrink:0">'
+          + '<div style="font-size:22px;font-weight:800;color:'+gc+'">'+r.grade+'</div>'
+          + '<div style="font-size:9px;color:#aaa;font-weight:600">GRADE</div>'
+        + '</div>'
+      + '</div>'
+      + '<div class="dosen-stats" style="margin-bottom:8px">'
+        + '<div class="dosen-stat"><div class="dosen-stat-num" style="color:'+bc+'">'+r.pctH+'%</div><div class="dosen-stat-lbl">Tepat Hadir</div></div>'
+        + '<div class="dosen-stat"><div class="dosen-stat-num">'+r.total+'</div><div class="dosen-stat-lbl">Total Sesi</div></div>'
+        + '<div class="dosen-stat"><div class="dosen-stat-num" style="color:#2e7d32">'+r.tepat+'</div><div class="dosen-stat-lbl">Tepat</div></div>'
+        + '<div class="dosen-stat"><div class="dosen-stat-num" style="color:#c62828">'+r.lambat+'</div><div class="dosen-stat-lbl">Terlambat</div></div>'
+      + '</div>'
+      + (trenHtml ? '<div class="tren-wrap" style="height:60px;margin-top:4px">'+trenHtml+'</div>' : '')
+      + (r.gantiCount ? '<div style="margin-top:6px;font-size:10px;color:#1565c0;background:#e3f2fd;border-radius:6px;padding:3px 8px;display:inline-block">🔄 '+r.gantiCount+' sesi pengganti</div>' : '')
+    + '</div>';
+  }).join('') + (rows.length > 12 ? '<div style="font-size:12px;color:#888;text-align:center;padding:8px;grid-column:1/-1">Menampilkan 12 dari '+rows.length+' dosen. Lihat tabel di bawah untuk semua data.</div>' : '');
+
+  // ── TABEL ──
+  if (!rows.length) {
+    document.getElementById('sem-tbody').innerHTML = '<tr><td colspan="12" class="empty">Tidak ada data untuk filter ini.</td></tr>';
+    return;
+  }
+
+  document.getElementById('sem-tbody').innerHTML = rows.map(function(r, i) {
+    var bc = pctColor(r.pctH);
+    var gc = gradeColor[r.grade] || '#888';
+    var trenHtml = r.bulanKeys.map(function(b){
+      var bd = r.bulanMap[b];
+      var pct = bd.total ? Math.round(bd.tepat/bd.total*100) : 0;
+      var h = Math.max(2, Math.round(pct * 0.2));
+      return '<div style="display:inline-flex;flex-direction:column;align-items:center;width:14px">'
+        + '<div style="width:10px;height:'+h+'px;background:'+pctColor(pct)+';border-radius:2px 2px 0 0"></div>'
+        + '</div>';
+    }).join('');
+
+    return '<tr>'
+      + '<td style="color:#888;font-size:12px">'+(i+1)+'</td>'
+      + '<td><div style="font-weight:600">'+(r.d.nama.split(',')[0])+'</div>'
+        + (r.d.nama.includes(',') ? '<div style="font-size:11px;color:#888">'+r.d.nama.split(',').slice(1).join(',').trim()+'</div>' : '')
+      + '</td>'
+      + '<td style="color:#888;font-size:12px">'+(r.d.nip||'–')+'</td>'
+      + '<td style="text-align:center;font-weight:700">'+r.total+'</td>'
+      + '<td style="text-align:center"><span class="badge badge-green">'+r.tepat+'</span></td>'
+      + '<td style="text-align:center"><span class="badge badge-yellow">'+r.lambat+'</span></td>'
+      + '<td style="text-align:center"><span class="badge badge-red">'+r.sangat+'</span></td>'
+      + '<td style="text-align:center;font-weight:800;color:'+bc+'">'+r.pctH+'%</td>'
+      + '<td style="text-align:center;color:#555">'+r.pctS+'%</td>'
+      + '<td style="text-align:center"><span style="font-weight:800;color:'+gc+'">'+r.grade+'</span></td>'
+      + '<td style="text-align:center">'+(r.gantiCount > 0 ? '<span class="badge badge-blue">'+r.gantiCount+'</span>' : '<span style="color:#aaa">–</span>')+'</td>'
+      + '<td><div style="display:flex;align-items:flex-end;gap:1px;height:20px">'+trenHtml+'</div></td>'
+      + '</tr>';
+  }).join('');
+}
+
+function statCard(cls, val, lbl) {
+  return '<div class="stat-card'+(cls?' '+cls:'')+'">'
+    + '<div class="stat-num">'+val+'</div>'
+    + '<div class="stat-lbl">'+lbl+'</div>'
+    + '</div>';
+}
+
+// Export ringkasan per semester
+function exportRekapSemester() {
+  var sem = document.getElementById('sem-filter-sem').value;
+  var rows = D.map(function(d) {
+    var myP = P.filter(function(p){
+      if (p.dosenId !== d.id) return false;
+      if (sem !== 'all' && p.semester !== sem) return false;
+      return true;
+    });
+    if (!myP.length) return null;
+    var total  = myP.length;
+    var tepat  = myP.filter(function(p){ return p.color==='green'; }).length;
+    var lambat = myP.filter(function(p){ return p.color==='yellow'; }).length;
+    var sangat = myP.filter(function(p){ return p.color==='red'; }).length;
+    var pctH   = total > 0 ? Math.round(tepat/total*100) : 0;
+    var grade  = total < 3 ? '–' : pctH>=90?'A':pctH>=80?'B':pctH>=70?'C':pctH>=60?'D':'E';
+    var gantiCount = myP.filter(function(p){ return p.sumberJadwal==='Jadwal Pengganti'; }).length;
+    return [d.nama, d.nip||'', sem==='all'?'Semua':sem, total, tepat, lambat, sangat, pctH+'%', grade, gantiCount];
+  }).filter(Boolean);
+  var csv = toCSV(['Nama Dosen','NIP','Semester','Total Sesi','Tepat Waktu','Terlambat','Sangat Terlambat','% Tepat Hadir','Grade','Sesi Pengganti'], rows);
+  downloadCSV(csv, 'LYTARA_Rekap_Semester_'+(sem==='all'?'Semua':sem.replace(/\//g,'-').replace(/\s/g,'_'))+'_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.csv');
+}
+
+// Export lengkap (setiap presensi per baris) untuk satu semester
+function exportRekapSemesterLengkap() {
+  var sem = document.getElementById('sem-filter-sem').value;
+  var myP = sem === 'all' ? P : P.filter(function(p){ return p.semester === sem; });
+  if (!myP.length) { alert('Tidak ada data presensi untuk semester ini.'); return; }
+  var rows = myP.map(function(p) {
+    var d = D.find(function(x){ return x.id === p.dosenId; });
+    return [
+      d ? d.nama : (p.dosen||''),
+      d ? (d.nip||'') : '',
+      p.semester||'',
+      p.tanggal||'',
+      p.mk||'',
+      p.kelas||'',
+      p.ruang||'',
+      p.modeKuliah||'',
+      p.waktuHadir||'',
+      p.status||'',
+      p.waktuSelesai||'',
+      p.statusSelesai||'',
+      p.sumberJadwal||'Reguler'
+    ];
+  });
+  var csv = toCSV(['Nama Dosen','NIP','Semester','Tanggal','Mata Kuliah','Kelas','Ruang','Mode','Waktu Hadir','Status Hadir','Waktu Selesai','Status Selesai','Sumber Jadwal'], rows);
+  downloadCSV(csv, 'LYTARA_Presensi_Lengkap_'+(sem==='all'?'Semua':sem.replace(/\//g,'-').replace(/\s/g,'_'))+'_'+new Date().toLocaleDateString('id-ID').replace(/\//g,'-')+'.csv');
+}
+
 // ── TAB SWITCH ──
 // Re-render rekap & leaderboard saat semester global berubah
 function onGlobalSemesterChange(){
@@ -929,6 +1225,7 @@ function switchTab(name, btn){
   document.getElementById('panel-'+name).classList.add('active');
   btn.classList.add('active');
   if(name==='rapor') renderRaporSemua();
+  if(name==='semester') renderRekapSemester();
 }
 
 // ── EXPORT EXCEL ──

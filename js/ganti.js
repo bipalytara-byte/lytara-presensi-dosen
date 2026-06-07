@@ -6,7 +6,80 @@
 */
 
 
-function cekTgl(){
+// =====================================================
+// GANTI PASSWORD — Mandiri oleh dosen sendiri
+// =====================================================
+function bukaGantiPassword() {
+  if (!currentUser) return;
+  document.getElementById('gp-lama').value = '';
+  document.getElementById('gp-baru').value = '';
+  document.getElementById('gp-konfirm').value = '';
+  document.getElementById('gp-err').textContent = '';
+  document.getElementById('gp-ok').style.display = 'none';
+  document.getElementById('modal-ganti-pass').classList.add('open');
+}
+
+async function simpanGantiPassword() {
+  var lama    = document.getElementById('gp-lama').value;
+  var baru    = document.getElementById('gp-baru').value;
+  var konfirm = document.getElementById('gp-konfirm').value;
+  var err     = document.getElementById('gp-err');
+  var ok      = document.getElementById('gp-ok');
+  err.textContent = ''; ok.style.display = 'none';
+
+  if (!lama) { err.textContent = 'Masukkan password lama.'; return; }
+  if (!baru)  { err.textContent = 'Masukkan password baru.'; return; }
+  if (baru.length < 4) { err.textContent = 'Password baru minimal 4 karakter.'; return; }
+  if (baru !== konfirm) { err.textContent = 'Konfirmasi password tidak cocok.'; return; }
+
+  // Verifikasi password lama
+  if (!DOSEN_PASS[currentUser.id] || lama !== DOSEN_PASS[currentUser.id]) {
+    err.textContent = '❌ Password lama salah.';
+    document.getElementById('gp-lama').value = '';
+    document.getElementById('gp-lama').focus();
+    return;
+  }
+  if (lama === baru) { err.textContent = 'Password baru tidak boleh sama dengan password lama.'; return; }
+
+  var btn = document.getElementById('btn-simpan-gp');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+  setSB('sy');
+  try {
+    await post({ action: 'resetPassword', dosenId: currentUser.id, passwordBaru: baru });
+    DOSEN_PASS[currentUser.id] = baru;
+    setSB('ok');
+    ok.style.display = 'block';
+    document.getElementById('gp-lama').value = '';
+    document.getElementById('gp-baru').value = '';
+    document.getElementById('gp-konfirm').value = '';
+    setTimeout(function(){ cm('modal-ganti-pass'); }, 1500);
+  } catch(e) {
+    setSB('er');
+    err.textContent = 'Gagal menyimpan: ' + e.message;
+  }
+  btn.disabled = false; btn.textContent = 'Simpan Password Baru';
+}
+
+// Reset password oleh admin (dari kelola dosen) — tetap ada
+async function resetPasswordDosen(id, nama) {
+  if (!isAdmin) { alert('Hanya admin yang dapat mereset password.'); return; }
+  var pw = prompt('Reset password untuk "' + nama + '".\nMasukkan password baru (min 4 karakter):');
+  if (pw === null) return;
+  pw = pw.trim();
+  if (pw.length < 4) { alert('Password minimal 4 karakter.'); return; }
+  if (!confirm('Reset password "' + nama + '" menjadi: ' + pw + '?')) return;
+
+  setSB('sy');
+  try {
+    await post({ action: 'resetPassword', dosenId: id, passwordBaru: pw });
+    if (DOSEN_PASS) DOSEN_PASS[id] = pw;
+    setSB('ok');
+    alert('✅ Password berhasil direset.\nDosen bisa login dengan password baru.');
+  } catch(e) {
+    setSB('er');
+    alert('Gagal reset password: ' + e.message);
+  }
+}
   var a=document.getElementById('gasli').value,b=document.getElementById('gganti').value;
   document.getElementById('terr').style.display=(a&&b&&new Date(b)<=new Date(a))?'block':'none';
 }
