@@ -86,6 +86,35 @@ async function resetPasswordDosen(id, nama) {
   }
 }
 
+// Dosen tandai kelas pengganti sudah terlaksana
+async function tandaiTerlaksana(id) {
+  var g = G.find(function(x){ return x.id === id; });
+  if (!g) return;
+  if (!confirm(
+    '✅ Tandai kelas pengganti ini sudah terlaksana?\n\n'
+    + '📚 ' + g.mk + '\n'
+    + '📅 Tanggal: ' + g.ganti + '\n'
+    + '⏰ Jam: ' + g.jam + '\n\n'
+    + 'Setelah ditandai, kamu bisa mengajukan jadwal pengganti baru untuk MK ini.'
+  )) return;
+
+  setSB('sy');
+  try {
+    await post({ action: 'updateStatusGanti', id: id, status: 'Terlaksana', alasan: '' });
+    var idx = G.findIndex(function(x){ return x.id === id; });
+    if (idx > -1) { G[idx].statusAcc = 'Terlaksana'; G[idx].alasanTolak = ''; }
+    setSB('ok');
+    renderG();
+    cekNotifGanti();
+    // Update banner beranda jika ada
+    if (typeof renderInfoMekanismeGanti === 'function') renderInfoMekanismeGanti();
+    alert('✅ Kelas pengganti berhasil ditandai sudah terlaksana.\nTerima kasih sudah melaporkan!');
+  } catch(e) {
+    setSB('er');
+    alert('Gagal: ' + e.message);
+  }
+}
+
 function cekTgl(){
   var a=document.getElementById('gasli').value,b=document.getElementById('gganti').value;
   document.getElementById('terr').style.display=(a&&b&&new Date(b)<=new Date(a))?'block':'none';
@@ -107,6 +136,7 @@ async function kirimGanti(){
   var gantiDisetujui = G.filter(function(g){
     return g.dosenId === currentUser.id && g.mk === mk
       && (g.statusAcc === 'Disetujui' || g.statusAcc === 'Menunggu Batal');
+    // Terlaksana, Dibatalkan, Ditolak → tidak mengunci
   });
   for(var i=0; i<gantiDisetujui.length; i++){
     var gd = gantiDisetujui[i];
@@ -209,6 +239,7 @@ function renderG(){
     // Badge status
     var stBadge =
       g.statusAcc === 'Disetujui'     ? '<span class="badge green">✅ Disetujui</span>' :
+      g.statusAcc === 'Terlaksana'    ? '<span class="badge green" style="background:#e6f1fb;color:#185fa5;border:1px solid #85b7eb">🎓 Terlaksana</span>' :
       g.statusAcc === 'Ditolak'       ? '<span class="badge red">❌ Ditolak</span>' :
       g.statusAcc === 'Menunggu Batal'? '<span class="badge yellow" style="background:#fef3c7;color:#92400e">⏳ Menunggu Batal</span>' :
       g.statusAcc === 'Dibatalkan'    ? '<span class="badge" style="background:#f5f5f3;color:#888;border:1px solid #e5e5e3">🚫 Dibatalkan</span>' :
@@ -239,11 +270,15 @@ function renderG(){
     if(!isAdmin && currentUser && g.dosenId === currentUser.id) {
       if(g.statusAcc === 'Disetujui') {
         if(sudahPresensi) {
-          // Sudah presensi → tuntas
+          // Sudah terdeteksi presensi otomatis → tuntas
           btnDosen = '<div style="margin-top:6px;font-size:11px;color:#27500a;background:#eaf3de;padding:4px 10px;border-radius:6px;display:inline-block">✅ Sudah dilaksanakan</div>';
         } else if(tglGantiSudahLewat) {
-          // Tanggal sudah lewat tapi tidak ada presensi → info saja, tidak bisa ajukan batal
-          btnDosen = '<div style="margin-top:6px;font-size:11px;color:#888;background:#f5f5f3;padding:4px 10px;border-radius:6px;display:inline-block">📅 Tanggal ganti sudah lewat</div>';
+          // Tanggal sudah lewat, belum ada presensi terdeteksi → tampilkan tombol konfirmasi
+          btnDosen = '<div style="margin-top:8px">'
+            + '<button class="btn btn-sm btn-primary" style="font-size:11px;background:#185fa5;border-color:#185fa5" onclick="tandaiTerlaksana(\''+g.id+'\')">'
+            + '🎓 Tandai Sudah Terlaksana</button>'
+            + '<span style="font-size:10px;color:#888;margin-left:8px">Kelas sudah dilaksanakan? Konfirmasi di sini.</span>'
+            + '</div>';
         } else {
           // Belum presensi, tanggal belum lewat → bisa ajukan pembatalan
           btnDosen = '<div style="margin-top:8px">'
@@ -252,6 +287,8 @@ function renderG(){
             + '<span style="font-size:10px;color:#888;margin-left:8px">Tidak bisa hadir? Ajukan pembatalan agar bisa mengajukan ulang.</span>'
             + '</div>';
         }
+      } else if(g.statusAcc === 'Terlaksana') {
+        btnDosen = '<div style="margin-top:6px;font-size:11px;color:#185fa5;background:#e6f1fb;padding:4px 10px;border-radius:6px;display:inline-block">🎓 Sudah ditandai terlaksana oleh dosen</div>';
       } else if(g.statusAcc === 'Menunggu Batal') {
         btnDosen = '<div style="margin-top:6px;font-size:11px;color:#92400e;background:#fef3c7;padding:4px 10px;border-radius:6px;display:inline-block">⏳ Menunggu persetujuan Admin untuk pembatalan</div>';
       }

@@ -15,9 +15,15 @@ function renderInfoMekanismeGanti() {
     return g.dosenId === currentUser.id && g.statusAcc === 'Menunggu Batal';
   });
   var adaDisetujuiBelumPresensi = G.some(function(g){
-    if(g.dosenId !== currentUser.id || g.statusAcc !== 'Disetujui') return false;
+    if(g.dosenId !== currentUser.id) return false;
+    // Terlaksana = sudah selesai, tidak perlu banner
+    if(g.statusAcc !== 'Disetujui') return false;
     var parts = g.ganti ? g.ganti.split('-') : [];
     var tglGantiFormatted = parts.length === 3 ? parts[2]+'/'+parts[1]+'/'+parts[0] : '';
+    // Hanya tampilkan banner jika tanggal belum lewat (masih akan datang)
+    var tglGantiDate = parts.length === 3 ? new Date(g.ganti+'T00:00:00') : null;
+    var today0b = new Date(); today0b.setHours(0,0,0,0);
+    if(tglGantiDate && tglGantiDate < today0b) return false; // sudah lewat → tidak banner
     return !P.some(function(p){
       return p.dosenId === currentUser.id && p.mk === g.mk
         && p.sumberJadwal === 'Jadwal Pengganti' && p.tanggal === tglGantiFormatted;
