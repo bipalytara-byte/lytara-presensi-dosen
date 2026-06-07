@@ -80,6 +80,8 @@ async function resetPasswordDosen(id, nama) {
     alert('Gagal reset password: ' + e.message);
   }
 }
+
+function cekTgl(){
   var a=document.getElementById('gasli').value,b=document.getElementById('gganti').value;
   document.getElementById('terr').style.display=(a&&b&&new Date(b)<=new Date(a))?'block':'none';
 }
