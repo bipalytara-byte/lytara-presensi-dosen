@@ -1501,11 +1501,40 @@ function renderToday(hariIni, hadir, belum, presensiHariIni, jMap) {
     belumEl.innerHTML = '';
     return;
   }
-  hadirEl.innerHTML = hadir.length ? hadir.map(renderItem).join('') : '<div style="color:var(--muted);font-size:13px;padding:16px 0">Belum ada yang hadir</div>';
-  belumEl.innerHTML = belum.length ? belum.map(renderItem).join('') : '<div style="color:var(--green);font-size:13px;padding:16px 0">✓ Semua sudah tercatat hadir</div>';
 
-  // Mulai auto-scroll setelah DOM update
-  setTimeout(startTodayScroll, 300);
+  // Sort: item berlangsung selalu di paling atas
+  function sortBerlangsung(arr) {
+    const nowM = new Date().getHours()*60 + new Date().getMinutes();
+    return arr.slice().sort(function(a, b) {
+      const aOn = (function(){ const m=toMin(a.jamMulai||''), s=toMin(a.jamSelesai||''); return m!==null&&s!==null&&nowM>=m&&nowM<=s; })();
+      const bOn = (function(){ const m=toMin(b.jamMulai||''), s=toMin(b.jamSelesai||''); return m!==null&&s!==null&&nowM>=m&&nowM<=s; })();
+      if (aOn && !bOn) return -1;
+      if (!aOn && bOn) return  1;
+      return 0;
+    });
+  }
+
+  hadirEl.innerHTML = hadir.length ? sortBerlangsung(hadir).map(renderItem).join('') : '<div style="color:var(--muted);font-size:13px;padding:16px 0">Belum ada yang hadir</div>';
+  belumEl.innerHTML = belum.length ? sortBerlangsung(belum).map(renderItem).join('') : '<div style="color:var(--green);font-size:13px;padding:16px 0">✓ Semua sudah tercatat hadir</div>';
+
+  // Scroll awal ke item berlangsung pertama sebelum auto-scroll dimulai
+  setTimeout(function() {
+    ['scroll-hadir','scroll-belum'].forEach(function(colId) {
+      var col   = document.getElementById(colId);
+      var inner = col ? col.querySelector('.today-col-inner') : null;
+      if (!col || !inner) return;
+      var liveItem = inner.querySelector('.berlangsung');
+      if (liveItem) {
+        var head   = col.querySelector('.today-col-head');
+        var headH  = head ? head.offsetHeight + 12 : 0;
+        var offsetTop = liveItem.offsetTop - headH - 8;
+        // Set posisi awal auto-scroll ke posisi item berlangsung
+        inner.style.transform = 'translateY(' + (-Math.max(0, offsetTop)) + 'px)';
+        inner._liveStartY = Math.max(0, offsetTop);
+      }
+    });
+    startTodayScroll();
+  }, 300);
 }
 
 // ── TODAY AUTO-SCROLL (smooth, CSS-animation based) ──
@@ -1529,7 +1558,10 @@ function startTodayScroll() {
 
     const SPEED    = 0.5;   // px per frame (~30px/sec @ 60fps)
     const PAUSE_MS = 2000;  // jeda di atas & bawah
-    let y = 0, dir = 1, paused = false;
+    // Jika ada item berlangsung, mulai dari posisinya — bukan dari 0
+    let y = (inner._liveStartY !== undefined && inner._liveStartY > 0) ? inner._liveStartY : 0;
+    inner._liveStartY = undefined; // reset setelah dipakai sekali
+    let dir = 1, paused = false;
 
     function frame() {
       if (!paused) {
