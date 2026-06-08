@@ -503,33 +503,42 @@ html, body {
 .today-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px 16px;
+  padding: 10px 14px;
   margin-bottom: 8px;
   animation: rowIn .5s both;
+  min-width: 0;
 }
 
 .today-avatar {
-  width: 38px; height: 38px;
+  width: 36px; height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: #fff;
   flex-shrink: 0;
   font-family: 'DM Serif Display', serif;
 }
 
-.today-info { flex:1; min-width:0; }
-.today-name { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.today-detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.today-status { font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.today-info { flex:1; min-width:0; overflow:hidden; }
+.today-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.today-detail { font-size: 10px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.today-status { font-size: 10px; font-weight: 700; flex-shrink: 0; }
 
+.today-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  min-width: 0;
+}
 
 /* ── TODAY: BERLANGSUNG HIGHLIGHT ── */
 .today-item.berlangsung {
@@ -556,6 +565,7 @@ html, body {
   border-radius: 6px;
   padding: 2px 7px;
   flex-shrink: 0;
+  white-space: nowrap;
   animation: pulseBadge 1.8s infinite;
 }
 @keyframes pulseBadge {
@@ -577,7 +587,7 @@ html, body {
 }
 
 /* ── TODAY STATUS EXTENDED ── */
-.today-status-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+.today-status-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 .today-mk-late { font-size: 10px; color: var(--orange); font-weight: 600; white-space: nowrap; }
 
 
@@ -1230,6 +1240,9 @@ async function loadData() {
 }
 
 function process(presensi, jadwals, majuData, gantiData) {
+  // Cache jadwal untuk voice over
+  window._cachedJadwal = jadwals || [];
+
   // Build jadwal lookup
   const jMap = {};
   const tvAnomalies = [];
@@ -1486,10 +1499,12 @@ function renderToday(hariIni, hadir, belum, presensiHariIni, jMap) {
       <div class="today-avatar" style="background:${color}">${ini}</div>
       <div class="today-info">
         <div class="today-name">${esc(dosenNama)} — ${esc(j.mk||'—')} · ${esc(j.kelas||'')}</div>
-        <div class="today-detail">${j.jamMulai||'?'} – ${j.jamSelesai||'?'}${isBerlangsung?' <span style="color:var(--gold);font-weight:700">· sedang berlangsung</span>':''}</div>
+        <div class="today-detail">${j.jamMulai||'?'} – ${j.jamSelesai||'?'}${isBerlangsung?' · <span style="color:var(--gold);font-weight:700">sedang berlangsung</span>':''}</div>
       </div>
-      ${isBerlangsung?'<span class="badge-live">LIVE</span>':''}
-      ${statusEl}
+      <div class="today-right">
+        ${isBerlangsung?'<span class="badge-live">LIVE</span>':''}
+        ${statusEl}
+      </div>
     </div>`;
   }
 
@@ -1785,6 +1800,134 @@ function renderAnomalyOverlay(list) {
 }
 
 // ── INIT ──
+// ══════════════════════════════════════════════════════
+// VOICE OVER — Pengumuman Sesi (gaya bandara)
+// Trigger: 15 menit sebelum jam mulai sesi,
+//          hanya jika ada jadwal yang menyentuh sesi tsb,
+//          hanya sekali per sesi per hari
+// ══════════════════════════════════════════════════════
+
+const SESI_LIST = [
+  { nama: 'Sesi I',   jamMulai: '08:00', jamSelesai: '09:30', triggerMnt: 7*60+45 },
+  { nama: 'Sesi II',  jamMulai: '10:00', jamSelesai: '11:30', triggerMnt: 9*60+45 },
+  { nama: 'Sesi III', jamMulai: '12:00', jamSelesai: '13:30', triggerMnt: 11*60+45 },
+  { nama: 'Sesi IV',  jamMulai: '14:00', jamSelesai: '15:30', triggerMnt: 13*60+45 },
+];
+
+// Simpan sesi yang sudah diumumkan hari ini
+// Key: "sesi-I-YYYY-MM-DD"
+const _voicePlayed = new Set();
+
+function voiceKey(sesiNama) {
+  const d = new Date();
+  const tgl = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  return sesiNama + '-' + tgl;
+}
+
+function buatKalimat(sesi) {
+  const JAM_KATA = {
+    '08:00': 'pukul delapan pagi',
+    '10:00': 'pukul sepuluh pagi',
+    '12:00': 'pukul dua belas siang',
+    '14:00': 'pukul dua siang',
+  };
+  const jamKata = JAM_KATA[sesi.jamMulai] || ('pukul ' + sesi.jamMulai);
+  return `Perhatian. ${sesi.nama} perkuliahan akan segera dimulai ${jamKata}. `
+       + `Kepada Bapak dan Ibu Dosen yang memiliki jadwal mengajar pada sesi ini, `
+       + `mohon segera bersiap menuju ruang kelas. Terima kasih.`;
+}
+
+function adaJadwalDiSesi(sesi, jadwalHariIni) {
+  // Cek apakah ada jadwal yang menyentuh rentang waktu sesi ini
+  const mulaiSesi   = toMin(sesi.jamMulai);
+  const selesaiSesi = toMin(sesi.jamSelesai);
+  return jadwalHariIni.some(function(j) {
+    const mulaiJ   = toMin(j.jamMulai   || '');
+    const selesaiJ = toMin(j.jamSelesai || '');
+    if (mulaiJ === null || selesaiJ === null) return false;
+    // Overlap jika jadwal mulai sebelum sesi selesai DAN jadwal selesai setelah sesi mulai
+    return mulaiJ < selesaiSesi && selesaiJ > mulaiSesi;
+  });
+}
+
+let _voiceReady = false;
+let _voiceAndika = null;
+
+function initVoice() {
+  if (!window.speechSynthesis) return;
+  // Tunggu sampai daftar suara tersedia
+  function cariAndika() {
+    const voices = window.speechSynthesis.getVoices();
+    // Prioritas: Andika (ID) → suara Indonesia apapun → fallback default
+    _voiceAndika = voices.find(v => v.name.includes('Andika'))
+                || voices.find(v => v.lang && v.lang.startsWith('id'))
+                || voices.find(v => v.lang && v.lang.startsWith('en-US'))
+                || (voices.length ? voices[0] : null);
+    _voiceReady = true;
+  }
+  if (window.speechSynthesis.getVoices().length > 0) {
+    cariAndika();
+  } else {
+    window.speechSynthesis.addEventListener('voiceschanged', cariAndika);
+  }
+}
+
+function ucapkan(teks) {
+  if (!window.speechSynthesis || !_voiceReady) return;
+  // Cancel jika ada yang sedang berbicara
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(teks);
+  if (_voiceAndika) utt.voice = _voiceAndika;
+  utt.lang  = 'id-ID';
+  utt.rate  = 0.88;   // sedikit lebih lambat — gaya bandara
+  utt.pitch = 1.0;
+  utt.volume= 1.0;
+  window.speechSynthesis.speak(utt);
+}
+
+function cekVoiceOver() {
+  if (!window.speechSynthesis || !_voiceReady) return;
+
+  const now     = new Date();
+  const nowMnt  = now.getHours() * 60 + now.getMinutes();
+  const hariIni = HARI_MAP[now.getDay()];
+
+  // Ambil jadwal hari ini dari data global
+  const jadwalHariIni = (window._cachedJadwal || []).filter(j => j.hari === hariIni);
+  if (!jadwalHariIni.length) return;
+
+  SESI_LIST.forEach(function(sesi) {
+    const key = voiceKey(sesi.nama);
+    if (_voicePlayed.has(key)) return; // sudah diputar hari ini
+
+    // Window trigger: tepat di menit trigger (±1 menit toleransi untuk interval 60 detik)
+    const selisih = Math.abs(nowMnt - sesi.triggerMnt);
+    if (selisih > 1) return;
+
+    // Cek apakah ada jadwal yang menyentuh sesi ini
+    if (!adaJadwalDiSesi(sesi, jadwalHariIni)) return;
+
+    // Tandai sudah diputar SEBELUM ucapkan (cegah double-trigger)
+    _voicePlayed.add(key);
+    ucapkan(buatKalimat(sesi));
+  });
+}
+
+// Simpan cache jadwal saat data di-load agar cekVoiceOver bisa akses
+const _origLoadData = typeof loadData === 'function' ? loadData : null;
+
+// Patch: simpan jadwal ke window._cachedJadwal saat data berhasil diload
+// Ini dipanggil dari dalam loadData() setelah data tersedia
+function onDataLoaded(jadwals) {
+  window._cachedJadwal = jadwals || [];
+}
+
+// Init voice saat halaman siap
+initVoice();
+
+// Cek voice over setiap 30 detik (lebih presisi dari 60 detik refresh data)
+setInterval(cekVoiceOver, 30 * 1000);
+
 window.addEventListener('DOMContentLoaded', async ()=>{
   setInterval(updateClock, 1000);
   updateClock();
