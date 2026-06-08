@@ -1810,8 +1810,7 @@ function renderAnomalyOverlay(list) {
 const SESI_LIST = [
   { nama: 'Sesi I',   jamMulai: '08:00', jamSelesai: '09:30', triggerMnt: 7*60+45 },
   { nama: 'Sesi II',  jamMulai: '10:00', jamSelesai: '11:30', triggerMnt: 9*60+45 },
-  { nama: 'Sesi III', jamMulai: '12:00', jamSelesai: '13:30', triggerMnt: 11*60+45 },
-  { nama: 'Sesi IV',  jamMulai: '14:00', jamSelesai: '15:30', triggerMnt: 13*60+45 },
+  { nama: 'Sesi III', jamMulai: '13:00', jamSelesai: '14:30', triggerMnt: 12*60+45 },
 ];
 
 // Simpan sesi yang sudah diumumkan hari ini
@@ -1828,8 +1827,7 @@ function buatKalimat(sesi) {
   const JAM_KATA = {
     '08:00': 'pukul delapan pagi',
     '10:00': 'pukul sepuluh pagi',
-    '12:00': 'pukul dua belas siang',
-    '14:00': 'pukul dua siang',
+    '13:00': 'pukul satu siang',
   };
   const jamKata = JAM_KATA[sesi.jamMulai] || ('pukul ' + sesi.jamMulai);
   return `Perhatian. ${sesi.nama} perkuliahan akan segera dimulai ${jamKata}. `
