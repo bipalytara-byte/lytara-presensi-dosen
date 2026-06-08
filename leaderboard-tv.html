@@ -1808,9 +1808,9 @@ function renderAnomalyOverlay(list) {
 // ══════════════════════════════════════════════════════
 
 const SESI_LIST = [
-  { nama: 'Sesi I',   jamMulai: '08:00', jamSelesai: '09:30', triggerMnt: 7*60+45 },
-  { nama: 'Sesi II',  jamMulai: '10:00', jamSelesai: '11:30', triggerMnt: 9*60+45 },
-  { nama: 'Sesi III', jamMulai: '13:00', jamSelesai: '14:30', triggerMnt: 12*60+45 },
+  { nama: 'Sesi I',   jamMulai: '08:00', jamSelesai: '09:30', triggerMnt: 7*60+50 },
+  { nama: 'Sesi II',  jamMulai: '10:00', jamSelesai: '11:30', triggerMnt: 9*60+50 },
+  { nama: 'Sesi III', jamMulai: '13:00', jamSelesai: '14:30', triggerMnt: 12*60+50 },
 ];
 
 // Simpan sesi yang sudah diumumkan hari ini
@@ -1898,9 +1898,9 @@ function cekVoiceOver() {
     const key = voiceKey(sesi.nama);
     if (_voicePlayed.has(key)) return; // sudah diputar hari ini
 
-    // Window trigger: tepat di menit trigger (±1 menit toleransi untuk interval 60 detik)
+    // Window trigger: ±2 menit toleransi (interval cek 15 detik)
     const selisih = Math.abs(nowMnt - sesi.triggerMnt);
-    if (selisih > 1) return;
+    if (selisih > 2) return;
 
     // Cek apakah ada jadwal yang menyentuh sesi ini
     if (!adaJadwalDiSesi(sesi, jadwalHariIni)) return;
@@ -1920,11 +1920,22 @@ function onDataLoaded(jadwals) {
   window._cachedJadwal = jadwals || [];
 }
 
-// Init voice saat halaman siap
-initVoice();
+// ── TEST BUTTON (klik untuk uji suara) ──
+document.addEventListener('DOMContentLoaded', function() {
+  var btn = document.createElement('button');
+  btn.textContent = '🔊 Test Suara';
+  btn.style.cssText = 'position:fixed;bottom:12px;right:12px;z-index:9999;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit';
+  btn.onclick = function() {
+    initVoice();
+    setTimeout(function() {
+      ucapkan('Perhatian. Sesi I perkuliahan akan segera dimulai pukul delapan pagi. Kepada Bapak dan Ibu Dosen yang memiliki jadwal mengajar pada sesi ini, mohon segera bersiap menuju ruang kelas. Terima kasih.');
+    }, 300);
+  };
+  document.body.appendChild(btn);
+});
 
-// Cek voice over setiap 30 detik (lebih presisi dari 60 detik refresh data)
-setInterval(cekVoiceOver, 30 * 1000);
+// Cek voice over setiap 15 detik agar tidak miss window trigger
+setInterval(cekVoiceOver, 15 * 1000);
 
 window.addEventListener('DOMContentLoaded', async ()=>{
   setInterval(updateClock, 1000);
