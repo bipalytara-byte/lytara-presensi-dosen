@@ -55,19 +55,6 @@ function doLogin(){
   hideLogin();loadThenShow();
 }
 
-function doAdminLogin(){
-  var pin=document.getElementById('admin-pin').value.trim();
-  var err=document.getElementById('login-err');err.textContent='';
-  if(pin === PIN) {
-     isAdmin=true; currentUser=null;
-     sessionStorage.setItem('userRole', 'admin');
-     hideLogin(); loadThenShow();
-  } else {
-     err.textContent='❌ PIN Admin salah.';
-     document.getElementById('admin-pin').value='';
-  }
-}
-
 function logout(){
   if(!confirm('Yakin ingin keluar dari aplikasi?'))return;
   sessionStorage.removeItem('userRole');

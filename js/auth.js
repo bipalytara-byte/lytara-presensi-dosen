@@ -34,6 +34,8 @@ async function loadForLogin(){
     PESAN_LIBUR      = cfg.pesanLibur      || '';
     PENGUMUMAN_LOGIN = cfg.pengumumanLogin || '';
     OVERRIDE_CODE    = cfg.overrideCode    || '';
+  } catch(e) {}
+  showLogin();
 }
 
 function tampilkanPengumumanLogin() {
