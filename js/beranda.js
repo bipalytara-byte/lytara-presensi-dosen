@@ -160,6 +160,52 @@ function fillBerandaAdmin() {
   if(el('abs-belum'))   el('abs-belum').textContent   = jumlahBelum;
   if(el('abs-pending')) el('abs-pending').textContent = jumlahPending;
 
+  // ── Summary Ketepatan Waktu Bulan Ini ──
+  var sumEl = document.getElementById('admin-summary-ketepatan');
+  if (sumEl) {
+    var nowSum = new Date();
+    var bulanSum = nowSum.getMonth() + 1;   // 1-12
+    var tahunSum = nowSum.getFullYear();
+
+    // Filter presensi bulan ini
+    var pBulan = P.filter(function(p) {
+      // p.bulan bisa berupa angka atau string; fallback ke parseTanggal
+      var bln = Number(p.bulan);
+      if (!bln) {
+        var ts = parseTanggal(p.tanggal);
+        if (ts) { var d2 = new Date(ts); bln = d2.getMonth() + 1; tahunSum = d2.getFullYear(); }
+      }
+      // filter tahun juga agar tidak campur tahun lama
+      var thn = Number(p.tahun) || tahunSum;
+      return bln === bulanSum && thn === tahunSum;
+    });
+
+    var nTepat     = pBulan.filter(function(p){ return p.color === 'green';  }).length;
+    var nTerlambat = pBulan.filter(function(p){ return p.color === 'yellow'; }).length;
+    var nSangat    = pBulan.filter(function(p){ return p.color === 'red';    }).length;
+    var nTotal     = pBulan.length;
+
+    var pctTepat     = nTotal > 0 ? Math.round(nTepat     / nTotal * 100) : 0;
+    var pctTerlambat = nTotal > 0 ? Math.round(nTerlambat / nTotal * 100) : 0;
+    var pctSangat    = nTotal > 0 ? Math.round(nSangat    / nTotal * 100) : 0;
+
+    var g = function(id){ return document.getElementById(id); };
+    if(g('sum-pct-tepat'))     g('sum-pct-tepat').textContent     = nTotal > 0 ? pctTepat     + '%' : '–';
+    if(g('sum-pct-terlambat')) g('sum-pct-terlambat').textContent = nTotal > 0 ? pctTerlambat + '%' : '–';
+    if(g('sum-pct-sangat'))    g('sum-pct-sangat').textContent    = nTotal > 0 ? pctSangat    + '%' : '–';
+    if(g('sum-n-tepat'))       g('sum-n-tepat').textContent       = nTepat     + ' sesi';
+    if(g('sum-n-terlambat'))   g('sum-n-terlambat').textContent   = nTerlambat + ' sesi';
+    if(g('sum-n-sangat'))      g('sum-n-sangat').textContent      = nSangat    + ' sesi';
+    if(g('sum-total-sesi'))    g('sum-total-sesi').textContent    = 'Total ' + nTotal + ' sesi bulan ini';
+
+    // Progress bar
+    if(g('sum-bar-tepat'))     g('sum-bar-tepat').style.width     = pctTepat     + '%';
+    if(g('sum-bar-terlambat')) g('sum-bar-terlambat').style.width = pctTerlambat + '%';
+    if(g('sum-bar-sangat'))    g('sum-bar-sangat').style.width    = pctSangat    + '%';
+
+    sumEl.style.display = nTotal > 0 ? 'block' : 'none';
+  }
+
   // Alert pending
   var alertEl = document.getElementById('admin-alert-pending');
   var alertTxt = document.getElementById('admin-alert-pending-txt');

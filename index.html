@@ -203,6 +203,49 @@
       </div>
     </div>
 
+    <!-- Summary Ketepatan Waktu Bulan Ini -->
+    <div id="admin-summary-ketepatan" style="display:none;margin-bottom:1rem">
+      <div class="beranda-menu-title" style="margin-bottom:8px">Ketepatan Waktu — Bulan Ini</div>
+      <div class="card" style="padding:14px 16px">
+
+        <!-- Baris persentase utama -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+          <div style="background:#eaf3de;border-radius:10px;padding:10px 8px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#27500a" id="sum-pct-tepat">–</div>
+            <div style="font-size:10px;color:#639922;font-weight:600;margin-top:2px">✅ Tepat Waktu</div>
+            <div style="font-size:10px;color:#888;margin-top:1px" id="sum-n-tepat">0 sesi</div>
+          </div>
+          <div style="background:#faeeda;border-radius:10px;padding:10px 8px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#633806" id="sum-pct-terlambat">–</div>
+            <div style="font-size:10px;color:#BA7517;font-weight:600;margin-top:2px">⏱ Terlambat</div>
+            <div style="font-size:10px;color:#888;margin-top:1px" id="sum-n-terlambat">0 sesi</div>
+          </div>
+          <div style="background:#fcebeb;border-radius:10px;padding:10px 8px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#791f1f" id="sum-pct-sangat">–</div>
+            <div style="font-size:10px;color:#E24B4A;font-weight:600;margin-top:2px">🚨 Sangat Terlambat</div>
+            <div style="font-size:10px;color:#888;margin-top:1px" id="sum-n-sangat">0 sesi</div>
+          </div>
+        </div>
+
+        <!-- Progress bar gabungan -->
+        <div style="height:10px;border-radius:20px;overflow:hidden;background:#f0f0ee;display:flex;margin-bottom:8px" id="sum-bar-wrap">
+          <div id="sum-bar-tepat"     style="height:100%;background:#639922;transition:width .4s"></div>
+          <div id="sum-bar-terlambat" style="height:100%;background:#BA7517;transition:width .4s"></div>
+          <div id="sum-bar-sangat"    style="height:100%;background:#E24B4A;transition:width .4s"></div>
+        </div>
+
+        <!-- Footer info -->
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:11px;color:#888" id="sum-total-sesi">Total 0 sesi bulan ini</div>
+          <button onclick="pg('report', document.getElementById('tab-report'))"
+            style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid #ddd;background:#fff;cursor:pointer;font-family:inherit;color:#555">
+            Lihat Detail →
+          </button>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Menu 6 kartu -->
     <div class="beranda-menu-title">Menu Admin</div>
     <div class="beranda-grid">
