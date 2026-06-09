@@ -57,16 +57,25 @@ function exportLaporanYayasan() {
     var totalMenitLambat = dd.reduce(function(acc, p){
       return acc + (p.color === 'yellow' || p.color === 'red' ? (Number(p.diff) || 0) : 0);
     }, 0);
+    var mLuring   = dd.filter(function(p){ return !p.modeKuliah || p.modeKuliah.indexOf('Luring') > -1; }).length;
+    var mSinkron  = dd.filter(function(p){ return p.modeKuliah && p.modeKuliah.indexOf('Sinkronus') > -1 && p.modeKuliah.indexOf('Asinkronus') === -1; }).length;
+    var mAsinkron = dd.filter(function(p){ return p.modeKuliah && p.modeKuliah.indexOf('Asinkronus') > -1; }).length;
     return {
-      nama:    d.nama,
-      nip:     d.nip || '—',
-      total:   dd.length,
-      tepat:   t,
-      lambat:  l,
-      sangat:  s,
-      pTepat:  _pct(t, dd.length),
-      pLambat: _pct(l + s, dd.length),
-      avgLambat: (l + s) > 0 ? Math.round(totalMenitLambat / (l + s)) : 0
+      nama:      d.nama,
+      nip:       d.nip || '—',
+      total:     dd.length,
+      tepat:     t,
+      lambat:    l,
+      sangat:    s,
+      pTepat:    _pct(t, dd.length),
+      pLambat:   _pct(l + s, dd.length),
+      avgLambat: (l + s) > 0 ? Math.round(totalMenitLambat / (l + s)) : 0,
+      mLuring:   mLuring,
+      mSinkron:  mSinkron,
+      mAsinkron: mAsinkron,
+      pLuringD:   _pct(mLuring,   dd.length),
+      pSinkronD:  _pct(mSinkron,  dd.length),
+      pAsinkronD: _pct(mAsinkron, dd.length)
     };
   }).filter(Boolean);
 
@@ -96,13 +105,24 @@ function exportLaporanYayasan() {
     var mkDetail = {};
     dd.forEach(function(p) {
       var k = p.mk || '(Tidak Ada Nama MK)';
-      if (!mkDetail[k]) mkDetail[k] = { mk: k, count: 0, totalMnt: 0 };
+      if (!mkDetail[k]) mkDetail[k] = { mk: k, count: 0, totalMnt: 0, mLuring: 0, mSinkron: 0, mAsinkron: 0 };
       mkDetail[k].count++;
       mkDetail[k].totalMnt += Number(p.diff) || 0;
+      if (!p.modeKuliah || p.modeKuliah.indexOf('Luring') > -1) mkDetail[k].mLuring++;
+      else if (p.modeKuliah.indexOf('Asinkronus') > -1)         mkDetail[k].mAsinkron++;
+      else if (p.modeKuliah.indexOf('Sinkronus') > -1)          mkDetail[k].mSinkron++;
     });
+    // Mode keseluruhan dosen ini (semua sesi, bukan hanya terlambat)
+    var allDd = data.filter(function(p){ return p.dosenId === d.id; });
+    var modeSemua = {
+      luring:   allDd.filter(function(p){ return !p.modeKuliah || p.modeKuliah.indexOf('Luring') > -1; }).length,
+      sinkron:  allDd.filter(function(p){ return p.modeKuliah && p.modeKuliah.indexOf('Sinkronus') > -1 && p.modeKuliah.indexOf('Asinkronus') === -1; }).length,
+      asinkron: allDd.filter(function(p){ return p.modeKuliah && p.modeKuliah.indexOf('Asinkronus') > -1; }).length,
+      total:    allDd.length
+    };
     var items = Object.values(mkDetail).sort(function(a, b){ return b.count - a.count; });
     items.forEach(function(i){ i.avgMnt = i.count > 0 ? Math.round(i.totalMnt / i.count) : 0; });
-    return { nama: d.nama, nip: d.nip || '—', items: items, totalLambat: dd.length };
+    return { nama: d.nama, nip: d.nip || '—', items: items, totalLambat: dd.length, modeSemua: modeSemua };
   }).filter(Boolean).sort(function(a, b){ return b.totalLambat - a.totalLambat; });
 
   // ── Tanggal cetak ────────────────────────────────────────────────────
@@ -182,7 +202,8 @@ function exportLaporanYayasan() {
   html += '<th class="tc">🚨 Sangat</th>';
   html += '<th class="tc">% Tepat</th>';
   html += '<th class="tc">% Terlambat</th>';
-  html += '<th class="tc">Rata Mnt Terlambat</th>';
+  html += '<th class="tc">Rata Mnt</th>';
+  html += '<th>Mode Perkuliahan</th>';
   html += '<th>Predikat</th>';
   html += '</tr></thead><tbody>';
 
@@ -204,6 +225,13 @@ function exportLaporanYayasan() {
     html += '<td class="tc"><b style="color:' + (d.pTepat >= 80 ? '#27500a' : d.pTepat >= 60 ? '#633806' : '#a32d2d') + '">' + d.pTepat + '%</b></td>';
     html += '<td class="tc" style="color:' + (d.pLambat > 30 ? '#a32d2d' : '#555') + '">' + d.pLambat + '%</td>';
     html += '<td class="tc">' + (d.avgLambat > 0 ? d.avgLambat + ' mnt' : '—') + '</td>';
+    html += '<td>'
+      + '<div style="display:flex;flex-direction:column;gap:2px;font-size:10px">'
+      + (d.mLuring   > 0 ? '<span style="background:#eaf3de;color:#27500a;border-radius:4px;padding:1px 5px;white-space:nowrap">🏫 Luring ' + d.mLuring + 'x (' + d.pLuringD + '%)</span>' : '')
+      + (d.mSinkron  > 0 ? '<span style="background:#e6f1fb;color:#185fa5;border-radius:4px;padding:1px 5px;white-space:nowrap">💻 Sinkronus ' + d.mSinkron + 'x (' + d.pSinkronD + '%)</span>' : '')
+      + (d.mAsinkron > 0 ? '<span style="background:#faeeda;color:#633806;border-radius:4px;padding:1px 5px;white-space:nowrap">📝 Asinkronus ' + d.mAsinkron + 'x (' + d.pAsinkronD + '%)</span>' : '')
+      + '</div>'
+      + '</td>';
     html += '<td><span style="background:' + predikatBg + ';color:' + predikatTx + ';padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap">' + predikat + '</span></td>';
     html += '</tr>';
   });
@@ -219,7 +247,7 @@ function exportLaporanYayasan() {
   html += '<td class="tc"><b>' + nLambat + '</b></td>';
   html += '<td class="tc"><b>' + nSangat + '</b></td>';
   html += '<td class="tc"><b>' + avgTepat + '%</b></td>';
-  html += '<td colspan="3"></td>';
+  html += '<td colspan="4"></td>';
   html += '</tr>';
   html += '</tbody></table>';
   html += '</div>'; // end bab 2
@@ -273,22 +301,33 @@ function exportLaporanYayasan() {
       html += '<div style="margin-bottom:20px;break-inside:avoid">';
       html += '<div class="dosen-header">';
       html += '<div class="dosen-no">' + (di + 1) + '</div>';
-      html += '<div><div class="dosen-nama">' + d.nama + '</div>';
-      html += '<div class="dosen-nip">NIP: ' + d.nip + ' · Total ' + d.totalLambat + 'x keterlambatan</div></div>';
+      html += '<div style="flex:1"><div class="dosen-nama">' + d.nama + '</div>';
+      html += '<div class="dosen-nip">NIP: ' + d.nip + ' · Total ' + d.totalLambat + 'x keterlambatan</div>';
+      // Mode summary keseluruhan dosen ini
+      html += '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px">';
+      if (d.modeSemua.luring   > 0) html += '<span style="background:#eaf3de;color:#27500a;border-radius:4px;padding:1px 6px;font-size:10px">🏫 Luring ' + d.modeSemua.luring + 'x (' + _pct(d.modeSemua.luring, d.modeSemua.total) + '%)</span>';
+      if (d.modeSemua.sinkron  > 0) html += '<span style="background:#e6f1fb;color:#185fa5;border-radius:4px;padding:1px 6px;font-size:10px">💻 Sinkronus ' + d.modeSemua.sinkron + 'x (' + _pct(d.modeSemua.sinkron, d.modeSemua.total) + '%)</span>';
+      if (d.modeSemua.asinkron > 0) html += '<span style="background:#faeeda;color:#633806;border-radius:4px;padding:1px 6px;font-size:10px">📝 Asinkronus ' + d.modeSemua.asinkron + 'x (' + _pct(d.modeSemua.asinkron, d.modeSemua.total) + '%)</span>';
       html += '</div>';
+      html += '</div></div>';
 
       html += '<table class="tbl" style="margin-top:8px">';
-      html += '<thead><tr><th>Mata Kuliah</th><th class="tc">Jml Terlambat</th><th class="tc">Rata-rata Menit</th><th>Keterangan</th></tr></thead>';
+      html += '<thead><tr><th>Mata Kuliah</th><th class="tc">Jml Terlambat</th><th class="tc">Rata-rata Menit</th><th>Mode saat Terlambat</th><th>Keterangan</th></tr></thead>';
       html += '<tbody>';
       d.items.forEach(function(item) {
         var ket = item.avgMnt > 15 ? '⚠️ Rata-rata sangat terlambat'
-                : item.avgMnt > 0  ? 'Rata-rata terlambat ' + item.avgMnt + ' mnt'
+                : item.avgMnt > 0  ? 'Terlambat ' + item.avgMnt + ' mnt rata-rata'
                 : '—';
         var rowC = item.count >= 3 ? 'background:#fff8f8' : '';
+        var modeBadges = '';
+        if (item.mLuring   > 0) modeBadges += '<span style="background:#eaf3de;color:#27500a;border-radius:3px;padding:1px 4px;font-size:9px;margin-right:2px">🏫 ' + item.mLuring + 'x</span>';
+        if (item.mSinkron  > 0) modeBadges += '<span style="background:#e6f1fb;color:#185fa5;border-radius:3px;padding:1px 4px;font-size:9px;margin-right:2px">💻 ' + item.mSinkron + 'x</span>';
+        if (item.mAsinkron > 0) modeBadges += '<span style="background:#faeeda;color:#633806;border-radius:3px;padding:1px 4px;font-size:9px">📝 ' + item.mAsinkron + 'x</span>';
         html += '<tr style="' + rowC + '">';
         html += '<td>' + item.mk + '</td>';
         html += '<td class="tc"><b>' + item.count + 'x</b></td>';
         html += '<td class="tc">' + (item.avgMnt > 0 ? item.avgMnt + ' mnt' : '—') + '</td>';
+        html += '<td>' + (modeBadges || '—') + '</td>';
         html += '<td style="font-size:10px;color:#555">' + ket + '</td>';
         html += '</tr>';
       });
