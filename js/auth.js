@@ -33,8 +33,7 @@ async function loadForLogin(){
     SISTEM_AKTIF     = cfg.liburAktif === true ? false : true;
     PESAN_LIBUR      = cfg.pesanLibur      || '';
     PENGUMUMAN_LOGIN = cfg.pengumumanLogin || '';
-  } catch(e) {}
-  showLogin();
+    OVERRIDE_CODE    = cfg.overrideCode    || '';
 }
 
 function tampilkanPengumumanLogin() {
@@ -343,6 +342,7 @@ async function loadThenShow() {
     PENGUMUMAN_LOGIN = cfg.pengumumanLogin || '';
     SEMESTER_AKTIF   = cfg.semesterAktif   || '';
     TAHUN_AKADEMIK   = cfg.tahunAkademik   || '';
+    OVERRIDE_CODE    = cfg.overrideCode    || '';
 
     updateLoadStep('✅ Siap! Membuka aplikasi...');
     setSB('ok');

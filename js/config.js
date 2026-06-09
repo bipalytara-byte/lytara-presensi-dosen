@@ -19,6 +19,7 @@ let PESAN_LIBUR        = '';    // pesan banner saat sistem nonaktif (untuk dose
 let PENGUMUMAN_LOGIN   = '';    // pengumuman di halaman login (untuk semua)
 let SEMESTER_AKTIF     = '';    // misal: "2025/2026 Genap"
 let TAHUN_AKADEMIK     = '';    // misal: "2025/2026"
+let OVERRIDE_CODE      = '';    // kode override sementara saat sistem nonaktif (kosong = tidak aktif)
 
 window.onload=function(){
   tick(); setInterval(tick,1000);

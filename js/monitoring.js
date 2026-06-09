@@ -579,7 +579,45 @@ function renderPengaturanSistem() {
 
     + '<div style="border-top:1px solid #f0f0ee;margin-bottom:1.5rem"></div>'
 
-    // ── BAGIAN 3: Pengumuman Login ──
+    // ── BAGIAN 3: Kode Override Sementara ──
+    + '<div style="margin-bottom:1.5rem">'
+      + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">🔑 Kode Override Presensi</div>'
+      + '<div style="font-size:12px;color:#888;margin-bottom:14px">'
+        + 'Gunakan saat sistem nonaktif (hari libur) tapi ada dosen tertentu yang perlu tetap mengajar dan merekam presensi. '
+        + 'Bagikan kode ini hanya ke dosen yang mendapat izin. Hapus kode setelah semua dosen selesai mengajar.'
+      + '</div>'
+      + (OVERRIDE_CODE
+        ? '<div style="background:#fff8e6;border:1.5px solid #f9c84a;border-radius:10px;padding:12px 14px;margin-bottom:12px">'
+            + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+              + '<div>'
+                + '<div style="font-size:11px;color:#7a4f00;font-weight:600;margin-bottom:4px">🟡 Kode Override Aktif:</div>'
+                + '<div style="font-size:22px;font-weight:800;color:#7a4f00;letter-spacing:4px;font-family:monospace">' + OVERRIDE_CODE + '</div>'
+                + '<div style="font-size:10px;color:#a07030;margin-top:4px">Bagikan hanya ke dosen yang mendapat izin mengajar hari ini.</div>'
+              + '</div>'
+              + '<button class="btn btn-danger" onclick="hapusOverrideCode()" style="font-size:12px;white-space:nowrap">🗑️ Hapus Kode</button>'
+            + '</div>'
+          + '</div>'
+        : '<div style="background:#f5f5f3;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#aaa;font-style:italic">Tidak ada kode override aktif. Semua dosen mengikuti status sistem.</div>'
+      )
+      + '<div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">'
+        + '<div style="flex:1;min-width:160px">'
+          + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">'
+            + (OVERRIDE_CODE ? 'Ganti kode override' : 'Buat kode override baru')
+            + ' <span style="font-weight:400;color:#aaa">(4–8 karakter, huruf/angka)</span>'
+          + '</label>'
+          + '<input type="text" id="input-override-code" maxlength="8" placeholder="cth: LIBUR24" '
+            + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:15px;font-family:monospace;letter-spacing:2px;text-transform:uppercase;font-weight:700"/>'
+        + '</div>'
+        + '<button class="btn btn-primary" onclick="simpanOverrideCode()" style="font-size:13px;white-space:nowrap">🔑 ' + (OVERRIDE_CODE ? 'Ganti Kode' : 'Aktifkan Kode') + '</button>'
+      + '</div>'
+      + '<div style="margin-top:8px;padding:8px 12px;background:#f0f7ff;border-radius:8px;font-size:11px;color:#185fa5;line-height:1.6">'
+        + 'ℹ️ <b>Cara pakai:</b> Aktifkan kode → bagikan ke dosen yang izin → dosen input kode di halaman Presensi → bisa rekam seperti biasa → setelah selesai, hapus kode ini.'
+      + '</div>'
+    + '</div>'
+
+    + '<div style="border-top:1px solid #f0f0ee;margin-bottom:1.5rem"></div>'
+
+    // ── BAGIAN 4: Pengumuman Login ──
     + '<div>'
       + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">📢 Pengumuman di Halaman Login</div>'
       + '<div style="font-size:12px;color:#888;margin-bottom:14px">Pesan ini muncul di papan pengumuman halaman login — terlihat oleh semua dosen sebelum masuk.</div>'
@@ -599,6 +637,34 @@ function renderPengaturanSistem() {
         + (PENGUMUMAN_LOGIN ? '<button class="btn btn-danger" onclick="hapusPengumumanLogin()" style="font-size:13px">🗑️ Hapus Pengumuman</button>' : '')
       + '</div>'
     + '</div>';
+}
+
+async function simpanOverrideCode() {
+  var kode = (document.getElementById('input-override-code').value || '').trim().toUpperCase();
+  if (!kode) { alert('Masukkan kode override terlebih dahulu.'); return; }
+  if (kode.length < 4) { alert('Kode minimal 4 karakter.'); return; }
+  if (!/^[A-Z0-9]+$/.test(kode)) { alert('Kode hanya boleh berisi huruf kapital dan angka.'); return; }
+  if (!confirm('Aktifkan kode override "' + kode + '"?\n\nKode ini akan memperbolehkan siapapun yang mengetahuinya untuk merekam presensi meski sistem sedang nonaktif.\n\nPastikan hanya dibagikan ke dosen yang mendapat izin.')) return;
+  setSB('sy');
+  try {
+    await post({ action: 'saveSettings', data: { overrideCode: kode } });
+    OVERRIDE_CODE = kode;
+    setSB('ok');
+    renderPengaturanSistem();
+    alert('✅ Kode override "' + kode + '" berhasil diaktifkan.\nBagikan kode ini hanya ke dosen yang mendapat izin mengajar hari ini.');
+  } catch(e) { setSB('er'); alert('Gagal menyimpan: ' + e.message); }
+}
+
+async function hapusOverrideCode() {
+  if (!confirm('Hapus kode override "' + OVERRIDE_CODE + '"?\n\nSetelah dihapus, semua dosen kembali mengikuti status sistem (tidak bisa presensi jika sistem nonaktif).')) return;
+  setSB('sy');
+  try {
+    await post({ action: 'saveSettings', data: { overrideCode: '' } });
+    OVERRIDE_CODE = '';
+    setSB('ok');
+    renderPengaturanSistem();
+    alert('✅ Kode override berhasil dihapus. Sistem kembali ke kondisi normal.');
+  } catch(e) { setSB('er'); alert('Gagal menghapus: ' + e.message); }
 }
 
 async function simpanSemesterAktif() {
