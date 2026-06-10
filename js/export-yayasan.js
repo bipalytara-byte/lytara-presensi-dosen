@@ -567,7 +567,6 @@ function exportLaporanYayasan() {
     html += '<li>Dosen berpredikat <b>Cukup</b> (' + jCukup + ' dosen) perlu mendapat perhatian dan monitoring lebih ketat pada periode berikutnya.</li>';
   }
   html += '<li>Penggunaan moda <b>Daring Asinkronus</b> yang berlebihan (&gt;50% dari total sesi per dosen) perlu dievaluasi karena dapat mengurangi kualitas interaksi pembelajaran.</li>';
-  html += '<li>Pemantauan ketepatan waktu disarankan dilakukan secara berkala setiap akhir bulan agar pola keterlambatan dapat dideteksi lebih dini dan ditindaklanjuti sebelum berdampak pada kualitas pembelajaran.</li>';
   if (totalAnomali > 0) {
     html += '<li>Lakukan verifikasi manual pada ' + totalAnomali + ' sesi yang terindikasi anomali data sebelum laporan ini dijadikan dokumen resmi evaluasi.</li>';
   }
