@@ -52,6 +52,10 @@ function exportLaporanYayasan() {
     var mLuring   = dd.filter(function(p){ return !p.modeKuliah || p.modeKuliah.indexOf('Luring') > -1; }).length;
     var mSinkron  = dd.filter(function(p){ return p.modeKuliah && p.modeKuliah.indexOf('Sinkronus') > -1 && p.modeKuliah.indexOf('Asinkronus') === -1; }).length;
     var mAsinkron = dd.filter(function(p){ return p.modeKuliah && p.modeKuliah.indexOf('Asinkronus') > -1; }).length;
+    // Riwayat tanggal mengajar (urut kronologis)
+    var riwayatTgl = dd.slice().sort(function(a, b){
+      return parseTanggal(a.tanggal) - parseTanggal(b.tanggal);
+    });
     // Per-MK breakdown (untuk BAB V profil dosen)
     var mkBreakdown = {};
     dd.forEach(function(p) {
@@ -78,7 +82,8 @@ function exportLaporanYayasan() {
       pLuringD:  _pct(mLuring, dd.length),
       pSinkronD: _pct(mSinkron, dd.length),
       pAsinkronD:_pct(mAsinkron, dd.length),
-      mkBreakdown: Object.values(mkBreakdown).sort(function(a,b){ return (b.lambat+b.sangat)-(a.lambat+a.sangat); })
+      mkBreakdown: Object.values(mkBreakdown).sort(function(a,b){ return (b.lambat+b.sangat)-(a.lambat+a.sangat); }),
+      riwayatTgl: riwayatTgl
     };
   }).filter(Boolean);
 
@@ -494,6 +499,45 @@ function exportLaporanYayasan() {
       html += '</tbody></table>';
     }
 
+    // Tabel riwayat tanggal mengajar
+    if (d.riwayatTgl && d.riwayatTgl.length > 0) {
+      html += '<div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;margin:12px 0 6px">Riwayat Tanggal Mengajar</div>';
+      html += '<table class="tbl" style="font-size:10px">';
+      html += '<thead><tr>';
+      html += '<th style="width:20px">No.</th>';
+      html += '<th>Tanggal</th>';
+      html += '<th>Mata Kuliah</th>';
+      html += '<th class="tc">Jam Mulai</th>';
+      html += '<th class="tc">Jam Selesai</th>';
+      html += '<th class="tc">Mode</th>';
+      html += '<th class="tc">Status</th>';
+      html += '</tr></thead><tbody>';
+      d.riwayatTgl.forEach(function(p, ri) {
+        var statusLabel = p.color === 'green'  ? '✅ Tepat'
+                        : p.color === 'yellow' ? '⏱ Terlambat'
+                        : p.color === 'red'    ? '🚨 Sangat'
+                        : '—';
+        var statusBg = p.color === 'green'  ? 'color:#27500a'
+                     : p.color === 'yellow' ? 'color:#633806'
+                     : p.color === 'red'    ? 'color:#791f1f;font-weight:700'
+                     : 'color:#888';
+        var modeIcon = !p.modeKuliah || p.modeKuliah.indexOf('Luring') > -1 ? '🏫'
+                     : p.modeKuliah.indexOf('Asinkronus') > -1 ? '📝' : '💻';
+        var lambatInfo = (p.color === 'yellow' || p.color === 'red') && p.diff
+          ? ' <span style="color:#a32d2d;font-size:9px">(+' + p.diff + ' mnt)</span>' : '';
+        html += '<tr style="' + (p.color === 'red' ? 'background:#fff8f8' : '') + '">';
+        html += '<td class="tc" style="color:#aaa">' + (ri + 1) + '</td>';
+        html += '<td><b>' + (p.tanggal || '—') + '</b></td>';
+        html += '<td>' + (p.mk || '—') + '</td>';
+        html += '<td class="tc">' + (p.waktuMulai || '—') + '</td>';
+        html += '<td class="tc">' + (p.waktuSelesai || '<span style="color:#aaa;font-style:italic">—</span>') + '</td>';
+        html += '<td class="tc">' + modeIcon + '</td>';
+        html += '<td class="tc" style="' + statusBg + '">' + statusLabel + lambatInfo + '</td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+
     html += '</div>'; // end profil dosen
   });
 
@@ -523,18 +567,30 @@ function exportLaporanYayasan() {
     html += '<li>Dosen berpredikat <b>Cukup</b> (' + jCukup + ' dosen) perlu mendapat perhatian dan monitoring lebih ketat pada periode berikutnya.</li>';
   }
   html += '<li>Penggunaan moda <b>Daring Asinkronus</b> yang berlebihan (&gt;50% dari total sesi per dosen) perlu dievaluasi karena dapat mengurangi kualitas interaksi pembelajaran.</li>';
-  html += '<li>Sistem LYTARA disarankan terus digunakan dan dioptimalkan, terutama untuk memastikan dosen merekam <b>waktu selesai</b> agar data keterlambatan dapat dihitung dengan akurat.</li>';
+  html += '<li>Pemantauan ketepatan waktu disarankan dilakukan secara berkala setiap akhir bulan agar pola keterlambatan dapat dideteksi lebih dini dan ditindaklanjuti sebelum berdampak pada kualitas pembelajaran.</li>';
   if (totalAnomali > 0) {
     html += '<li>Lakukan verifikasi manual pada ' + totalAnomali + ' sesi yang terindikasi anomali data sebelum laporan ini dijadikan dokumen resmi evaluasi.</li>';
   }
   html += '</ol></div>';
 
-  html += '<div style="margin-top:50px;display:flex;justify-content:space-between;align-items:flex-end">';
-  html += '<div style="font-size:11px;color:#aaa">LYTARA v6.0 · Laporan digenerate otomatis · ' + tglCetak + '</div>';
-  html += '<div style="text-align:center;min-width:200px">';
-  html += '<div style="font-size:11px;color:#555;margin-bottom:4px">Mengetahui,</div>';
-  html += '<div style="margin-top:50px;border-top:1px solid #333;padding-top:4px;font-size:11px;color:#555">Admin / Pejabat yang Berwenang</div>';
-  html += '</div></div>';
+  html += '<div style="margin-top:50px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:20px">';
+  html += '<div style="font-size:11px;color:#aaa">Laporan digenerate otomatis · ' + tglCetak + '</div>';
+
+  // TTD LYTARA saja
+  html += '<div style="text-align:center;min-width:180px">';
+  html += '<div style="font-size:11px;color:#555;margin-bottom:4px">Dicetak oleh,</div>';
+  html += '<div style="font-size:11px;color:#555">Admin Sistem Presensi</div>';
+  html += '<div style="margin-top:8px;margin-bottom:4px">';
+  html += '<svg width="160" height="44" viewBox="0 0 160 44" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto">'
+    + '<path d="M8,34 C14,10 22,8 28,18 C32,26 30,36 36,28 C40,22 38,12 44,16 C50,20 46,36 52,30 C56,26 54,14 60,12 C66,10 64,28 70,26 C74,24 72,16 78,14 C84,12 82,30 88,26 C92,22 94,16 100,18 C106,20 104,32 110,28 C114,24 112,14 118,14 C124,14 126,28 132,26 C136,24 138,18 144,20 C150,22 152,30 154,30" stroke="#1a1a1a" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<path d="M60,12 C60,30 62,38 58,40" stroke="#1a1a1a" stroke-width="1.8" fill="none" stroke-linecap="round"/>'
+    + '<path d="M100,18 C96,36 98,42 94,42" stroke="#1a1a1a" stroke-width="1.8" fill="none" stroke-linecap="round"/>'
+    + '</svg>';
+  html += '</div>';
+  html += '<div style="border-top:1px solid #333;padding-top:4px;font-size:11px;color:#185fa5;font-weight:600">Admin LYTARA</div>';
+  html += '</div>';
+
+  html += '</div>';
   html += '</div>';
 
   html += '</body></html>';
