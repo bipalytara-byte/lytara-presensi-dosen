@@ -146,3 +146,20 @@ async function tutupPaksa(id) {
 // =====================================================
 // FITUR 1: DASHBOARD RINGKASAN HARIAN
 // =====================================================
+
+// ── Normalisasi format semester ──────────────────────────────────────
+// Menyeragamkan berbagai variasi format ke "Genap 2025/2026" / "Ganjil 2025/2026"
+// Menangani: "2025/2026 Genap", "Semester Genap 2025/2026", "Genap 2025/2026", dll.
+function normalisasiSemester(str) {
+  if (!str || !str.trim()) return str;
+  var s = str.trim();
+  // Sudah benar: "Genap 2025/2026" atau "Ganjil 2025/2026"
+  if (/^(Genap|Ganjil)\s+\d{4}\/\d{4}$/.test(s)) return s;
+  // Format "2025/2026 Genap" atau "2025/2026 Ganjil"
+  var m1 = s.match(/^(\d{4}\/\d{4})\s+(Genap|Ganjil)$/i);
+  if (m1) return m1[2].charAt(0).toUpperCase() + m1[2].slice(1).toLowerCase() + ' ' + m1[1];
+  // Format "Semester Genap 2025/2026"
+  var m2 = s.match(/^Semester\s+(Genap|Ganjil)\s+(\d{4}\/\d{4})$/i);
+  if (m2) return m2[1].charAt(0).toUpperCase() + m2[1].slice(1).toLowerCase() + ' ' + m2[2];
+  return s;
+}

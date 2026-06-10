@@ -33,7 +33,6 @@ async function loadForLogin(){
     SISTEM_AKTIF     = cfg.liburAktif === true ? false : true;
     PESAN_LIBUR      = cfg.pesanLibur      || '';
     PENGUMUMAN_LOGIN = cfg.pengumumanLogin || '';
-    OVERRIDE_CODE    = cfg.overrideCode    || '';
   } catch(e) {}
   showLogin();
 }
@@ -209,6 +208,8 @@ async function refreshDataLokal() {
     G = r[3].data || [];
     M = r[4].data || [];
     MK= r[5].data || [];
+    // Normalisasi format semester agar konsisten di seluruh dropdown
+    P.forEach(function(p){ if(p.semester) p.semester = normalisasiSemester(p.semester); });
     setSB('ok'); 
     
     var oldRd = document.getElementById('rd') ? document.getElementById('rd').value : 'all';
@@ -337,6 +338,8 @@ async function loadThenShow() {
     G  = results[3].data || [];
     M  = results[4].data || [];
     MK = results[6].data || [];
+    // Normalisasi format semester agar konsisten di seluruh dropdown
+    P.forEach(function(p){ if(p.semester) p.semester = normalisasiSemester(p.semester); });
 
     var cfg          = results[5].data || {};
     SISTEM_AKTIF     = cfg.liburAktif === true ? false : true;
@@ -344,7 +347,6 @@ async function loadThenShow() {
     PENGUMUMAN_LOGIN = cfg.pengumumanLogin || '';
     SEMESTER_AKTIF   = cfg.semesterAktif   || '';
     TAHUN_AKADEMIK   = cfg.tahunAkademik   || '';
-    OVERRIDE_CODE    = cfg.overrideCode    || '';
 
     updateLoadStep('✅ Siap! Membuka aplikasi...');
     setSB('ok');
