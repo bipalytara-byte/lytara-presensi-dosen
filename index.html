@@ -343,6 +343,9 @@
 <!-- ====== END BERANDA ====== -->
 
 <div id="page-hadir" class="page">
+  <!-- Banner sistem nonaktif + kode override -->
+  <div id="hadir-banner-nonaktif" style="display:none;margin-bottom:1rem"></div>
+
   <div id="notif-ganti" style="display:none; margin-bottom:1rem;"></div>
 
   <div class="resume-banner" id="resume-banner" style="display:none">
@@ -717,12 +720,13 @@
 
     <!-- Tab header -->
     <div style="display:flex;border-bottom:1px solid #e5e5e3;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none" id="dash-tab-bar">
-      <button class="dash-tab active" onclick="switchDashTab('harian',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#1a1a1a;border-bottom:2px solid #1a1a1a;font-family:inherit">☀️ Hari Ini</button>
+      <button class="dash-tab" onclick="switchDashTab('harian',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#1a1a1a;border-bottom:2px solid #1a1a1a;font-family:inherit">☀️ Hari Ini</button>
       <button class="dash-tab" onclick="switchDashTab('rekap',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">📊 Rekap</button>
       <button class="dash-tab" onclick="switchDashTab('tren',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">📈 Tren</button>
       <button class="dash-tab" onclick="switchDashTab('dosen',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">👤 Per Dosen</button>
       <button class="dash-tab" onclick="switchDashTab('jadwal',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">🔄 Jadwal</button>
       <button class="dash-tab" onclick="switchDashTab('rapor',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">📋 Rapor</button>
+      <button class="dash-tab" onclick="switchDashTab('belumrekam',this);renderBelumRekam()" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">🔍 Belum Rekam</button>
       <button class="dash-tab" onclick="switchDashTab('detail',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">🗂️ Detail</button>
       <button class="dash-tab" onclick="switchDashTab('pengaturan',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">⚙️ Pengaturan</button>
     </div>
@@ -919,6 +923,31 @@
           <div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Pilih dosen untuk melihat rapor presensinya.</div>
         </div>
       </div>
+    </div>
+
+    <!-- ===== PANEL: BELUM REKAM ===== -->
+    <div class="dash-panel" id="dash-panel-belumrekam" style="padding:14px;display:none">
+
+      <!-- Filter & summary -->
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#1a1a1a">Sesi Belum Direkam</div>
+          <div style="font-size:11px;color:#888;margin-top:2px">Cross-check jadwal vs presensi pada rentang tanggal yang dipilih</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <select id="br-filter-dosen" onchange="renderBelumRekam()" style="font-size:12px;padding:5px 8px;border:1px solid #ddd;border-radius:7px;font-family:inherit">
+            <option value="all">Semua dosen</option>
+          </select>
+          <button onclick="renderBelumRekam()" style="padding:5px 12px;border-radius:7px;border:1px solid #ddd;background:#fff;font-size:12px;cursor:pointer;font-family:inherit">🔄 Refresh</button>
+        </div>
+      </div>
+
+      <!-- Badge ringkasan -->
+      <div id="br-summary" style="display:none;margin-bottom:12px"></div>
+
+      <!-- List hasil -->
+      <div id="br-list"><div style="text-align:center;padding:30px;color:#aaa;font-size:13px">Pilih rentang tanggal di filter atas lalu klik tab ini.</div></div>
+
     </div>
 
     <!-- ===== PANEL: DETAIL ===== -->

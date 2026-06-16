@@ -119,6 +119,126 @@ function fillJadwalDosen(){
   else if(todJ.length===0 && jadwalGantiVirtual.length===1){sel.value=jadwalGantiVirtual[0].j.id;onJadwal();}
 }
 
+// ── Banner sistem nonaktif di halaman Presensi ───────────────────────
+function renderBannerHadirNonaktif() {
+  var el = document.getElementById('hadir-banner-nonaktif');
+  var cardEl = document.querySelector('#page-hadir .card');
+  if (!el) return;
+
+  if (!SISTEM_AKTIF) {
+    // Cek jika session override sudah aktif — tampilkan banner hijau langsung
+    if (sessionStorage.getItem('override_unlocked') === '1') {
+      el.innerHTML = '<div style="background:#eaf3de;border:1.5px solid #97c459;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">'
+        + '<span style="font-size:20px">🔓</span>'
+        + '<div><div style="font-size:13px;font-weight:700;color:#27500a">Kode Override Aktif</div>'
+        + '<div style="font-size:12px;color:#27500a;margin-top:2px">Anda mendapat izin merekam presensi hari ini. Silakan lanjutkan seperti biasa.</div></div>'
+        + '</div>';
+      el.style.display = 'block';
+      if (cardEl) { cardEl.style.opacity = ''; cardEl.style.pointerEvents = ''; }
+      return;
+    }
+
+    // Jadwal dosen hari ini yang belum punya pengganti
+    var hariIni = todayHari();
+    var belumGanti = currentUser ? J.filter(function(j){
+      return j.dosenId === currentUser.id && j.hari === hariIni &&
+        !G.some(function(g){ return g.dosenId === currentUser.id && g.mk === j.mk && g.statusAcc !== 'Ditolak'; });
+    }) : [];
+
+    var jadwalHtml = belumGanti.length > 0
+      ? '<div style="margin:8px 0 6px;font-size:12px;font-weight:700;color:#7a4f00">📋 Jadwal hari ini yang perlu diganti:</div>'
+        + '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">'
+        + belumGanti.map(function(j){
+            return '<div style="background:rgba(255,255,255,.5);border-radius:6px;padding:5px 10px;font-size:12px;color:#7a4f00">'
+              + '• <b>' + j.mk + '</b>' + (j.kelas?' · '+j.kelas:'') + ' · ' + (jStr(j.jamMulai)||'?') + '–' + (jStr(j.jamSelesai)||'?')
+              + '</div>';
+          }).join('')
+        + '</div>'
+      : '';
+
+    var overrideHtml = OVERRIDE_CODE
+      ? '<div style="margin-top:12px;padding:12px 14px;background:rgba(255,255,255,.7);border-radius:10px;border:1px solid #e8c97a">'
+          + '<div style="font-size:12px;font-weight:700;color:#7a4f00;margin-bottom:4px">🔑 Punya kode override dari Admin?</div>'
+          + '<div style="font-size:11px;color:#7a4f00;margin-bottom:8px">Masukkan kode yang diberikan Admin untuk mengajar hari ini.</div>'
+          + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+            + '<input type="text" id="input-kode-override" maxlength="8" placeholder="Masukkan kode..." '
+              + 'style="flex:1;min-width:140px;border:1.5px solid #f9c84a;border-radius:8px;padding:8px 12px;'
+              + 'font-size:16px;font-family:monospace;letter-spacing:3px;text-transform:uppercase;font-weight:700;'
+              + 'background:#fffdf0;color:#5a3800;outline:none" '
+              + 'onkeydown="if(event.key===\'Enter\') cekOverrideCode()"/>'
+            + '<button onclick="cekOverrideCode()" '
+              + 'style="padding:8px 16px;border-radius:8px;border:none;background:#f9c84a;color:#5a3800;'
+              + 'font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">'
+              + '✅ Gunakan Kode</button>'
+          + '</div>'
+          + '<div id="override-err" style="display:none;margin-top:6px;font-size:11px;color:#a32d2d;font-weight:600"></div>'
+        + '</div>'
+      : '<div style="margin-top:10px;padding:8px 12px;background:rgba(255,255,255,.5);border-radius:8px;font-size:11px;color:#7a4f00">'
+          + 'ℹ️ Tidak ada kode override aktif. Hubungi Admin jika perlu izin mengajar hari ini.'
+        + '</div>';
+
+    el.innerHTML = '<div style="background:#fff3cd;border:1.5px solid #f9c84a;border-radius:12px;padding:14px 16px">'
+      + '<div style="display:flex;align-items:flex-start;gap:10px">'
+        + '<span style="font-size:22px;flex-shrink:0">🔕</span>'
+        + '<div style="flex:1">'
+          + '<div style="font-size:14px;font-weight:700;color:#7a4f00;margin-bottom:4px">Rekam Presensi Tidak Tersedia</div>'
+          + '<div style="font-size:12px;color:#7a4f00;line-height:1.6;margin-bottom:8px">'
+            + (PESAN_LIBUR || 'Sistem presensi sedang dinonaktifkan oleh Admin.')
+          + '</div>'
+          + jadwalHtml
+          + '<div style="background:rgba(255,255,255,.6);border-radius:8px;padding:10px 12px;border:1px solid #f9c84a">'
+            + '<div style="font-size:12px;font-weight:700;color:#7a4f00;margin-bottom:6px">✅ Yang masih bisa dilakukan:</div>'
+            + '<div style="font-size:12px;color:#7a4f00;margin-bottom:8px;line-height:1.6">'
+              + 'Ajukan <b>Jadwal Pengganti</b> untuk memindahkan perkuliahan ke hari lain.'
+            + '</div>'
+            + '<button onclick="pg(\'ganti\', document.getElementById(\'tab-ganti\'))" '
+              + 'style="padding:7px 16px;border-radius:8px;border:none;background:#f9c84a;color:#5a3800;'
+              + 'font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">'
+              + '🔄 Ajukan Jadwal Pengganti →</button>'
+          + '</div>'
+          + overrideHtml
+        + '</div>'
+      + '</div>'
+    + '</div>';
+    el.style.display = 'block';
+    if (cardEl) { cardEl.style.opacity = '0.4'; cardEl.style.pointerEvents = 'none'; }
+  } else {
+    el.style.display = 'none';
+    if (cardEl) { cardEl.style.opacity = ''; cardEl.style.pointerEvents = ''; }
+  }
+}
+
+// ── Validasi kode override yang diinput dosen ────────────────────────
+function cekOverrideCode() {
+  var input = (document.getElementById('input-kode-override').value || '').trim().toUpperCase();
+  var errEl = document.getElementById('override-err');
+  if (!input) {
+    if (errEl) { errEl.textContent = '❌ Masukkan kode terlebih dahulu.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if (!OVERRIDE_CODE) {
+    if (errEl) { errEl.textContent = '❌ Tidak ada kode override aktif. Hubungi Admin.'; errEl.style.display = 'block'; }
+    return;
+  }
+  if (input === OVERRIDE_CODE) {
+    var cardEl = document.querySelector('#page-hadir .card');
+    var bannerEl = document.getElementById('hadir-banner-nonaktif');
+    if (bannerEl) {
+      bannerEl.innerHTML = '<div style="background:#eaf3de;border:1.5px solid #97c459;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px">'
+        + '<span style="font-size:20px">🔓</span>'
+        + '<div><div style="font-size:13px;font-weight:700;color:#27500a">Kode Override Diterima</div>'
+        + '<div style="font-size:12px;color:#27500a;margin-top:2px">Anda mendapat izin merekam presensi hari ini. Silakan lanjutkan seperti biasa.</div></div>'
+        + '</div>';
+    }
+    if (cardEl) { cardEl.style.opacity = ''; cardEl.style.pointerEvents = ''; }
+    sessionStorage.setItem('override_unlocked', '1');
+  } else {
+    if (errEl) { errEl.textContent = '❌ Kode salah. Periksa kembali atau hubungi Admin.'; errEl.style.display = 'block'; }
+    document.getElementById('input-kode-override').value = '';
+    document.getElementById('input-kode-override').focus();
+  }
+}
+
 function onJadwal(){
   var jid=document.getElementById('pj').value;
   document.getElementById('hint').style.display='none';
@@ -214,9 +334,13 @@ function previewStatus(){
 
 async function rekam(){
   if(!currentUser){alert('Hanya dosen yang bisa melakukan ini.');return;}
-  // Cek status sistem — blokir jika sedang libur / dimatikan admin
-  if(!SISTEM_AKTIF){
-    alert('🚫 Sistem presensi sedang dinonaktifkan oleh Admin.\n\n' + (PESAN_LIBUR || 'Presensi tidak dapat dilakukan saat ini. Hubungi Admin untuk informasi lebih lanjut.'));
+  // Blokir rekam jika sistem nonaktif — kecuali ada override aktif di session
+  if(!SISTEM_AKTIF && sessionStorage.getItem('override_unlocked') !== '1'){
+    if(confirm(
+      '🔕 Rekam presensi tidak tersedia hari ini.\n\n'
+      + (PESAN_LIBUR ? PESAN_LIBUR + '\n\n' : '')
+      + 'Buka halaman Jadwal Pengganti sebagai alternatif?'
+    )) { pg('ganti', document.getElementById('tab-ganti')); }
     return;
   }
   var jid=document.getElementById('pj').value,
