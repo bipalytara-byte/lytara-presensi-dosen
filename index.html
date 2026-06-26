@@ -44,16 +44,6 @@
 <style>
 @keyframes lytara-spin { to { transform: rotate(360deg); } }
 @keyframes fadeIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
-/* Indikator scroll untuk dash-tab-bar: fade di tepi kanan agar terlihat masih ada tab tersembunyi */
-#dash-tab-bar-wrap { position:relative; }
-#dash-tab-bar-wrap::after {
-  content:'';
-  position:absolute;
-  top:0; right:0; bottom:0;
-  width:28px;
-  background:linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.95));
-  pointer-events:none;
-}
 </style>
 <!-- ====== END LOADING OVERLAY ====== -->
 
@@ -693,6 +683,7 @@
         <select id="rd" onchange="renderR()" style="width:100%;font-size:13px;padding:6px 8px;border:1px solid #ddd;border-radius:7px"><option value="all">Semua dosen</option></select>
       </div>
       <button class="btn btn-blue" onclick="exportExcel()" style="height:34px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;white-space:nowrap;flex-shrink:0">📥 Export Excel</button>
+      <button class="btn btn-blue" onclick="exportLaporanYayasan()" style="height:34px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;white-space:nowrap;flex-shrink:0;background:#185fa5">📄 Export Laporan Yayasan</button>
     </div>
   </div>
 
@@ -729,7 +720,6 @@
   <div style="background:#fff;border:1px solid #e5e5e3;border-radius:12px;overflow:hidden">
 
     <!-- Tab header -->
-    <div id="dash-tab-bar-wrap">
     <div style="display:flex;border-bottom:1px solid #e5e5e3;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none" id="dash-tab-bar">
       <button class="dash-tab" onclick="switchDashTab('harian',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#1a1a1a;border-bottom:2px solid #1a1a1a;font-family:inherit">☀️ Hari Ini</button>
       <button class="dash-tab" onclick="switchDashTab('rekap',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">📊 Rekap</button>
@@ -740,7 +730,6 @@
       <button class="dash-tab" onclick="switchDashTab('belumrekam',this);renderBelumRekam()" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">🔍 Belum Rekam</button>
       <button class="dash-tab" onclick="switchDashTab('detail',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">🗂️ Detail</button>
       <button class="dash-tab" onclick="switchDashTab('pengaturan',this)" style="padding:10px 14px;font-size:12px;font-weight:500;border:none;background:none;cursor:pointer;white-space:nowrap;color:#888;border-bottom:2px solid transparent;font-family:inherit">⚙️ Pengaturan</button>
-    </div>
     </div>
 
     <!-- ===== PANEL: HARI INI ===== -->
@@ -1187,6 +1176,7 @@
 <script src="js/mk.js"></script>
 <script src="js/notif.js"></script>
 <script src="js/beranda.js"></script>
+<script src="js/export-yayasan.js"></script>
 
 </body>
 </html>
