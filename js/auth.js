@@ -310,39 +310,25 @@ async function loadThenShow() {
   showAppLoading('Menghubungi server...');
   setSB('sy');
 
-  var STEPS = [
-    { action:'getDosen',      label:'Data dosen' },
-    { action:'getJadwal',     label:'Data jadwal' },
-    { action:'getPresensi',   label:'Data presensi' },
-    { action:'getGanti',      label:'Jadwal pengganti' },
-    { action:'getMaju',       label:'Jadwal maju' },
-    { action:'getSettings',   label:'Pengaturan sistem' },
-    { action:'getMataKuliah', label:'Mata kuliah' }
-  ];
-
   try {
-    updateLoadStep('🔄 Menghubungi Google Apps Script...');
+    updateLoadStep('🔄 Menghubungi server...');
 
-    var results = await Promise.all(
-      STEPS.map(function(s) {
-        return getWithRetry({ action: s.action })
-          .then(function(r) {
-            updateLoadStep('✅ ' + s.label);
-            return r;
-          });
-      })
-    );
+    // V9.1: 1 request getAll menggantikan 7 request paralel
+    var r = await getWithRetry({ action: 'getAll' });
 
-    D  = results[0].data || [];
-    J  = results[1].data || [];
-    P  = results[2].data || [];
-    G  = results[3].data || [];
-    M  = results[4].data || [];
-    MK = results[6].data || [];
+    updateLoadStep('✅ Data diterima, menyiapkan aplikasi...');
+
+    D  = r.dosen      || [];
+    J  = r.jadwal     || [];
+    P  = r.presensi   || [];
+    G  = r.ganti      || [];
+    M  = r.maju       || [];
+    MK = r.mataKuliah || [];
+
     // Normalisasi format semester agar konsisten di seluruh dropdown
     P.forEach(function(p){ if(p.semester) p.semester = normalisasiSemester(p.semester); });
 
-    var cfg          = results[5].data || {};
+    var cfg          = r.settings    || {};
     SISTEM_AKTIF     = cfg.liburAktif === true ? false : true;
     PESAN_LIBUR      = cfg.pesanLibur      || '';
     PENGUMUMAN_LOGIN = cfg.pengumumanLogin || '';
