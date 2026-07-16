@@ -416,6 +416,11 @@ async function rekam(){
     modeLbl.style.color='#185fa5'; modeLbl.textContent='💻 Daring Sinkronus (Zoom / GMeet)';
     modeWarn.style.color='#185fa5';
     modeWarn.textContent='Pastikan perkuliahan dilakukan online real-time, bukan tatap muka.';
+  } else if(pmode.indexOf('Take-Home')>-1){
+    modeBox.style.background='#faeeda'; modeBox.style.borderColor='#fac775';
+    modeLbl.style.color='#633806'; modeLbl.textContent='📝 UAS Take-Home / Project';
+    modeWarn.style.color='#633806';
+    modeWarn.textContent='Presensi tetap dinilai sesuai jam ujian terjadwal. Perpanjangan pengerjaan take-home diatur di luar sistem.';
   } else {
     modeBox.style.background='#faeeda'; modeBox.style.borderColor='#fac775';
     modeLbl.style.color='#633806'; modeLbl.textContent='📝 Daring Asinkronus (E-learning / Penugasan)';
@@ -509,6 +514,11 @@ async function rekamSelesai(){
   var txtAlasan=document.getElementById('alasan-txt').value.trim();
   var alasan=(selAlasan==='Lainnya')?txtAlasan:selAlasan;
   if(alasan!==''){st.l='Selesai Awal ('+alasan+')';st.c='blue';}
+  // UAS Take-Home/Project: skoring tetap normal (stS), hanya tempel tag informatif ke status
+  var actRec = P.find(function(p){return p.id===actId;});
+  if(actRec && (actRec.modeKuliah||'').indexOf('Take-Home')>-1 && st.l.indexOf('Take-Home')===-1){
+    st.l = st.l + ' · Ujian Take-Home/Project';
+  }
   var btn=document.getElementById('bsel');btn.disabled=true;btn.textContent='Menyimpan...';
   setSB('sy');
   try{
