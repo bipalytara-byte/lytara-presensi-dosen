@@ -48,6 +48,10 @@ function onModeChange(){
     hint.style.display='block';
     hint.style.background='#faeeda';hint.style.color='#633806';
     hint.innerHTML='📝 <b>Daring Asinkronus</b> — pastikan perkuliahan berupa penugasan mandiri / e-learning, bukan tatap muka.';
+  } else if(v.indexOf('Take-Home')>-1){
+    hint.style.display='block';
+    hint.style.background='#faeeda';hint.style.color='#633806';
+    hint.innerHTML='📝 <b>UAS Take-Home / Project</b> — presensi tetap di jam ujian terjadwal. Perpanjangan waktu pengerjaan mahasiswa diatur dosen di luar sistem.';
   } else {
     hint.style.display='none';
   }
