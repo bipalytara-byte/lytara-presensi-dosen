@@ -4,7 +4,7 @@
 */
 
 
-const API = 'https://script.google.com/macros/s/AKfycbx1DqAKM2pgkQtdrzW08JPwMjV1JnDHxY517bvcjWMeBQVtEHSBiLpoRtVTdPZWsEnYcA/exec';
+const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
 const HARI = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 let D=[],J=[],P=[],G=[],M=[],MK=[];
 let eDos=null,eJad=null,eMk=null,tempMk=[];
@@ -47,6 +47,15 @@ function tick(){
   el.textContent=n.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+' — '+n.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 function todayHari(){return['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][new Date().getDay()];}
+
+// [V10] setSB() dipindah ke sini dari api.js (file itu dihapus).
+// Indikator status sinkronisasi di pojok header — dipakai 95x di seluruh app.
+function setSB(s){
+  var el=document.getElementById('sb');
+  if(!el) return;
+  el.textContent = s==='ok' ? 'Tersinkron' : s==='sy' ? 'Menyinkron...' : 'Error';
+  el.className   = 'sb'+(s==='sy'?' sy':s==='er'?' se':'');
+}
 
 async function get(p){var r=await fetch(API+'?'+new URLSearchParams(p).toString(),{redirect:'follow'});return JSON.parse(await r.text());}
 async function post(b){var r=await fetch(API+'?method=POST&payload='+encodeURIComponent(JSON.stringify(b)),{redirect:'follow'});return JSON.parse(await r.text());}
