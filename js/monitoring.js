@@ -636,7 +636,106 @@ function renderPengaturanSistem() {
         + '<button class="btn btn-primary" onclick="simpanPengumumanLogin()" style="font-size:13px">💾 Simpan Pengumuman</button>'
         + (PENGUMUMAN_LOGIN ? '<button class="btn btn-danger" onclick="hapusPengumumanLogin()" style="font-size:13px">🗑️ Hapus Pengumuman</button>' : '')
       + '</div>'
-    + '</div>';
+    + '</div>'
+
+    // ── BAGIAN 5 [V10]: Arsip Semester Lalu ──
+    + renderKartuArsip();
+}
+
+// =====================================================
+// [V10] KARTU ARSIP — kelola & buka database semester lalu
+// =====================================================
+function renderKartuArsip() {
+  var opsi = ARSIP_LIST.map(function(a){
+    var sel = (ARSIP_AKTIF && ARSIP_AKTIF.id === a.id) ? ' selected' : '';
+    return '<option value="'+a.id+'"'+sel+'>'+a.nama+'</option>';
+  }).join('');
+
+  var daftar = ARSIP_LIST.length
+    ? ARSIP_LIST.map(function(a){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;'
+          + 'background:#f8f8f7;border-radius:8px;padding:8px 10px;margin-bottom:6px">'
+          + '<div style="min-width:0">'
+            + '<div style="font-size:12px;font-weight:600;color:#1a1a1a">'+a.nama+'</div>'
+            + '<div style="font-size:10px;color:#aaa;font-family:monospace;overflow:hidden;text-overflow:ellipsis">'+a.id+'</div>'
+          + '</div>'
+          + '<button class="btn btn-danger btn-sm" style="font-size:11px;flex-shrink:0" '
+          + 'onclick="hapusArsip(\''+a.id+'\')">Hapus</button>'
+        + '</div>';
+      }).join('')
+    : '<div style="background:#f5f5f3;border-radius:8px;padding:10px 12px;margin-bottom:10px;'
+      + 'font-size:12px;color:#aaa;font-style:italic">Belum ada arsip terdaftar.</div>';
+
+  return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
+    + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">📁 Arsip Semester Lalu</div>'
+    + '<div style="font-size:12px;color:#888;margin-bottom:14px">'
+      + 'Membuka arsip hanya mempengaruhi layar Anda sendiri — dosen lain tetap bisa presensi seperti biasa. '
+      + 'Data arsip tidak bisa diubah.</div>'
+
+    + (ARSIP_LIST.length
+      ? '<div style="margin-bottom:14px">'
+        + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Lihat data semester</label>'
+        + '<select id="pilih-arsip" onchange="bukaArsip(this.value)" '
+        + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit">'
+        + '<option value="">— Semester berjalan (aktif) —</option>' + opsi
+        + '</select></div>'
+      : '')
+
+    + '<div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px">Daftar arsip</div>'
+    + daftar
+
+    + '<div style="background:#f8f8f7;border-radius:8px;padding:10px 12px;margin-top:10px">'
+      + '<div style="font-size:12px;font-weight:600;color:#555;margin-bottom:8px">+ Tambah arsip baru</div>'
+      + '<input type="text" id="arsip-nama" placeholder="Nama, cth: Genap 2025/2026" '
+      + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;margin-bottom:6px"/>'
+      + '<input type="text" id="arsip-id" placeholder="ID spreadsheet (dari URL-nya)" '
+      + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:12px;font-family:monospace;margin-bottom:8px"/>'
+      + '<button class="btn btn-primary" onclick="simpanArsip()" style="font-size:13px">💾 Tambah Arsip</button>'
+      + '<div style="font-size:11px;color:#aaa;margin-top:8px;line-height:1.5">'
+        + 'ID diambil dari URL spreadsheet:<br>'
+        + '<span style="font-family:monospace">docs.google.com/spreadsheets/d/<b style="color:#185fa5">ID-NYA</b>/edit</span>'
+      + '</div>'
+    + '</div>'
+  + '</div>';
+}
+
+async function simpanArsip() {
+  var nama = (document.getElementById('arsip-nama').value || '').trim();
+  var id   = (document.getElementById('arsip-id').value   || '').trim();
+  if (!nama) { alert('Nama semester wajib diisi.'); return; }
+  if (!id)   { alert('ID spreadsheet wajib diisi.'); return; }
+
+  // Toleransi kalau yang ditempel URL penuh, bukan ID saja
+  var m = id.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) id = m[1];
+
+  setSB('sy');
+  try {
+    var r = await post({ action: 'saveArsip', data: { nama: nama, id: id } });
+    if (!r.success) { setSB('er'); alert('Gagal: ' + r.error); return; }
+    ARSIP_LIST = (await get({ action: 'getDaftarArsip' })).data || [];
+    setSB('ok');
+    renderPengaturanSistem();
+    alert('✅ Arsip "' + nama + '" ' + (r.updated ? 'diperbarui' : 'ditambahkan')
+      + '.\nSpreadsheet: ' + r.nama);
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
+}
+
+async function hapusArsip(id) {
+  var a = ARSIP_LIST.find(function(x){ return x.id === id; });
+  if (!a) return;
+  if (!confirm('Hapus "' + a.nama + '" dari daftar arsip?\n\n'
+    + 'Spreadsheet-nya TIDAK ikut terhapus — hanya dikeluarkan dari daftar.')) return;
+
+  setSB('sy');
+  try {
+    var r = await post({ action: 'deleteArsip', id: id });
+    if (!r.success) { setSB('er'); alert('Gagal: ' + r.error); return; }
+    ARSIP_LIST = ARSIP_LIST.filter(function(x){ return x.id !== id; });
+    if (ARSIP_AKTIF && ARSIP_AKTIF.id === id) { await keluarArsip(); return; }
+    setSB('ok');
+    renderPengaturanSistem();
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
 }
 
 async function simpanOverrideCode() {

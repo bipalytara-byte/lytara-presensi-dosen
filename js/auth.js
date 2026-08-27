@@ -309,14 +309,14 @@ async function loadThenShow() {
     SEMESTER_AKTIF   = cfg.semesterAktif   || '';
     TAHUN_AKADEMIK   = cfg.tahunAkademik   || '';
     OVERRIDE_CODE    = cfg.overrideCode    || '';
-    MODE_ARSIP       = r.modeArsip === true || cfg.modeArsip === true;
+    ARSIP_LIST       = r.arsip || [];
 
     // Libur nasional dari sheet Libur_Nasional → objek Date
     LIBUR_NASIONAL = (r.libur || []).map(function(l){
       return { tgl: new Date(l.tgl + 'T00:00:00'), nama: l.nama };
     }).filter(function(l){ return !isNaN(l.tgl); });
 
-    if (MODE_ARSIP) tampilkanBannerArsip();
+    renderBannerArsip();
 
     updateLoadStep('✅ Siap! Membuka aplikasi...');
     setSB('ok');
@@ -443,20 +443,53 @@ function restoreSesi(){
 
 
 // =====================================================
-// [V10] BANNER MODE ARSIP
-// Muncul saat aplikasi menunjuk ke database semester lalu.
-// Semua penulisan sudah ditolak di sisi server; banner ini
-// supaya pengguna tidak bingung kenapa tidak bisa menyimpan.
+// [V10] ARSIP — lihat data semester lalu (READ-ONLY)
+// -----------------------------------------------------
+// Sifatnya per-pengguna: hanya browser ini yang membaca
+// database lama. Dosen lain tetap bisa presensi normal.
 // =====================================================
-function tampilkanBannerArsip() {
-  if (document.getElementById('banner-arsip')) return;
-  var b = document.createElement('div');
-  b.id = 'banner-arsip';
-  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;'
-    + 'background:#633806;color:#fff;text-align:center;padding:7px 12px;'
-    + 'font-size:12px;font-weight:600;letter-spacing:.02em';
-  b.innerHTML = '📁 MODE ARSIP — Anda sedang melihat data semester lalu. '
-    + 'Data tidak bisa diubah atau ditambah.';
-  document.body.appendChild(b);
-  document.body.style.paddingTop = '30px';
+
+function renderBannerArsip() {
+  var b = document.getElementById('banner-arsip');
+  if (!ARSIP_AKTIF) {
+    if (b) { b.remove(); document.body.style.paddingTop = ''; }
+    return;
+  }
+  if (!b) {
+    b = document.createElement('div');
+    b.id = 'banner-arsip';
+    b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;'
+      + 'background:#633806;color:#fff;text-align:center;padding:8px 12px;'
+      + 'font-size:12px;font-weight:600;display:flex;align-items:center;'
+      + 'justify-content:center;gap:10px;flex-wrap:wrap';
+    document.body.appendChild(b);
+    document.body.style.paddingTop = '34px';
+  }
+  b.innerHTML = '📁 ARSIP: <b>' + ARSIP_AKTIF.nama + '</b> — data hanya bisa dibaca'
+    + '<button onclick="keluarArsip()" style="background:#fff;color:#633806;border:none;'
+    + 'border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">'
+    + '← Kembali ke semester berjalan</button>';
 }
+
+// Buka arsip. id === '' berarti kembali ke semester berjalan.
+async function bukaArsip(id) {
+  if (!id) return keluarArsip();
+  var arsip = ARSIP_LIST.find(function(a){ return a.id === id; });
+  if (!arsip) { alert('Arsip tidak ditemukan.'); return; }
+
+  if (!confirm('Buka arsip "' + arsip.nama + '"?\n\n'
+    + 'Semua data yang tampil akan berasal dari semester tersebut '
+    + 'dan tidak bisa diubah.\n\n'
+    + 'Dosen lain TIDAK terpengaruh — mereka tetap bisa presensi seperti biasa.')) return;
+
+  ARSIP_AKTIF = { id: arsip.id, nama: arsip.nama };
+  renderBannerArsip();
+  await loadThenShow();
+}
+
+async function keluarArsip() {
+  ARSIP_AKTIF = null;
+  renderBannerArsip();
+  await loadThenShow();
+}
+

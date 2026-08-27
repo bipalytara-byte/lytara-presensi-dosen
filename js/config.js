@@ -20,7 +20,10 @@ let PENGUMUMAN_LOGIN   = '';    // pengumuman di halaman login (untuk semua)
 let SEMESTER_AKTIF     = '';    // misal: "2025/2026 Genap"
 let TAHUN_AKADEMIK     = '';    // misal: "2025/2026"
 let OVERRIDE_CODE      = '';    // kode override sementara saat sistem nonaktif (kosong = tidak aktif)
-let MODE_ARSIP         = false; // true = database arsip, aplikasi jadi read-only
+// ── Arsip (per-request, bukan mode global) ──
+let ARSIP_LIST   = [];   // [{nama, id, catatan}] dari sheet Arsip
+let ARSIP_AKTIF  = null; // null = database semester berjalan
+                         // {nama,id} = sedang melihat arsip (read-only)
 
 // Libur nasional — diisi dari sheet Libur_Nasional saat loadThenShow().
 // Format tiap item: { tgl: Date, nama: string }
@@ -57,5 +60,23 @@ function setSB(s){
   el.className   = 'sb'+(s==='sy'?' sy':s==='er'?' se':'');
 }
 
-async function get(p){var r=await fetch(API+'?'+new URLSearchParams(p).toString(),{redirect:'follow'});return JSON.parse(await r.text());}
-async function post(b){var r=await fetch(API+'?method=POST&payload='+encodeURIComponent(JSON.stringify(b)),{redirect:'follow'});return JSON.parse(await r.text());}
+// [V10] get() otomatis menyertakan arsipId kalau sedang melihat arsip.
+async function get(p){
+  var q = {};
+  Object.keys(p).forEach(function(k){ q[k] = p[k]; });
+  if (ARSIP_AKTIF && !q.arsipId) q.arsipId = ARSIP_AKTIF.id;
+  var r = await fetch(API+'?'+new URLSearchParams(q).toString(),{redirect:'follow'});
+  return JSON.parse(await r.text());
+}
+
+// [V10] post() diblokir saat melihat arsip. Server juga menolak,
+// ini lapis kedua supaya pengguna dapat pesan jelas tanpa menunggu server.
+async function post(b){
+  if (ARSIP_AKTIF && b.action !== 'saveArsip' && b.action !== 'deleteArsip') {
+    alert('📁 Anda sedang melihat arsip ' + ARSIP_AKTIF.nama + '.\n\n'
+        + 'Data arsip tidak bisa diubah. Kembali ke semester berjalan dulu.');
+    throw new Error('Mode arsip: penulisan ditolak.');
+  }
+  var r = await fetch(API+'?method=POST&payload='+encodeURIComponent(JSON.stringify(b)),{redirect:'follow'});
+  return JSON.parse(await r.text());
+}
