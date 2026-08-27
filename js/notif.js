@@ -8,8 +8,6 @@
 */
 
 
-function cekNotifGanti() { cekNotifMaju(); }
-
 function switchDashTab(panel, btn) {
   // Panel
   document.querySelectorAll('.dash-panel').forEach(function(p){ p.style.display='none'; });
@@ -78,70 +76,10 @@ function cekNotifMaju() {
 // dan libur yang punya tanggal pasti (format: YYYY-MM-DD)
 // =====================================================
 
-var LIBUR_NASIONAL = (function() {
-  var tahun = new Date().getFullYear();
-  // Format: { tgl: Date, nama: string }
-  // Libur tetap (sama tiap tahun)
-  var tetap = [
-    { bulTgl: '01-01', nama: 'Tahun Baru Masehi' },
-    { bulTgl: '05-01', nama: 'Hari Buruh Internasional' },
-    { bulTgl: '06-01', nama: 'Hari Lahir Pancasila' },
-    { bulTgl: '08-17', nama: 'Hari Kemerdekaan RI' },
-    { bulTgl: '12-25', nama: 'Hari Natal' },
-    { bulTgl: '12-26', nama: 'Cuti Bersama Natal' },
-  ];
-  // Libur berdasarkan tahun (perkiraan / SKB resmi — update tiap tahun)
-  // Tahun 2025
-  var dinamis2025 = [
-    { tgl: '2025-01-27', nama: 'Isra Miraj' },
-    { tgl: '2025-01-28', nama: 'Cuti Bersama Isra Miraj' },
-    { tgl: '2025-01-29', nama: 'Hari Raya Imlek' },
-    { tgl: '2025-03-29', nama: 'Hari Raya Nyepi' },
-    { tgl: '2025-03-31', nama: 'Hari Raya Idul Fitri' },
-    { tgl: '2025-04-01', nama: 'Hari Raya Idul Fitri' },
-    { tgl: '2025-04-18', nama: 'Wafat Isa Al Masih' },
-    { tgl: '2025-05-12', nama: 'Hari Raya Waisak' },
-    { tgl: '2025-05-29', nama: 'Kenaikan Isa Al Masih' },
-    { tgl: '2025-06-06', nama: 'Hari Raya Idul Adha' },
-    { tgl: '2025-06-27', nama: 'Tahun Baru Islam 1447 H' },
-    { tgl: '2025-09-05', nama: 'Maulid Nabi Muhammad SAW' },
-  ];
-  // Tahun 2026
-  var dinamis2026 = [
-    { tgl: '2026-01-01', nama: 'Tahun Baru Masehi' },
-    { tgl: '2026-01-17', nama: 'Isra Miraj' },
-    { tgl: '2026-02-17', nama: 'Hari Raya Imlek' },
-    { tgl: '2026-03-19', nama: 'Hari Raya Nyepi' },
-    { tgl: '2026-03-20', nama: 'Wafat Isa Al Masih' },
-    { tgl: '2026-03-21', nama: 'Hari Raya Idul Fitri' },
-    { tgl: '2026-03-22', nama: 'Hari Raya Idul Fitri' },
-    { tgl: '2026-05-01', nama: 'Hari Buruh Internasional' },
-    { tgl: '2026-05-07', nama: 'Kenaikan Isa Al Masih' },
-    { tgl: '2026-05-27', nama: 'Hari Raya Waisak' },
-    { tgl: '2026-05-28', nama: 'Hari Raya Idul Adha' },
-    { tgl: '2026-06-01', nama: 'Hari Lahir Pancasila' },
-    { tgl: '2026-06-17', nama: 'Tahun Baru Islam 1448 H' },
-    { tgl: '2026-08-17', nama: 'Hari Kemerdekaan RI' },
-    { tgl: '2026-08-25', nama: 'Maulid Nabi Muhammad SAW' },
-    { tgl: '2026-12-25', nama: 'Hari Natal' },
-    { tgl: '2026-12-26', nama: 'Cuti Bersama Natal' },
-  ];
-
-  var hasil = [];
-  // Libur tetap untuk tahun ini dan tahun depan
-  [tahun, tahun + 1].forEach(function(y) {
-    tetap.forEach(function(l) {
-      var d = new Date(y + '-' + l.bulTgl + 'T00:00:00');
-      if (!isNaN(d)) hasil.push({ tgl: d, nama: l.nama });
-    });
-  });
-  // Libur dinamis
-  (dinamis2025.concat(dinamis2026)).forEach(function(l) {
-    var d = new Date(l.tgl + 'T00:00:00');
-    if (!isNaN(d)) hasil.push({ tgl: d, nama: l.nama });
-  });
-  return hasil;
-}());
+// [V10] Daftar libur nasional TIDAK lagi hardcode di sini.
+// Sekarang dibaca dari sheet "Libur_Nasional" di spreadsheet, diisi ke
+// variabel global LIBUR_NASIONAL oleh loadThenShow() di auth.js.
+// Untuk menambah/mengubah libur: cukup edit sheet, tidak perlu ubah kode.
 
 // Kembalikan daftar libur dalam rentang [startDate, endDate] (inklusif)
 function getLiburDalamRentang(startDate, endDate) {

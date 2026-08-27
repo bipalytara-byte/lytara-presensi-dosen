@@ -66,25 +66,8 @@ async function simpanGantiPassword() {
 }
 
 // Reset password oleh admin (dari kelola dosen) — tetap ada
-async function resetPasswordDosen(id, nama) {
-  if (!isAdmin) { alert('Hanya admin yang dapat mereset password.'); return; }
-  var pw = prompt('Reset password untuk "' + nama + '".\nMasukkan password baru (min 4 karakter):');
-  if (pw === null) return;
-  pw = pw.trim();
-  if (pw.length < 4) { alert('Password minimal 4 karakter.'); return; }
-  if (!confirm('Reset password "' + nama + '" menjadi: ' + pw + '?')) return;
-
-  setSB('sy');
-  try {
-    await post({ action: 'resetPassword', dosenId: id, passwordBaru: pw });
-    if (DOSEN_PASS) DOSEN_PASS[id] = pw;
-    setSB('ok');
-    alert('✅ Password berhasil direset.\nDosen bisa login dengan password baru.');
-  } catch(e) {
-    setSB('er');
-    alert('Gagal reset password: ' + e.message);
-  }
-}
+// [V10] resetPasswordDosen() dihapus dari sini — definisi tunggal ada di auth.js.
+//       Versi lama masih memanggil DOSEN_PASS yang sudah tidak ada.
 
 // Dosen tandai kelas pengganti sudah terlaksana
 async function tandaiTerlaksana(id) {

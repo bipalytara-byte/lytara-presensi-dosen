@@ -8,53 +8,7 @@
 */
 
 
-function cekNotifMaju() {
-  var w = document.getElementById('notif-ganti');
-  if(!w || !currentUser || isAdmin) return;
-
-  var today = new Date();
-  today.setHours(0,0,0,0);
-
-  var notifG = G.filter(function(g) {
-    return g.dosenId === currentUser.id &&
-           (g.statusAcc === 'Disetujui' || g.statusAcc === 'Ditolak') &&
-           new Date(g.ganti) >= today;
-  });
-  
-  var notifM = M.filter(function(m) {
-    return m.dosenId === currentUser.id &&
-           (m.statusAcc === 'Disetujui' || m.statusAcc === 'Ditolak') &&
-           new Date(m.tglRaw) >= today;
-  });
-
-  var all = [];
-  notifG.forEach(function(g){
-    var isAcc = g.statusAcc === 'Disetujui';
-    var bg = isAcc ? '#eaf3de' : '#fcebeb';
-    var border = isAcc ? '#97c459' : '#f09595';
-    var color = isAcc ? '#27500a' : '#791f1f';
-    var icon = isAcc ? '✅' : '❌';
-    all.push('<div style="background:'+bg+'; border:1px solid '+border+'; color:'+color+'; padding:10px 14px; border-radius:8px; margin-bottom:8px; font-size:13px; font-weight:500;">' +
-           icon + ' Jadwal <b>Pengganti</b> — <b>' + g.mk + '</b> (' + g.asli + ' → ' + g.ganti + ') telah <b>' + g.statusAcc + '</b>.' +
-           (g.alasanTolak ? ' Alasan: ' + g.alasanTolak : '') +
-           '</div>');
-  });
-  notifM.forEach(function(m){
-    var isAcc = m.statusAcc === 'Disetujui';
-    var bg = isAcc ? '#fef3c7' : '#fcebeb';
-    var border = isAcc ? '#fde68a' : '#f09595';
-    var color = isAcc ? '#92400e' : '#791f1f';
-    var icon = isAcc ? '⏩' : '❌';
-    all.push('<div style="background:'+bg+'; border:1px solid '+border+'; color:'+color+'; padding:10px 14px; border-radius:8px; margin-bottom:8px; font-size:13px; font-weight:500;">' +
-           icon + ' Jadwal <b>Maju</b> — <b>' + m.mk + '</b> (' + m.tgl + ' · ' + m.jam + ') telah <b>' + m.statusAcc + '</b>.' +
-           (m.alasanTolak ? ' Alasan: ' + m.alasanTolak : '') +
-           '</div>');
-  });
-
-  if(all.length === 0) { w.style.display='none'; return; }
-  w.innerHTML = all.join('');
-  w.style.display = 'block';
-}
+// [V10] cekNotifMaju() dihapus dari sini — definisi tunggal ada di notif.js.
 
 // =====================================================
 // RAPOR — Semester helper

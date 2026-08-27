@@ -4,7 +4,7 @@
            updateUserUI, restoreSesi, showSelesai,
            showAppLoading, hideAppLoading, showLoadError,
            updateLoadStep, getWithTimeout, getWithRetry, retryLoad,
-           resetPasswordDosen, jalankanMigrasiPassword
+           resetPasswordDosen
 */
 
 
@@ -120,35 +120,9 @@ async function resetPasswordDosen(dosenId, namaDosen) {
   }
 }
 
-// Migrasi password lama → dipanggil SEKALI oleh admin setelah deploy V8.0
-async function jalankanMigrasiPassword() {
-  if (!isAdmin) return;
-  if (!confirm('Migrasi password dari config lama ke server?\n\nLakukan ini SEKALI saja setelah pertama deploy V8.0.')) return;
-
-  // Password lama dari config.js — hanya ada di sini untuk keperluan migrasi
-  var PASS_LAMA = {
-    "d001":"QAH276","d002":"XCK025","d003":"AFQ525","d004":"VAU631",
-    "d005":"YIC086","d006":"USN935","d007":"VQW570","d008":"FHC212",
-    "d009":"QJJ229","d010":"QPE713","d011":"ZQO687","d012":"FAI229",
-    "d013":"WIR394","d014":"GGO258","d015":"KFZ500","d016":"CQU403",
-    "d017":"ZNZ807","d018":"RNG614","d019":"LYW251","d020":"XWH661",
-    "d021":"TOU503"
-  };
-
-  var data = Object.keys(PASS_LAMA).map(function(id) {
-    return { id: id, password: PASS_LAMA[id] };
-  });
-
-  setSB('sy');
-  try {
-    var r = await post({ action: 'migrasiPassword', data: data });
-    setSB('ok');
-    alert('✅ Migrasi selesai!\nBerhasil: ' + r.berhasil + ' dosen\nGagal: ' + r.gagal);
-  } catch(e) {
-    setSB('er');
-    alert('❌ Migrasi gagal: ' + e.message);
-  }
-}
+// [V10] jalankanMigrasiPassword() dihapus — berisi 21 password dosen
+//       dalam bentuk plaintext di dalam kode. Migrasi sudah selesai
+//       sejak V8.0, jadi fungsi ini tidak diperlukan lagi.
 
 async function doAdminLogin(){
   var pin = document.getElementById('admin-pin').value.trim();
@@ -335,6 +309,14 @@ async function loadThenShow() {
     SEMESTER_AKTIF   = cfg.semesterAktif   || '';
     TAHUN_AKADEMIK   = cfg.tahunAkademik   || '';
     OVERRIDE_CODE    = cfg.overrideCode    || '';
+    MODE_ARSIP       = r.modeArsip === true || cfg.modeArsip === true;
+
+    // Libur nasional dari sheet Libur_Nasional → objek Date
+    LIBUR_NASIONAL = (r.libur || []).map(function(l){
+      return { tgl: new Date(l.tgl + 'T00:00:00'), nama: l.nama };
+    }).filter(function(l){ return !isNaN(l.tgl); });
+
+    if (MODE_ARSIP) tampilkanBannerArsip();
 
     updateLoadStep('✅ Siap! Membuka aplikasi...');
     setSB('ok');
@@ -457,4 +439,24 @@ function restoreSesi(){
     document.getElementById('resume-banner').style.display='none';
     document.getElementById('csel').style.display='none';
   }
+}
+
+
+// =====================================================
+// [V10] BANNER MODE ARSIP
+// Muncul saat aplikasi menunjuk ke database semester lalu.
+// Semua penulisan sudah ditolak di sisi server; banner ini
+// supaya pengguna tidak bingung kenapa tidak bisa menyimpan.
+// =====================================================
+function tampilkanBannerArsip() {
+  if (document.getElementById('banner-arsip')) return;
+  var b = document.createElement('div');
+  b.id = 'banner-arsip';
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;'
+    + 'background:#633806;color:#fff;text-align:center;padding:7px 12px;'
+    + 'font-size:12px;font-weight:600;letter-spacing:.02em';
+  b.innerHTML = '📁 MODE ARSIP — Anda sedang melihat data semester lalu. '
+    + 'Data tidak bisa diubah atau ditambah.';
+  document.body.appendChild(b);
+  document.body.style.paddingTop = '30px';
 }

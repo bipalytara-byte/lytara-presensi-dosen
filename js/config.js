@@ -4,7 +4,7 @@
 */
 
 
-const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
+const API = 'https://script.google.com/macros/s/AKfycbx1DqAKM2pgkQtdrzW08JPwMjV1JnDHxY517bvcjWMeBQVtEHSBiLpoRtVTdPZWsEnYcA/exec';
 const HARI = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 let D=[],J=[],P=[],G=[],M=[],MK=[];
 let eDos=null,eJad=null,eMk=null,tempMk=[];
@@ -20,6 +20,11 @@ let PENGUMUMAN_LOGIN   = '';    // pengumuman di halaman login (untuk semua)
 let SEMESTER_AKTIF     = '';    // misal: "2025/2026 Genap"
 let TAHUN_AKADEMIK     = '';    // misal: "2025/2026"
 let OVERRIDE_CODE      = '';    // kode override sementara saat sistem nonaktif (kosong = tidak aktif)
+let MODE_ARSIP         = false; // true = database arsip, aplikasi jadi read-only
+
+// Libur nasional — diisi dari sheet Libur_Nasional saat loadThenShow().
+// Format tiap item: { tgl: Date, nama: string }
+let LIBUR_NASIONAL     = [];
 
 window.onload=function(){
   tick(); setInterval(tick,1000);
