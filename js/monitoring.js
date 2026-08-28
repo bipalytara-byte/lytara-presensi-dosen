@@ -639,7 +639,8 @@ function renderPengaturanSistem() {
     + '</div>'
 
     // ── BAGIAN 5 [V10]: Arsip Semester Lalu ──
-    + renderKartuArsip();
+    + renderKartuArsip()
+    + renderKartuRollover();
 }
 
 // =====================================================
@@ -697,6 +698,123 @@ function renderKartuArsip() {
       + '</div>'
     + '</div>'
   + '</div>';
+}
+
+// =====================================================
+// [V10] KARTU ROLLOVER — ganti semester tanpa buka Apps Script
+// =====================================================
+function renderKartuRollover() {
+  return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
+    + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">🔄 Ganti Semester (Rollover)</div>'
+    + '<div style="font-size:12px;color:#888;margin-bottom:12px">'
+      + 'Dipakai <b>sekali tiap awal semester</b>. Database yang sekarang otomatis '
+      + 'masuk daftar arsip, lalu sistem berpindah ke database baru.</div>'
+
+    + '<div style="background:#fcebeb;border:1px solid #f09595;border-radius:8px;padding:10px 12px;margin-bottom:12px">'
+      + '<div style="font-size:12px;color:#791f1f;line-height:1.6">'
+      + '<b>⚠️ Berpengaruh ke SEMUA pengguna.</b> Setelah tombol ditekan, seluruh dosen '
+      + 'langsung memakai database baru. Pastikan spreadsheet baru sudah dibuat dari '
+      + 'template dan berisi data Dosen &amp; Mata Kuliah.</div>'
+    + '</div>'
+
+    + '<div style="background:#f8f8f7;border-radius:8px;padding:12px">'
+      + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">1. ID spreadsheet BARU</label>'
+      + '<input type="text" id="ro-id-baru" placeholder="ID atau URL spreadsheet baru" '
+      + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:12px;font-family:monospace;margin-bottom:10px"/>'
+
+      + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">2. Nama arsip untuk database SEKARANG</label>'
+      + '<input type="text" id="ro-nama-arsip" placeholder="cth: Genap 2025/2026" value="'+(SEMESTER_AKTIF||'')+'" '
+      + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;margin-bottom:10px"/>'
+
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+        + '<div>'
+          + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">3. Semester baru</label>'
+          + '<select id="ro-semester" style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit">'
+          + ['2026/2027 Ganjil','2026/2027 Genap','2027/2028 Ganjil','2027/2028 Genap'].map(function(x){
+              return '<option value="'+x+'">'+x+'</option>'; }).join('')
+          + '</select>'
+        + '</div>'
+        + '<div>'
+          + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">4. Tahun akademik</label>'
+          + '<input type="text" id="ro-tahun" placeholder="cth: 2026/2027" '
+          + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit"/>'
+        + '</div>'
+      + '</div>'
+
+      + '<button class="btn btn-danger" onclick="jalankanRollover()" style="font-size:13px">🔄 Jalankan Rollover</button>'
+    + '</div>'
+
+    + '<div style="margin-top:12px">'
+      + '<div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px">🧹 Rapikan database</div>'
+      + '<div style="font-size:11px;color:#aaa;margin-bottom:8px;line-height:1.5">'
+        + 'Meluruskan header, membuang sheet &amp; kolom tak terpakai, dan menghapus baris kosong. '
+        + 'Jalankan setelah rollover. Aman diulang.</div>'
+      + '<button class="btn btn-sm" onclick="jalankanSiapkanDatabase()" style="font-size:12px">🧹 Rapikan Sekarang</button>'
+    + '</div>'
+  + '</div>';
+}
+
+function ambilIdSpreadsheet(v) {
+  v = (v || '').trim();
+  var m = v.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : v;
+}
+
+async function jalankanRollover() {
+  var idBaru    = ambilIdSpreadsheet(document.getElementById('ro-id-baru').value);
+  var namaArsip = (document.getElementById('ro-nama-arsip').value || '').trim();
+  var semester  = document.getElementById('ro-semester').value;
+  var tahun     = (document.getElementById('ro-tahun').value || '').trim();
+
+  if (!idBaru)    { alert('ID spreadsheet baru wajib diisi.'); return; }
+  if (!namaArsip) { alert('Nama arsip wajib diisi.'); return; }
+  if (!tahun)     { alert('Tahun akademik wajib diisi.'); return; }
+
+  // Konfirmasi berlapis — dampaknya ke semua pengguna.
+  if (!confirm('🔄 GANTI SEMESTER\n\n'
+    + 'Database sekarang → arsip "' + namaArsip + '"\n'
+    + 'Database baru     → ' + idBaru + '\n'
+    + 'Semester baru     → ' + semester + '\n\n'
+    + 'SELURUH DOSEN akan langsung berpindah ke database baru.\n'
+    + 'Lanjutkan?')) return;
+
+  var ketik = prompt('Konfirmasi terakhir.\n\nKetik ulang nama semester baru persis seperti ini:\n\n'
+    + semester);
+  if (ketik === null) return;
+  if (ketik.trim() !== semester) { alert('❌ Tidak cocok. Rollover dibatalkan.'); return; }
+
+  setSB('sy');
+  try {
+    var r = await post({ action:'rolloverSemester', data:{
+      idBaru: idBaru, namaArsip: namaArsip, semesterBaru: semester, tahunBaru: tahun
+    }});
+    if (!r.success) { setSB('er'); alert('Gagal: ' + r.error); return; }
+    setSB('ok');
+    alert('✅ Rollover berhasil.\n\n'
+      + 'Database aktif : ' + r.dbBaru + '\n'
+      + 'Arsip          : ' + r.arsip + '\n'
+      + (r.warning ? '\n⚠️ ' + r.warning + '\n' : '')
+      + '\nHalaman akan dimuat ulang.');
+    location.reload();
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
+}
+
+async function jalankanSiapkanDatabase() {
+  if (!confirm('🧹 Rapikan struktur database aktif?\n\n'
+    + 'Header diluruskan, sheet & kolom tak terpakai dibuang, baris kosong dihapus.\n'
+    + 'Data yang ada TIDAK dihapus.')) return;
+
+  setSB('sy');
+  try {
+    var r = await post({ action:'siapkanDatabaseBaru', data:{
+      semesterAktif: SEMESTER_AKTIF, tahunAkademik: TAHUN_AKADEMIK
+    }});
+    if (!r.success) { setSB('er'); alert('Gagal: ' + (r.error||'')); return; }
+    setSB('ok');
+    var pesan = r.log.length ? '✅ Selesai:\n\n• ' + r.log.join('\n• ') : '✅ Tidak ada yang perlu diperbaiki.';
+    if (r.peringatan && r.peringatan.length) pesan += '\n\n⚠️ Perlu perhatian:\n• ' + r.peringatan.join('\n• ');
+    alert(pesan);
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
 }
 
 async function simpanArsip() {
