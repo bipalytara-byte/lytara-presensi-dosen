@@ -640,6 +640,7 @@ function renderPengaturanSistem() {
 
     // ── BAGIAN 5 [V10]: Arsip Semester Lalu ──
     + renderKartuArsip()
+    + renderKartuImport()
     + renderKartuRollover();
 }
 
@@ -752,6 +753,112 @@ function renderKartuRollover() {
       + '<button class="btn btn-sm" onclick="jalankanSiapkanDatabase()" style="font-size:12px">🧹 Rapikan Sekarang</button>'
     + '</div>'
   + '</div>';
+}
+
+// =====================================================
+// [V10] KARTU IMPORT JADWAL
+// =====================================================
+function renderKartuImport() {
+  return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
+    + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">📥 Import Jadwal</div>'
+    + '<div style="font-size:12px;color:#888;margin-bottom:12px">'
+      + 'Isi jadwal satu semester lewat spreadsheet, bukan satu per satu. '
+      + 'Tipe kelas paralel ditentukan otomatis dari hari dan jam.</div>'
+
+    + '<div style="background:#f8f8f7;border-radius:8px;padding:12px">'
+      + '<div style="font-size:12px;color:#555;line-height:1.7;margin-bottom:10px">'
+        + '<b>1.</b> Klik <i>Buat Template</i> → sheet <b>Import_Jadwal</b> muncul di spreadsheet<br>'
+        + '<b>2.</b> Isi barisnya, hapus baris contoh<br>'
+        + '<b>3.</b> Klik <i>Cek Dulu</i> untuk melihat error tanpa menyimpan<br>'
+        + '<b>4.</b> Kalau bersih, klik <i>Import Sekarang</i>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+        + '<button class="btn btn-sm" onclick="buatTemplateImport()" style="font-size:12px">📄 Buat Template</button>'
+        + '<button class="btn btn-sm" onclick="cekImportJadwal()" style="font-size:12px">🔍 Cek Dulu</button>'
+        + '<button class="btn btn-primary btn-sm" onclick="jalankanImportJadwal()" style="font-size:12px">📥 Import Sekarang</button>'
+      + '</div>'
+      + '<div id="hasil-import" style="margin-top:10px"></div>'
+    + '</div>'
+  + '</div>';
+}
+
+async function buatTemplateImport() {
+  setSB('sy');
+  try {
+    var r = await post({ action:'buatTemplateImport' });
+    setSB(r.success ? 'ok' : 'er');
+    alert(r.success
+      ? '✅ Sheet "Import_Jadwal" siap.\n\nBuka spreadsheet, isi barisnya, lalu kembali ke sini dan klik "Cek Dulu".'
+      : 'Gagal: ' + r.error);
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
+}
+
+function tampilkanHasilPreview(r) {
+  var el = document.getElementById('hasil-import');
+  if (!el) return;
+  if (!r.success) { el.innerHTML = '<div style="font-size:12px;color:#a32d2d">❌ '+r.error+'</div>'; return; }
+
+  var ringkas = '<div style="font-size:12px;color:#555;margin-bottom:8px">'
+    + '<b>'+r.total+'</b> baris · <b style="color:#27500a">'+r.siap+'</b> siap'
+    + (r.errors ? ' · <b style="color:#a32d2d">'+r.errors+'</b> bermasalah' : '')
+    + ' · '+r.paralel+' paralel · '+r.flex+' flex</div>';
+
+  var masalah = r.baris.filter(function(b){ return !b.ok; });
+  var detail = masalah.length
+    ? masalah.slice(0,15).map(function(b){
+        return '<div style="font-size:11px;color:#791f1f;background:#fcebeb;border-radius:6px;'
+          + 'padding:5px 8px;margin-bottom:4px">Baris '+b.baris+': '+b.pesan.join('; ')+'</div>';
+      }).join('') + (masalah.length>15 ? '<div style="font-size:11px;color:#888">… dan '+(masalah.length-15)+' lainnya</div>' : '')
+    : '<div style="font-size:12px;color:#27500a;background:#eaf3de;border-radius:6px;padding:6px 10px">'
+      + '✅ Semua baris valid — siap diimport.</div>';
+
+  el.innerHTML = ringkas + detail;
+}
+
+async function cekImportJadwal() {
+  setSB('sy');
+  try {
+    var r = await get({ action:'previewImportJadwal' });
+    setSB('ok');
+    tampilkanHasilPreview(r);
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
+}
+
+async function jalankanImportJadwal() {
+  setSB('sy');
+  var pv;
+  try { pv = await get({ action:'previewImportJadwal' }); }
+  catch(e) { setSB('er'); alert('Gagal: ' + e.message); return; }
+  setSB('ok');
+  tampilkanHasilPreview(pv);
+
+  if (!pv.success)   { alert('Gagal: ' + pv.error); return; }
+  if (pv.errors > 0) { alert('❌ Masih ada ' + pv.errors + ' baris bermasalah.\nPerbaiki dulu di sheet Import_Jadwal.'); return; }
+
+  var jmlLama = J.length;
+  var hapusLama = false;
+  if (jmlLama > 0) {
+    hapusLama = confirm('Sudah ada ' + jmlLama + ' jadwal di sistem.\n\n'
+      + 'OK  = HAPUS semua jadwal lama, ganti dengan hasil import\n'
+      + 'Cancel = TAMBAHKAN hasil import ke jadwal yang ada');
+  }
+
+  if (!confirm('Import ' + pv.total + ' jadwal?\n\n'
+    + '• ' + pv.paralel + ' kelas paralel (8 pertemuan)\n'
+    + '• ' + (pv.total - pv.paralel) + ' kelas reguler (16 pertemuan)\n'
+    + '• ' + pv.flex + ' kelas flex\n\n'
+    + (hapusLama ? '⚠️ Jadwal lama akan DIHAPUS.' : 'Jadwal lama tetap ada.'))) return;
+
+  setSB('sy');
+  try {
+    var r = await post({ action:'commitImportJadwal', data:{ hapusLama: hapusLama } });
+    if (!r.success) { setSB('er'); alert('Gagal: ' + r.error); return; }
+    J = (await get({ action:'getJadwal' })).data || [];
+    setSB('ok');
+    alert('✅ ' + r.imported + ' jadwal berhasil diimport.\n'
+      + r.paralel + ' paralel · ' + r.flex + ' flex');
+    if (typeof renderJ === 'function') renderJ();
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
 }
 
 function ambilIdSpreadsheet(v) {
