@@ -310,6 +310,10 @@ async function loadThenShow() {
     TAHUN_AKADEMIK   = cfg.tahunAkademik   || '';
     OVERRIDE_CODE    = cfg.overrideCode    || '';
     ARSIP_LIST       = r.arsip || [];
+    FLEX_BLOK        = r.flexBlok || [];
+    TGL_MULAI_KULIAH = cfg.tglMulaiKuliah || '';
+    MINGGU_UTS       = Number(cfg.mingguUTS || 8);
+    MINGGU_UAS       = Number(cfg.mingguUAS || 16);
 
     // Libur nasional dari sheet Libur_Nasional → objek Date
     LIBUR_NASIONAL = (r.libur || []).map(function(l){

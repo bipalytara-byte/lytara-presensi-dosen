@@ -4,7 +4,7 @@
 */
 
 
-const API = 'https://script.google.com/macros/s/AKfycbx1DqAKM2pgkQtdrzW08JPwMjV1JnDHxY517bvcjWMeBQVtEHSBiLpoRtVTdPZWsEnYcA/exec';
+const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
 const HARI = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 let D=[],J=[],P=[],G=[],M=[],MK=[];
 let eDos=null,eJad=null,eMk=null,tempMk=[];
@@ -20,6 +20,12 @@ let PENGUMUMAN_LOGIN   = '';    // pengumuman di halaman login (untuk semua)
 let SEMESTER_AKTIF     = '';    // misal: "2025/2026 Genap"
 let TAHUN_AKADEMIK     = '';    // misal: "2025/2026"
 let OVERRIDE_CODE      = '';    // kode override sementara saat sistem nonaktif (kosong = tidak aktif)
+// ── Kalender akademik (untuk Flex Class) ──
+let TGL_MULAI_KULIAH = '';   // YYYY-MM-DD, minggu 1 dimulai di sini
+let MINGGU_UTS       = 8;
+let MINGGU_UAS       = 16;
+let FLEX_BLOK        = [];   // blok waktu mingguan kelas flex
+
 // ── Arsip (per-request, bukan mode global) ──
 let ARSIP_LIST   = [];   // [{nama, id, catatan}] dari sheet Arsip
 let ARSIP_AKTIF  = null; // null = database semester berjalan

@@ -640,6 +640,7 @@ function renderPengaturanSistem() {
 
     // ── BAGIAN 5 [V10]: Arsip Semester Lalu ──
     + renderKartuArsip()
+    + renderKartuKalender()
     + renderKartuCache()
     + renderKartuImport()
     + renderKartuRollover();
@@ -654,6 +655,59 @@ function renderPengaturanSistem() {
 // diedit LANGSUNG (bukan lewat aplikasi), server belum tahu —
 // tombol ini memaksa baca ulang tanpa menunggu.
 // =====================================================
+// =====================================================
+// [V10] KARTU KALENDER AKADEMIK
+// Tanggal mulai kuliah dipakai untuk menghitung "minggu ke berapa".
+// Tanpa ini, Flex Class tidak bisa jalan sama sekali.
+// =====================================================
+function renderKartuKalender() {
+  return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
+    + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">🗓️ Kalender Akademik</div>'
+    + '<div style="font-size:12px;color:#888;margin-bottom:12px">'
+      + 'Dipakai untuk menghitung <b>minggu ke berapa</b> sebuah pertemuan. '
+      + 'Wajib diisi sebelum Flex Class bisa dipakai.</div>'
+    + '<div style="background:#f8f8f7;border-radius:8px;padding:12px">'
+      + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Tanggal mulai perkuliahan</label>'
+      + '<input type="date" id="kal-mulai" value="'+(TGL_MULAI_KULIAH||'')+'" '
+      + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;margin-bottom:10px"/>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
+        + '<div><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Minggu UTS</label>'
+        + '<input type="number" id="kal-uts" min="1" max="16" value="'+(MINGGU_UTS||8)+'" '
+        + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit"/></div>'
+        + '<div><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Minggu UAS</label>'
+        + '<input type="number" id="kal-uas" min="1" max="20" value="'+(MINGGU_UAS||16)+'" '
+        + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit"/></div>'
+      + '</div>'
+      + '<button class="btn btn-primary" onclick="simpanKalender()" style="font-size:13px">💾 Simpan Kalender</button>'
+      + '<div style="font-size:11px;color:#aaa;margin-top:8px;line-height:1.5">'
+        + 'Minggu 1 dimulai pada tanggal di atas. Presensi menyimpan nomor minggunya '
+        + 'saat direkam, jadi data lama tidak berubah kalau tanggal ini digeser.</div>'
+    + '</div>'
+  + '</div>';
+}
+
+async function simpanKalender() {
+  var mulai = document.getElementById('kal-mulai').value;
+  var uts   = parseInt(document.getElementById('kal-uts').value, 10);
+  var uas   = parseInt(document.getElementById('kal-uas').value, 10);
+  if (!mulai) { alert('Tanggal mulai perkuliahan wajib diisi.'); return; }
+  if (!uts || !uas || uas <= uts) { alert('Minggu UAS harus lebih besar dari minggu UTS.'); return; }
+
+  setSB('sy');
+  try {
+    var r = await post({ action:'saveSettings', data:{
+      tglMulaiKuliah: mulai, mingguUTS: String(uts), mingguUAS: String(uas)
+    }});
+    if (!r.success) { setSB('er'); alert('Gagal: ' + (r.error||'')); return; }
+    TGL_MULAI_KULIAH = mulai; MINGGU_UTS = uts; MINGGU_UAS = uas;
+    setSB('ok');
+    var d = new Date(mulai + 'T00:00:00');
+    alert('✅ Kalender akademik tersimpan.\n\nMinggu 1 dimulai '
+      + d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
+      + '\nUTS minggu ke-' + uts + ' · UAS minggu ke-' + uas);
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
+}
+
 function renderKartuCache() {
   return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
     + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">♻️ Segarkan Data</div>'
