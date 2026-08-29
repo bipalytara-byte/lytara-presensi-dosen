@@ -632,6 +632,8 @@ function openMJ(id){
   document.getElementById('jmh').value='Senin';
   // Reset field paralel
   document.getElementById('jmtipe').value='reguler';
+  if(document.getElementById('jmpola')) document.getElementById('jmpola').value='tetap';
+  togglePolaJadwal();
   document.getElementById('jmbatch').value='';
   document.getElementById('jmstatus').value='aktif';
   toggleFieldParalel();
@@ -646,6 +648,8 @@ function openMJ(id){
     document.getElementById('jmr').value=j.ruang;document.getElementById('jmsem').value=j.semester||'';
     // Isi field paralel
     document.getElementById('jmtipe').value=j.tipe||'reguler';
+    if(document.getElementById('jmpola')) document.getElementById('jmpola').value=j.polaJadwal||'tetap';
+    togglePolaJadwal();
     document.getElementById('jmbatch').value=j.batch||'';
     document.getElementById('jmstatus').value=j.statusParalel||'aktif';
     toggleFieldParalel();
@@ -673,14 +677,22 @@ async function saveJad(){
   var tipe         = document.getElementById('jmtipe').value || 'reguler';
   var batch        = tipe === 'paralel' ? (document.getElementById('jmbatch').value||'') : '';
   var statusParalel= tipe === 'paralel' ? (document.getElementById('jmstatus').value||'aktif') : '';
-  var maxPertemuan = tipe === 'paralel' ? 8 : 14;
+  var pola         = document.getElementById('jmpola') ? document.getElementById('jmpola').value : 'tetap';
+  if (tipe === 'paralel' && pola === 'flex') {
+    alert('Kelas paralel tidak bisa memakai pola Flex Class.');
+    return;
+  }
+  // 16 = 14 tatap muka + UTS + UAS ; 8 = 7 tatap muka + UAS
+  var maxPertemuan = tipe === 'paralel' ? 8 : 16;
+  var maxTatapMuka = tipe === 'paralel' ? 7 : 14;
 
   var btn=document.getElementById('bsj');btn.disabled=true;btn.textContent='Menyimpan...';
   var data={
     id:eJad||('j'+Date.now()),dosenId:did,mk:mk,hari:document.getElementById('jmh').value,
     kelas:document.getElementById('jmk').value,jamMulai:jms,jamSelesai:document.getElementById('jme').value,
     ruang:jmr,semester:document.getElementById('jmsem').value,
-    tipe:tipe, batch:batch, statusParalel:statusParalel, maxPertemuan:maxPertemuan
+    tipe:tipe, batch:batch, statusParalel:statusParalel,
+    maxPertemuan:maxPertemuan, maxTatapMuka:maxTatapMuka, polaJadwal:pola
   };
   setSB('sy');
   try{
@@ -698,4 +710,12 @@ async function hapusJad(id){
   if(!confirm('Hapus jadwal ini?'))return;setSB('sy');
   try{await post({action:'deleteJadwal',id:id});J=J.filter(function(j){return j.id!==id;});setSB('ok');renderJ();}
   catch(e){setSB('er');alert('Gagal: '+e.message);}
+}
+
+// [V10] Tampilkan keterangan saat pola Flex Class dipilih.
+function togglePolaJadwal() {
+  var sel  = document.getElementById('jmpola');
+  var hint = document.getElementById('hint-pola');
+  if (!sel || !hint) return;
+  hint.style.display = sel.value === 'flex' ? 'block' : 'none';
 }
