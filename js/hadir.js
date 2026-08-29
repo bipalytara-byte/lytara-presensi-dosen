@@ -332,6 +332,45 @@ function previewStatus(){
 }
 
 
+
+// =====================================================
+// [V10] SUMBER JAM RESMI — satu tempat, dipakai semua pengecekan
+// -----------------------------------------------------
+// Jam yang berlaku belum tentu jam jadwal asli. Kalau ada Jadwal
+// Pengganti atau Jadwal Maju yang sudah di-ACC untuk tanggal ini,
+// JAM MEREKA yang berlaku. Sebelumnya pengaman anti-manipulasi
+// memaksa balik ke jam asli, sehingga dosen yang maju ke jam 14:00
+// tetap dihitung terlambat dari jam 11:00.
+// Sumbernya tetap data server (G / M / J), bukan input di layar,
+// jadi pengamanan terhadap manipulasi DevTools tidak berkurang.
+// =====================================================
+function ambilJamResmi(jad) {
+  var d = new Date();
+  var ymd = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0')
+          + '-' + String(d.getDate()).padStart(2,'0');
+
+  function pecah(rentang, bagian) {
+    var v = String(rentang || '');
+    if (v.indexOf('-') > -1) return jStr(v.split('-')[bagian].trim());
+    return bagian === 0 ? jStr(v) : '';
+  }
+
+  // Jadwal pengganti hanya berlaku kalau hari ini bukan hari jadwal aslinya
+  var ganti = (jad.hari !== todayHari())
+    ? G.find(function(g){ return g.dosenId === currentUser.id && g.mk === jad.mk
+                            && g.statusAcc === 'Disetujui' && g.ganti === ymd; })
+    : null;
+  var maju = M.find(function(m){ return m.dosenId === currentUser.id && m.mk === jad.mk
+                            && m.statusAcc === 'Disetujui' && m.tglRaw === ymd; });
+
+  if (ganti) return { jam: pecah(ganti.jam,0), jamSelesai: pecah(ganti.jam,1) || jStr(jad.jamSelesai||''),
+                      sumber: 'Jadwal Pengganti', ganti: ganti, maju: null };
+  if (maju)  return { jam: pecah(maju.jam,0),  jamSelesai: pecah(maju.jam,1)  || jStr(jad.jamSelesai||''),
+                      sumber: 'Jadwal Maju', ganti: null, maju: maju };
+  return { jam: jStr(jad.jamMulai), jamSelesai: jStr(jad.jamSelesai||''),
+           sumber: 'Jadwal Reguler', ganti: null, maju: null };
+}
+
 async function rekam(){
   if(!currentUser){alert('Hanya dosen yang bisa melakukan ini.');return;}
   // Blokir rekam jika sistem nonaktif — kecuali ada override aktif di session
@@ -352,21 +391,19 @@ async function rekam(){
   var jad=J.find(function(j){return j.id===jid;});
   if(!jad){alert('Jadwal tidak ditemukan.');return;}
 
-  // ── SECURITY: ambil jam resmi dari data jadwal GAS, bukan dari input ──
-  // Ini mencegah manipulasi field pjam secara manual / via DevTools
-  var jamResmi = jStr(jad.jamMulai);
+  // ── SECURITY: jam resmi diambil dari data server, bukan dari input ──
+  // Sumbernya bisa jadwal pengganti / maju yang sudah di-ACC, bukan
+  // selalu jam jadwal asli. Lihat ambilJamResmi().
+  var resmi = ambilJamResmi(jad);
+  var jamResmi = resmi.jam;
   if(!jamResmi){alert('Data jam jadwal tidak ditemukan. Hubungi Admin.');return;}
 
   // Paksa sinkronkan input dengan data resmi (siapa yang mengubah, tampilan ikut kembali)
   document.getElementById('pjam').value = jamResmi;
 
   var d = new Date();
-  var ymd = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-  // Bug 3 fix: isGantiValid hanya berlaku jika jadwal ini bukan jadwal asli hari ini
-  var isGantiValid = (jad.hari !== todayHari())
-    ? G.find(function(g){ return g.dosenId === currentUser.id && g.mk === jad.mk && g.statusAcc === 'Disetujui' && g.ganti === ymd; })
-    : null;
-  var isMajuValid  = M.find(function(m){ return m.dosenId === currentUser.id && m.mk === jad.mk && m.statusAcc === 'Disetujui' && m.tglRaw === ymd; });
+  var isGantiValid = resmi.ganti;
+  var isMajuValid  = resmi.maju;
 
   // ── Cek batasan 15 menit sebelum jadwal ──
   // Gunakan jamResmi dari GAS — bukan jam dari input yang bisa dimanipulasi
@@ -440,7 +477,7 @@ async function eksekusiRekam(){
   // Mencegah serangan via _rekamPending yang diisi manual lewat DevTools
   var jad2 = J.find(function(j){ return j.id === p.jid; });
   if(!jad2){ alert('❌ Data jadwal tidak valid.'); return; }
-  var jamCek = jStr(jad2.jamMulai);
+  var jamCek = ambilJamResmi(jad2).jam;
   var cekParts = jamCek.split(':');
   var cekMenit = parseInt(cekParts[0])*60 + parseInt(cekParts[1]);
   var nowCek = new Date();
