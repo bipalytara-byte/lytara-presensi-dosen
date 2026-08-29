@@ -640,6 +640,7 @@ function renderPengaturanSistem() {
 
     // ── BAGIAN 5 [V10]: Arsip Semester Lalu ──
     + renderKartuArsip()
+    + renderKartuStatus()
     + renderKartuKalender()
     + renderKartuCache()
     + renderKartuImport()
@@ -660,6 +661,83 @@ function renderPengaturanSistem() {
 // Tanggal mulai kuliah dipakai untuk menghitung "minggu ke berapa".
 // Tanpa ini, Flex Class tidak bisa jalan sama sekali.
 // =====================================================
+// =====================================================
+// [V10.5] KARTU STATUS SISTEM
+// Menjawab pertanyaan yang selama ini harus dicek di Apps Script:
+// database mana yang aktif, dan apakah deployment sudah terbaru.
+// =====================================================
+function renderKartuStatus() {
+  return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
+    + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">🩺 Status Sistem</div>'
+    + '<div style="font-size:12px;color:#888;margin-bottom:10px">'
+      + 'Cek database mana yang sedang dipakai dan apakah kode di server sudah versi terbaru.</div>'
+    + '<button class="btn btn-sm" onclick="cekStatusSistem()" style="font-size:12px">🩺 Periksa Sekarang</button>'
+    + '<div id="hasil-status" style="margin-top:10px"></div>'
+
+    + '<div style="background:#f8f8f7;border-radius:8px;padding:12px;margin-top:12px">'
+      + '<div style="font-size:12px;font-weight:600;color:#555;margin-bottom:6px">🔧 Arahkan ke database lain</div>'
+      + '<div style="font-size:11px;color:#aaa;margin-bottom:8px;line-height:1.5">'
+        + 'Hanya untuk memperbaiki kalau sistem menunjuk database yang salah. '
+        + 'Tidak mengarsipkan apa pun. Untuk ganti semester, pakai kartu Rollover.</div>'
+      + '<input type="text" id="db-id-perbaikan" placeholder="ID atau URL spreadsheet" '
+      + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:12px;font-family:monospace;margin-bottom:8px"/>'
+      + '<button class="btn btn-sm" onclick="perbaikiDatabaseAktif()" style="font-size:12px">🔧 Jadikan Database Aktif</button>'
+    + '</div>'
+  + '</div>';
+}
+
+async function cekStatusSistem() {
+  var el = document.getElementById('hasil-status');
+  el.innerHTML = '<div style="font-size:12px;color:#888">Memeriksa…</div>';
+  try {
+    var r = await get({ action:'statusDatabase' });
+    var baris = function(label, isi, warna) {
+      return '<div style="display:flex;justify-content:space-between;gap:10px;font-size:11px;'
+        + 'padding:4px 0;border-bottom:1px solid #f0f0ee">'
+        + '<span style="color:#888;flex-shrink:0">'+label+'</span>'
+        + '<span style="color:'+(warna||'#1a1a1a')+';text-align:right;word-break:break-all">'+isi+'</span></div>';
+    };
+    var html = '<div style="background:#f8f8f7;border-radius:8px;padding:10px 12px">'
+      + baris('Versi kode di server', r.versi || '—', '#185fa5')
+      + baris('Spreadsheet', r.terbuka ? r.nama : '❌ tidak bisa dibuka', r.terbuka ? '' : '#a32d2d')
+      + baris('Semester aktif', r.semester || '—')
+      + baris('ID dipakai', r.idDipakai)
+      + baris('ID cadangan di kode', r.idKode)
+      + baris('Arsip terdaftar', r.arsip + ' semester');
+    if (!r.terbuka) {
+      html += '<div style="font-size:11px;color:#791f1f;background:#fcebeb;border-radius:6px;padding:6px 8px;margin-top:8px">'
+        + '❌ ' + (r.error||'') + '</div>';
+    }
+    if (r.idOverride && r.idOverride !== r.idKode) {
+      html += '<div style="font-size:11px;color:#633806;background:#faeeda;border-radius:6px;padding:6px 8px;margin-top:8px">'
+        + '⚠️ ID yang dipakai berbeda dengan cadangan di kode. Kalau setelan server hilang, '
+        + 'sistem akan jatuh ke database yang salah. Minta pengelola memperbarui DB_ID_AKTIF.</div>';
+    }
+    if (r.sheets && r.sheets.indexOf('Flex_Blok') === -1) {
+      html += '<div style="font-size:11px;color:#633806;background:#faeeda;border-radius:6px;padding:6px 8px;margin-top:8px">'
+        + '⚠️ Sheet Flex_Blok belum ada di database ini.</div>';
+    }
+    el.innerHTML = html + '</div>';
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:12px;color:#a32d2d">Gagal: '+e.message+'</div>';
+  }
+}
+
+async function perbaikiDatabaseAktif() {
+  var id = ambilIdSpreadsheet(document.getElementById('db-id-perbaikan').value);
+  if (!id) { alert('ID wajib diisi.'); return; }
+  if (!confirm('Arahkan sistem ke database ini?\n\n' + id
+    + '\n\nSeluruh pengguna akan langsung memakai database tersebut.')) return;
+  setSB('sy');
+  try {
+    var r = await post({ action:'setDatabaseAktif', data:{ id:id } });
+    if (!r.success) { setSB('er'); alert('Gagal: ' + r.error); return; }
+    setSB('ok');
+    alert('✅ Sistem sekarang memakai:\n' + r.nama + '\n\nHalaman akan dimuat ulang.');
+    location.reload();
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
+}
+
 function renderKartuKalender() {
   return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
     + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">🗓️ Kalender Akademik</div>'
