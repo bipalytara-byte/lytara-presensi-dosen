@@ -640,6 +640,7 @@ function renderPengaturanSistem() {
 
     // ── BAGIAN 5 [V10]: Arsip Semester Lalu ──
     + renderKartuArsip()
+    + renderKartuCache()
     + renderKartuImport()
     + renderKartuRollover();
 }
@@ -647,6 +648,33 @@ function renderPengaturanSistem() {
 // =====================================================
 // [V10] KARTU ARSIP — kelola & buka database semester lalu
 // =====================================================
+// =====================================================
+// [V10] KARTU CACHE
+// Data dibaca dari cache 3 menit supaya ringan. Kalau spreadsheet
+// diedit LANGSUNG (bukan lewat aplikasi), server belum tahu —
+// tombol ini memaksa baca ulang tanpa menunggu.
+// =====================================================
+function renderKartuCache() {
+  return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
+    + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">♻️ Segarkan Data</div>'
+    + '<div style="font-size:12px;color:#888;margin-bottom:10px">'
+      + 'Data disimpan sementara selama 3 menit agar aplikasi ringan. '
+      + 'Kalau Anda mengubah spreadsheet <b>secara langsung</b> dan perubahannya belum muncul, '
+      + 'klik tombol ini. Perubahan lewat aplikasi tidak perlu tombol ini.</div>'
+    + '<button class="btn btn-sm" onclick="bersihkanCacheSistem()" style="font-size:12px">♻️ Muat Ulang dari Spreadsheet</button>'
+  + '</div>';
+}
+
+async function bersihkanCacheSistem() {
+  setSB('sy');
+  try {
+    await get({ action:'bersihkanCache' });
+    setSB('ok');
+    alert('✅ Data dimuat ulang dari spreadsheet.\n\nHalaman akan disegarkan.');
+    location.reload();
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
+}
+
 function renderKartuArsip() {
   var opsi = ARSIP_LIST.map(function(a){
     var sel = (ARSIP_AKTIF && ARSIP_AKTIF.id === a.id) ? ' selected' : '';
