@@ -708,7 +708,12 @@ async function cekStatusSistem() {
       html += '<div style="font-size:11px;color:#791f1f;background:#fcebeb;border-radius:6px;padding:6px 8px;margin-top:8px">'
         + '❌ ' + (r.error||'') + '</div>';
     }
-    if (r.idOverride && r.idOverride !== r.idKode) {
+    var beda = r.idOverride && String(r.idOverride).trim() !== String(r.idKode).trim();
+    if (!beda) {
+      html += '<div style="font-size:11px;color:#27500a;background:#eaf3de;border-radius:6px;padding:6px 8px;margin-top:8px">'
+        + '✅ ID cadangan di kode sudah cocok dengan yang dipakai.</div>';
+    }
+    if (beda) {
       html += '<div style="font-size:11px;color:#633806;background:#faeeda;border-radius:6px;padding:6px 8px;margin-top:8px">'
         + '⚠️ ID yang dipakai berbeda dengan cadangan di kode. Kalau setelan server hilang, '
         + 'sistem akan jatuh ke database yang salah. Minta pengelola memperbarui DB_ID_AKTIF.</div>';
