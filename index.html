@@ -350,6 +350,15 @@
 <!-- ====== END BERANDA ====== -->
 
 <div id="page-hadir" class="page">
+
+  <div class="card" id="card-manual-dosen" style="display:none">
+    <div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:3px">🆘 Sistem bermasalah?</div>
+    <p style="font-size:12px;color:#888;margin:0 0 10px">
+      Kalau presensi tidak bisa direkam padahal Anda sedang mengajar, ajukan presensi manual dengan foto bukti.
+    </p>
+    <button class="btn btn-sm" onclick="bukaFormManual()" style="font-size:12px">🆘 Ajukan Presensi Manual</button>
+  </div>
+
   <!-- Banner sistem nonaktif + kode override -->
   <div id="hadir-banner-nonaktif" style="display:none;margin-bottom:1rem"></div>
 
@@ -680,6 +689,14 @@
 <!-- ====== END KELOLA MK ====== -->
 
 <div id="page-report" class="page">
+
+  <div class="card" id="card-verif-manual" style="display:none">
+    <h3 style="font-size:14px;margin:0 0 4px">🆘 Verifikasi Presensi Manual</h3>
+    <p style="font-size:12px;color:#888;margin:0 0 10px">
+      Presensi yang diajukan dosen saat sistem bermasalah. Menolak akan mencabut catatan presensinya.
+    </p>
+    <div id="verif-manual-list"></div>
+  </div>
 
   <div class="card" id="card-rekap-flex" style="display:none">
     <h3 style="font-size:14px;margin:0 0 4px">🔀 Rekap Flex Class</h3>
@@ -1089,6 +1106,61 @@
 </div>
 
 <!-- Modal Tambah / Edit Mata Kuliah -->
+<div class="mo" id="modal-manual">
+  <div class="md">
+    <div class="mt">🆘 Presensi Manual (Darurat)</div>
+
+    <div style="background:#faeeda;color:#633806;border-radius:8px;padding:9px 12px;margin-bottom:14px;font-size:11px;line-height:1.6">
+      Gunakan <b>hanya</b> kalau sistem gagal saat Anda mengajar.
+      Presensi langsung tercatat, lalu diverifikasi WK I.
+      Jika bukti tidak sah, catatan presensi akan <b>dicabut</b>.
+    </div>
+
+    <div class="field">
+      <label>Mata Kuliah</label>
+      <select id="pm-jadwal"></select>
+    </div>
+
+    <div class="field">
+      <label>Tanggal Pelaksanaan</label>
+      <input type="date" id="pm-tanggal"/>
+    </div>
+
+    <div class="row">
+      <div class="field"><label>Jam Mulai</label><input type="time" id="pm-mulai"/></div>
+      <div class="field"><label>Jam Selesai</label><input type="time" id="pm-selesai"/></div>
+    </div>
+
+    <div class="field">
+      <label>Mode Perkuliahan</label>
+      <select id="pm-mode">
+        <option>Luring</option>
+        <option>Daring Sinkronus</option>
+        <option>Daring Asinkronus</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Alasan <span style="font-size:11px;color:#888;font-weight:400">(minimal 10 karakter)</span></label>
+      <textarea id="pm-alasan" rows="3" placeholder="Contoh: Sistem tidak bisa dibuka pukul 08.00, sudah dicoba 3x dan muncul error."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Foto Bukti <span style="font-size:11px;color:#888;font-weight:400">(foto kelas / daftar hadir / layar Zoom)</span></label>
+      <input type="file" id="pm-file" accept="image/*" onchange="pilihFotoManual(this)"/>
+      <div id="pm-preview"></div>
+      <div style="font-size:11px;color:#aaa;margin-top:5px;line-height:1.5">
+        Foto otomatis dikecilkan sebelum dikirim, jadi tidak menghabiskan kuota.
+      </div>
+    </div>
+
+    <div class="bg" style="justify-content:flex-end">
+      <button class="btn" onclick="cm('modal-manual')">Batal</button>
+      <button class="btn btn-primary" id="btn-kirim-manual" onclick="kirimPresensiManual()">Kirim Pengajuan</button>
+    </div>
+  </div>
+</div>
+
 <div class="mo" id="modal-flex">
   <div class="md">
     <div class="mt" id="fb-title">Tetapkan Blok Waktu</div>
@@ -1265,6 +1337,7 @@
 <script src="js/rapor.js"></script>
 <script src="js/mk.js"></script>
 <script src="js/flex.js"></script>
+<script src="js/manual.js"></script>
 <script src="js/notif.js"></script>
 <script src="js/beranda.js"></script>
 <script src="js/export-yayasan.js"></script>

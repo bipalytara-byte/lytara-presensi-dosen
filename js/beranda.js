@@ -450,11 +450,17 @@ function pg(p,btn){
     renderR();
     var cardFlex = document.getElementById('card-rekap-flex');
     if (cardFlex && isAdmin) { cardFlex.style.display = 'block'; renderRekapFlexAdmin(); }
+    var cardVm = document.getElementById('card-verif-manual');
+    if (cardVm && isAdmin) { cardVm.style.display = 'block'; renderVerifikasiManual(); }
   }
   if(p==='mk'){ renderMK(); }
   if(p==='flex'){ renderFlex(); }
   if(p==='rapor'){ if(!isAdmin) renderRapor(null); }
-  if(p==='hadir'){ renderNotifLiburHadir(); renderBannerHadirNonaktif(); }
+  if(p==='hadir'){
+    renderNotifLiburHadir(); renderBannerHadirNonaktif();
+    var cm2 = document.getElementById('card-manual-dosen');
+    if (cm2) cm2.style.display = (!isAdmin && currentUser) ? 'block' : 'none';
+  }
   if(p==='beranda'||p==='beranda-admin'){ renderInfoMekanismeGanti(); renderNotifFlexBeranda(); }
   if(p==='beranda-admin'){ fillBerandaAdmin(); }
 }

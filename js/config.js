@@ -4,7 +4,7 @@
 */
 
 
-const API = 'https://script.google.com/macros/s/AKfycbxGKxl4M9NdTNZTJu1xSvdDulR0PkQRRiIihjDSp_VKxHETmstZ0qXSGDhlLljDRpJDlA/exec';
+const API = 'https://script.google.com/macros/s/AKfycbzcIoEqRDMV0rnNzPn6A_A8KP4JR_9hnQuKKY4yQDpvQq6p_M2mlenyjt1xJ9KCPtbN/exec';
 const HARI = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 let D=[],J=[],P=[],G=[],M=[],MK=[];
 let eDos=null,eJad=null,eMk=null,tempMk=[];
@@ -72,6 +72,24 @@ async function get(p){
   Object.keys(p).forEach(function(k){ q[k] = p[k]; });
   if (ARSIP_AKTIF && !q.arsipId) q.arsipId = ARSIP_AKTIF.id;
   var r = await fetch(API+'?'+new URLSearchParams(q).toString(),{redirect:'follow'});
+  return JSON.parse(await r.text());
+}
+
+// [V10.9] postBesar() — untuk kiriman besar seperti foto bukti.
+// post() biasa menempelkan seluruh data di URL, dan foto tidak muat
+// di situ. Ini memakai POST sungguhan. Content-Type sengaja text/plain
+// supaya browser tidak melakukan preflight (yang akan ditolak GAS).
+async function postBesar(b){
+  if (ARSIP_AKTIF) {
+    alert('📁 Anda sedang melihat arsip ' + ARSIP_AKTIF.nama + '.\n\nData arsip tidak bisa diubah.');
+    throw new Error('Mode arsip: penulisan ditolak.');
+  }
+  var r = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(b),
+    redirect: 'follow'
+  });
   return JSON.parse(await r.text());
 }
 
