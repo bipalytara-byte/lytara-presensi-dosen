@@ -11,6 +11,8 @@ var MODA_SUMBU_A = ['Tatap Muka Terjadwal','Hybrid Sinkronus',
                     'Blended Terstruktur','Kompensasi Asinkronus'];
 var METODE_SUMBU_B = ['Flipped Classroom','Problem-Based Learning',
                       'Project-Based Learning','Case-Based Teaching'];
+var MODA_UJIAN = ['Ujian Sinkronus (diawasi)',
+                  'Ujian Asinkronus (take-home / project)'];
 var MAKS_KOMPENSASI = 5;
 
 var _editBlokId = null;
@@ -25,6 +27,18 @@ function mingguBerjalan(tanggal) {
   var selisih = Math.floor((d - mulai) / 86400000);
   if (selisih < 0) return 0;
   return Math.floor(selisih / 7) + 1;
+}
+
+// Minggu ini minggu ujian atau bukan — untuk jadwal tertentu.
+// Paralel tidak punya UTS: minggu UTS/UAS-nya adalah UAS batch itu.
+function jenisMinggu(jad, minggu) {
+  if (!minggu) return 'Tatap Muka';
+  if (jad && jad.tipe === 'paralel') {
+    return (minggu === MINGGU_UTS || minggu === MINGGU_UAS) ? 'UAS' : 'Tatap Muka';
+  }
+  if (minggu === MINGGU_UTS) return 'UTS';
+  if (minggu === MINGGU_UAS) return 'UAS';
+  return 'Tatap Muka';
 }
 
 // Blok flex yang berlaku hari ini untuk sebuah jadwal — dipakai hadir.js
@@ -86,12 +100,14 @@ function kartuJadwalFlex(j) {
 
   var daftar = blok.length ? blok.map(function(b){
     var lewat = new Date(b.tanggal + 'T00:00:00') < hariIni;
-    var warna = b.modaSumbuA === 'Kompensasi Asinkronus' ? '#faeeda' : '#eaf3de';
-    var tx    = b.modaSumbuA === 'Kompensasi Asinkronus' ? '#633806' : '#27500a';
+    var isUjian = MODA_UJIAN.indexOf(b.modaSumbuA) > -1;
+    var warna = isUjian ? '#e6f1fb' : b.modaSumbuA === 'Kompensasi Asinkronus' ? '#faeeda' : '#eaf3de';
+    var tx    = isUjian ? '#185fa5' : b.modaSumbuA === 'Kompensasi Asinkronus' ? '#633806' : '#27500a';
     return '<div style="background:'+warna+';border-radius:8px;padding:8px 10px;margin-bottom:6px">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
         + '<div style="min-width:0">'
-          + '<div style="font-size:12px;font-weight:700;color:'+tx+'">Minggu ' + b.minggu
+          + '<div style="font-size:12px;font-weight:700;color:'+tx+'">'
+            + (isUjian ? '📝 ' : '') + 'Minggu ' + b.minggu
             + ' · ' + b.tanggal + ' · ' + b.jamMulai + '–' + b.jamSelesai + '</div>'
           + '<div style="font-size:11px;color:#555;margin-top:2px">' + b.modaSumbuA + ' · ' + b.metodeSumbuB + '</div>'
           + (b.direvisiOleh ? '<div style="font-size:10px;color:#a32d2d;margin-top:2px">✏️ Direvisi ' + b.direvisiOleh + ' · ' + b.direvisiPada + '</div>' : '')
@@ -186,11 +202,29 @@ function hitungMingguForm() {
     info.style.color = '#a32d2d';
     return;
   }
-  var label = 'Minggu ke-' + w;
-  if (w === MINGGU_UTS) label += ' — minggu UTS';
-  if (w === MINGGU_UAS) label += ' — minggu UAS';
-  info.innerHTML = '📌 ' + label;
-  info.style.color = '#185fa5';
+  var jad   = J.find(function(x){ return x.id === document.getElementById('fb-jadwal').value; });
+  var jenis = jenisMinggu(jad, w);
+  var ujian = jenis !== 'Tatap Muka';
+
+  info.innerHTML = ujian
+    ? '📝 Minggu ke-' + w + ' — <b>minggu ' + jenis + '</b>. Yang direkam adalah pelaksanaan ujian, bukan perkuliahan.'
+    : '📌 Minggu ke-' + w;
+  info.style.color = ujian ? '#633806' : '#185fa5';
+
+  // Minggu ujian punya pilihan moda sendiri.
+  var sel = document.getElementById('fb-moda');
+  if (sel) {
+    var lama = sel.value;
+    var opsi = ujian ? MODA_UJIAN : MODA_SUMBU_A;
+    sel.innerHTML = opsi.map(function(o){ return '<option>' + o + '</option>'; }).join('');
+    if (opsi.indexOf(lama) > -1) sel.value = lama;
+  }
+  var hintKomp = document.getElementById('fb-hint-komp');
+  if (hintKomp) {
+    hintKomp.textContent = ujian
+      ? 'Ujian asinkronus (take-home / project) tidak memakai kuota kompensasi.'
+      : 'Kompensasi Asinkronus maksimal 5x per mata kuliah.';
+  }
 }
 
 async function simpanBlokFlex() {
