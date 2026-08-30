@@ -363,6 +363,14 @@ function ambilJamResmi(jad) {
   var maju = M.find(function(m){ return m.dosenId === currentUser.id && m.mk === jad.mk
                             && m.statusAcc === 'Disetujui' && m.tglRaw === ymd; });
 
+  // Kelas Flex Class tidak punya jam tetap — jamnya dari blok minggu ini.
+  if (jad.polaJadwal === 'flex') {
+    var blok = (typeof blokUntukHariIni === 'function') ? blokUntukHariIni(jad.id) : null;
+    if (blok) return { jam: jStr(blok.jamMulai), jamSelesai: jStr(blok.jamSelesai),
+                       sumber: 'Flex Class minggu ' + blok.minggu, ganti: null, maju: null, blok: blok };
+    return { jam: '', jamSelesai: '', sumber: 'Flex Class', ganti: null, maju: null, blok: null };
+  }
+
   if (ganti) return { jam: pecah(ganti.jam,0), jamSelesai: pecah(ganti.jam,1) || jStr(jad.jamSelesai||''),
                       sumber: 'Jadwal Pengganti', ganti: ganti, maju: null };
   if (maju)  return { jam: pecah(maju.jam,0),  jamSelesai: pecah(maju.jam,1)  || jStr(jad.jamSelesai||''),
@@ -396,6 +404,12 @@ async function rekam(){
   // selalu jam jadwal asli. Lihat ambilJamResmi().
   var resmi = ambilJamResmi(jad);
   var jamResmi = resmi.jam;
+  if (!jamResmi && jad.polaJadwal === 'flex') {
+    alert('🔀 Kelas Flex Class ini belum punya blok waktu untuk hari ini.\n\n'
+        + 'Buka menu Flex Class dan tetapkan blok minggu ini terlebih dahulu '
+        + '(paling lambat H-1 sebelum pelaksanaan).');
+    return;
+  }
   if(!jamResmi){alert('Data jam jadwal tidak ditemukan. Hubungi Admin.');return;}
 
   // Paksa sinkronkan input dengan data resmi (siapa yang mengubah, tampilan ikut kembali)
@@ -507,6 +521,21 @@ async function eksekusiRekam(){
     jamSelesaiJadwal:jamSelesaiAkhir,waktuSelesai:'',statusSelesai:'',colorSelesai:'',timestamp:ts,
     modeKuliah:p.pmode, sumberJadwal:sumberJadwal,
     semester: SEMESTER_AKTIF || p.jad.semester || ''};
+
+  // Kelas flex: bawa nomor minggu + Sumbu A/B dari blok yang berlaku
+  var blokAktif = (p.jad.polaJadwal === 'flex' && typeof blokUntukHariIni === 'function')
+                  ? blokUntukHariIni(p.jad.id) : null;
+  if (blokAktif) {
+    rec.minggu       = blokAktif.minggu;
+    rec.modeKuliah   = blokAktif.modaSumbuA;
+    rec.metodeSumbuB = blokAktif.metodeSumbuB;
+  } else if (typeof mingguBerjalan === 'function') {
+    rec.minggu = mingguBerjalan();
+  }
+  if (typeof MINGGU_UTS !== 'undefined' && rec.minggu) {
+    rec.jenisPertemuan = rec.minggu === MINGGU_UTS ? 'UTS'
+                       : rec.minggu === MINGGU_UAS ? 'UAS' : 'Tatap Muka';
+  }
 
   var btn=document.getElementById('brek');btn.disabled=true;btn.textContent='Menyimpan...';
   setSB('sy');

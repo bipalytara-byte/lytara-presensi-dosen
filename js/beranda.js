@@ -448,11 +448,14 @@ function pg(p,btn){
     var rd=document.getElementById('rd');if(rd){rd.innerHTML='<option value="all">Semua dosen</option>';D.forEach(function(d){var o=document.createElement('option');o.value=d.id;o.textContent=d.nama;rd.appendChild(o);});}
     fillAdminRaporDropdown();
     renderR();
+    var cardFlex = document.getElementById('card-rekap-flex');
+    if (cardFlex && isAdmin) { cardFlex.style.display = 'block'; renderRekapFlexAdmin(); }
   }
   if(p==='mk'){ renderMK(); }
+  if(p==='flex'){ renderFlex(); }
   if(p==='rapor'){ if(!isAdmin) renderRapor(null); }
   if(p==='hadir'){ renderNotifLiburHadir(); renderBannerHadirNonaktif(); }
-  if(p==='beranda'||p==='beranda-admin'){ renderInfoMekanismeGanti(); }
+  if(p==='beranda'||p==='beranda-admin'){ renderInfoMekanismeGanti(); renderNotifFlexBeranda(); }
   if(p==='beranda-admin'){ fillBerandaAdmin(); }
 }
 document.querySelectorAll('.mo').forEach(function(el){el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
