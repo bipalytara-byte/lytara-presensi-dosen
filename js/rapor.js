@@ -137,7 +137,7 @@ function fillRaporElements(targetDosen, myP, myG, myM, semLabel) {
   document.getElementById('rapor-mode').innerHTML = buildModeHTML(myP, total);
   document.getElementById('rapor-selesai').innerHTML = buildSelesaiHTML(myP, total);
   document.getElementById('rapor-tren').innerHTML = buildTrenHTML(myP);
-  document.getElementById('rapor-mk').innerHTML = buildMkHTML(myP);
+  document.getElementById('rapor-mk').innerHTML = buildPemenuhanHTML(targetDosen, myP) + buildMkHTML(myP);
   document.getElementById('rapor-pengajuan').innerHTML = buildPengajuanHTML(myG, myM);
 }
 
@@ -362,4 +362,55 @@ function _openRaporPrintWindow(dosen, myP, myG, myM, semLabel) {
     +'</head><body><div style="max-width:720px;margin:0 auto">'+html+'</div>'
     +'<script>window.onload=function(){window.print();}<\/script></body></html>');
   w.document.close();
+}
+
+
+// =====================================================
+// [V11.5] PEMENUHAN PERTEMUAN — tatap muka vs ujian dipisah
+// -----------------------------------------------------
+// Digabung jadi satu persen justru menyembunyikan informasi:
+// dosen yang sudah 14 tatap muka tapi belum mengawas UAS
+// terlihat sama dengan yang kurang satu pertemuan.
+// =====================================================
+function buildPemenuhanHTML(dosen, myP) {
+  var jadwalDosen = J.filter(function(j){ return j.dosenId === dosen.id; });
+  if (!jadwalDosen.length) return '';
+
+  var baris = jadwalDosen.map(function(j) {
+    var pres = myP.filter(function(p){ return p.jadwalId === j.id; });
+    var ujian = pres.filter(function(p){
+      return p.jenisPertemuan === 'UTS' || p.jenisPertemuan === 'UAS'; });
+    var tm    = pres.length - ujian.length;
+
+    var targetTM    = j.maxTatapMuka || (j.tipe === 'paralel' ? 7 : 14);
+    var targetUjian = j.tipe === 'paralel' ? 1 : 2;
+    var pctTM = targetTM ? Math.round(tm / targetTM * 100) : 0;
+
+    var warna = pctTM >= 90 ? '#27500a' : pctTM >= 60 ? '#633806' : '#791f1f';
+    var bg    = pctTM >= 90 ? '#eaf3de' : pctTM >= 60 ? '#faeeda' : '#fcebeb';
+    var label = j.tipe === 'paralel' ? 'Paralel' : (j.polaJadwal === 'flex' ? 'Flex' : 'Reguler');
+
+    return '<div style="background:'+bg+';border-radius:8px;padding:8px 10px;margin-bottom:6px">'
+      + '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">'
+        + '<div style="min-width:0">'
+          + '<div style="font-size:12px;font-weight:700;color:#1a1a1a">' + j.mk + '</div>'
+          + '<div style="font-size:10px;color:#888">' + label + (j.kelas ? ' · ' + j.kelas : '') + '</div>'
+        + '</div>'
+        + '<div style="font-size:11px;color:'+warna+';font-weight:600;text-align:right">'
+          + 'Tatap muka ' + tm + '/' + targetTM + ' (' + pctTM + '%)'
+          + '<br>Ujian ' + ujian.length + '/' + targetUjian
+        + '</div>'
+      + '</div>'
+      + '<div style="height:5px;background:#fff;border-radius:3px;margin-top:6px;overflow:hidden">'
+        + '<div style="height:100%;width:' + Math.min(pctTM,100) + '%;background:'+warna+'"></div>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+
+  return '<div style="margin-bottom:14px">'
+    + '<div style="font-size:12px;font-weight:700;color:#555;margin-bottom:6px">📊 Pemenuhan Pertemuan</div>'
+    + '<div style="font-size:11px;color:#aaa;margin-bottom:8px">'
+      + 'Tatap muka dan ujian dihitung terpisah — target berbeda per jenis kelas.</div>'
+    + baris
+  + '</div>';
 }

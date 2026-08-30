@@ -247,6 +247,8 @@ function onJadwal(){
   if(!jid){document.getElementById('pjam').value='';document.getElementById('pruang').value='';return;}
   var j=J.find(function(x){return x.id===jid;});if(!j)return;
 
+  sesuaikanModeUjian(j);
+
   var d = new Date();
   var ymd = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   var todayStr = d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'});
@@ -651,4 +653,56 @@ function renderRiwayatSaya() {
              '</div>' +
            '</div></div>';
   }).join('');
+}
+
+
+// =====================================================
+// [V11.5] MODE PERKULIAHAN SAAT MINGGU UJIAN
+// -----------------------------------------------------
+// Di minggu UTS/UAS, yang direkam adalah pelaksanaan ujian —
+// bukan perkuliahan. Dropdown mode diganti jadi dua pilihan
+// ujian supaya ujian take-home/project tetap tercatat, bukan
+// dianggap tatap muka biasa.
+// Aturan minggunya sama dengan flex: paralel tidak punya UTS.
+// =====================================================
+var MODE_KULIAH_BIASA = [
+  ['Luring', 'Luring (Tatap Muka di Kelas)'],
+  ['Daring Sinkronus', 'Daring Sinkronus (Zoom / GMeet)'],
+  ['Daring Asinkronus', 'Daring Asinkronus (E-learning / Penugasan)']
+];
+var MODE_UJIAN = [
+  ['Ujian Sinkronus (diawasi)', 'Ujian Sinkronus — diawasi langsung / online'],
+  ['Ujian Asinkronus (take-home / project)', 'Ujian Asinkronus — take-home / project']
+];
+
+function mingguHariIni() {
+  if (typeof mingguBerjalan === 'function') return mingguBerjalan();
+  return 0;
+}
+
+function sesuaikanModeUjian(jad) {
+  var sel  = document.getElementById('pmode');
+  var hint = document.getElementById('mode-hint');
+  if (!sel) return;
+
+  var w = mingguHariIni();
+  var jenis = (typeof jenisMinggu === 'function') ? jenisMinggu(jad, w) : 'Tatap Muka';
+  var ujian = jenis !== 'Tatap Muka';
+
+  var lama = sel.value;
+  var opsi = ujian ? MODE_UJIAN : MODE_KULIAH_BIASA;
+  sel.innerHTML = opsi.map(function(o){
+    return '<option value="' + o[0] + '">' + o[1] + '</option>';
+  }).join('');
+  if (opsi.some(function(o){ return o[0] === lama; })) sel.value = lama;
+
+  if (ujian && hint) {
+    hint.style.display = 'block';
+    hint.style.background = '#e6f1fb';
+    hint.style.color = '#185fa5';
+    hint.innerHTML = '📝 <b>Minggu ' + jenis + '</b> (minggu ke-' + w + ') — '
+      + 'yang Anda rekam adalah pelaksanaan ujian, bukan perkuliahan biasa.';
+  } else if (typeof onModeChange === 'function') {
+    onModeChange();
+  }
 }
