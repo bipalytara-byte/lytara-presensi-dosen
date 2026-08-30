@@ -674,12 +674,18 @@ async function saveJad(){
   if(!isAdmin){alert('Hanya admin yang dapat mengubah jadwal.');return;}
   var did=document.getElementById('jmd').value,mk=document.getElementById('jmm').value;
   var jms=document.getElementById('jms').value,jmr=document.getElementById('jmr').value;
-  if(!did||!mk||!jms||!jmr){alert('Lengkapi field wajib.');return;}
 
   var tipe         = document.getElementById('jmtipe').value || 'reguler';
   var batch        = tipe === 'paralel' ? (document.getElementById('jmbatch').value||'') : '';
   var statusParalel= tipe === 'paralel' ? (document.getElementById('jmstatus').value||'aktif') : '';
   var pola         = document.getElementById('jmpola') ? document.getElementById('jmpola').value : 'tetap';
+
+  // Kelas flex tidak punya hari, jam, dan ruang tetap — jangan diwajibkan.
+  if (pola === 'flex') {
+    if(!did||!mk){alert('Dosen dan mata kuliah wajib diisi.');return;}
+  } else {
+    if(!did||!mk||!jms||!jmr){alert('Lengkapi field wajib (dosen, mata kuliah, jam mulai, ruang).');return;}
+  }
   if (tipe === 'paralel' && pola === 'flex') {
     alert('Kelas paralel tidak bisa memakai pola Flex Class.');
     return;
