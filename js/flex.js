@@ -31,6 +31,11 @@ function mingguBerjalan(tanggal) {
 
 // Minggu ini minggu ujian atau bukan — untuk jadwal tertentu.
 // Paralel tidak punya UTS: minggu UTS/UAS-nya adalah UAS batch itu.
+function mingguLiburList() {
+  return String(MINGGU_LIBUR || '').split(/[,;\s]+/)
+    .map(function(x){ return parseInt(x,10); }).filter(function(x){ return x > 0; });
+}
+
 function jenisMinggu(jad, minggu) {
   if (!minggu) return 'Tatap Muka';
   if (jad && jad.tipe === 'paralel') {
@@ -121,8 +126,10 @@ function kartuJadwalFlex(j) {
       + '</div></div>';
   }).join('') : '<p class="empty" style="font-size:12px">Belum ada blok yang ditetapkan.</p>';
 
+  var liburW = mingguLiburList();
   var tertinggal = [];
   for (var w = 1; w <= Math.min(mb, 16); w++) {
+    if (liburW.indexOf(w) > -1) continue;
     if (!blok.some(function(b){ return b.minggu === w; })) tertinggal.push(w);
   }
 
@@ -206,6 +213,11 @@ function hitungMingguForm() {
   var jenis = jenisMinggu(jad, w);
   var ujian = jenis !== 'Tatap Muka';
 
+  if (mingguLiburList().indexOf(w) > -1) {
+    info.innerHTML = '🚫 Minggu ke-' + w + ' ditandai <b>libur</b> — tidak ada perkuliahan. Pilih tanggal lain.';
+    info.style.color = '#a32d2d';
+    return;
+  }
   info.innerHTML = ujian
     ? '📝 Minggu ke-' + w + ' — <b>minggu ' + jenis + '</b>. Yang direkam adalah pelaksanaan ujian, bukan perkuliahan.'
     : '📌 Minggu ke-' + w;
@@ -293,8 +305,10 @@ function renderNotifFlexBeranda() {
 
   var perlu = jadwalFlexSaya().map(function(j){
     var blok = FLEX_BLOK.filter(function(b){ return b.jadwalId === j.id && b.status !== 'batal'; });
+    var libur = mingguLiburList();
     var belum = [];
     for (var w = 1; w <= Math.min(mb, 16); w++) {
+      if (libur.indexOf(w) > -1) continue;
       if (!blok.some(function(b){ return b.minggu === w; })) belum.push(w);
     }
     return { j:j, belum:belum };

@@ -762,6 +762,9 @@ function renderKartuKalender() {
         + '<input type="number" id="kal-uas" min="1" max="20" value="'+(MINGGU_UAS||16)+'" '
         + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit"/></div>'
       + '</div>'
+      + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Minggu libur <span style="font-weight:400;color:#888">(opsional)</span></label>'
+      + '<input type="text" id="kal-libur" value="'+(MINGGU_LIBUR||'')+'" placeholder="cth: 5, 12 — kosongkan kalau tidak ada" '
+      + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;margin-bottom:12px"/>'
       + '<button class="btn btn-primary" onclick="simpanKalender()" style="font-size:13px">💾 Simpan Kalender</button>'
       + '<div style="font-size:11px;color:#aaa;margin-top:8px;line-height:1.5">'
         + 'Minggu 1 dimulai pada tanggal di atas. Presensi menyimpan nomor minggunya '
@@ -774,21 +777,39 @@ async function simpanKalender() {
   var mulai = document.getElementById('kal-mulai').value;
   var uts   = parseInt(document.getElementById('kal-uts').value, 10);
   var uas   = parseInt(document.getElementById('kal-uas').value, 10);
+  var libur = (document.getElementById('kal-libur').value || '').trim();
   if (!mulai) { alert('Tanggal mulai perkuliahan wajib diisi.'); return; }
   if (!uts || !uas || uas <= uts) { alert('Minggu UAS harus lebih besar dari minggu UTS.'); return; }
+
+  var daftarLibur = libur.split(/[,;\s]+/).map(function(x){ return parseInt(x,10); })
+                         .filter(function(x){ return x > 0; });
+  if (daftarLibur.indexOf(uts) > -1 || daftarLibur.indexOf(uas) > -1) {
+    alert('Minggu UTS/UAS tidak boleh ditandai libur.'); return;
+  }
+  // Minggu libur sebelum ujian menggeser jadwal ujian secara kalender.
+  // Sistem tidak menggesernya sendiri — itu keputusan kampus, bukan sistem.
+  var sebelumUTS = daftarLibur.filter(function(w){ return w < uts; }).length;
+  if (sebelumUTS > 0) {
+    if (!confirm('⚠️ Ada ' + sebelumUTS + ' minggu libur sebelum UTS.\n\n'
+      + 'Kalau perkuliahan diperpanjang, UTS kemungkinan bergeser ke minggu '
+      + (uts + sebelumUTS) + '.\n\nSimpan dengan minggu UTS = ' + uts + '?')) return;
+  }
 
   setSB('sy');
   try {
     var r = await post({ action:'saveSettings', data:{
-      tglMulaiKuliah: mulai, mingguUTS: String(uts), mingguUAS: String(uas)
+      tglMulaiKuliah: mulai, mingguUTS: String(uts), mingguUAS: String(uas),
+      mingguLibur: daftarLibur.join(', ')
     }});
     if (!r.success) { setSB('er'); alert('Gagal: ' + (r.error||'')); return; }
     TGL_MULAI_KULIAH = mulai; MINGGU_UTS = uts; MINGGU_UAS = uas;
+    MINGGU_LIBUR = daftarLibur.join(', ');
     setSB('ok');
     var d = new Date(mulai + 'T00:00:00');
     alert('✅ Kalender akademik tersimpan.\n\nMinggu 1 dimulai '
       + d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
-      + '\nUTS minggu ke-' + uts + ' · UAS minggu ke-' + uas);
+      + '\nUTS minggu ke-' + uts + ' · UAS minggu ke-' + uas
+      + (daftarLibur.length ? '\nMinggu libur: ' + daftarLibur.join(', ') : ''));
   } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
 }
 

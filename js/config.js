@@ -8,7 +8,7 @@ const API = 'https://script.google.com/macros/s/AKfycbxGKxl4M9NdTNZTJu1xSvdDulR0
 // Versi backend yang diharapkan. Kalau server menjawab dengan versi
 // lain, berarti URL /exec menunjuk deployment lama — penyebab paling
 // sering dari "action tidak dikenal" dan "data lama muncul lagi".
-const VERSI_DIHARAPKAN = 'V11.5';
+const VERSI_DIHARAPKAN = 'V11.6';
 const HARI = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 let D=[],J=[],P=[],G=[],M=[],MK=[];
 let eDos=null,eJad=null,eMk=null,tempMk=[];
@@ -28,6 +28,7 @@ let OVERRIDE_CODE      = '';    // kode override sementara saat sistem nonaktif 
 let TGL_MULAI_KULIAH = '';   // YYYY-MM-DD, minggu 1 dimulai di sini
 let MINGGU_UTS       = 8;
 let MINGGU_UAS       = 16;
+let MINGGU_LIBUR     = '';   // nomor minggu tanpa perkuliahan, mis. "5, 12"
 let FLEX_BLOK        = [];   // blok waktu mingguan kelas flex
 
 // ── Arsip (per-request, bukan mode global) ──

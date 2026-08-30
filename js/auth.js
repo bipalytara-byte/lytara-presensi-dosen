@@ -310,10 +310,12 @@ async function loadThenShow() {
     TAHUN_AKADEMIK   = cfg.tahunAkademik   || '';
     OVERRIDE_CODE    = cfg.overrideCode    || '';
     ARSIP_LIST       = r.arsip || [];
+    periksaVersiBackend(r.versi);
     FLEX_BLOK        = r.flexBlok || [];
     TGL_MULAI_KULIAH = cfg.tglMulaiKuliah || '';
     MINGGU_UTS       = Number(cfg.mingguUTS || 8);
     MINGGU_UAS       = Number(cfg.mingguUAS || 16);
+    MINGGU_LIBUR     = cfg.mingguLibur || '';
 
     // Libur nasional dari sheet Libur_Nasional → objek Date
     LIBUR_NASIONAL = (r.libur || []).map(function(l){
@@ -497,3 +499,29 @@ async function keluarArsip() {
   await loadThenShow();
 }
 
+
+
+// =====================================================
+// [V10.9] PERIKSA VERSI BACKEND
+// Membandingkan versi kode di server dengan yang diharapkan
+// frontend. Kalau beda, URL /exec kemungkinan besar menunjuk
+// deployment lama — dan itu menjelaskan data lama yang muncul
+// kembali serta fitur yang "tidak dikenal".
+// =====================================================
+function periksaVersiBackend(versiServer) {
+  var el = document.getElementById('banner-versi');
+  if (versiServer === VERSI_DIHARAPKAN) { if (el) el.remove(); return; }
+
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'banner-versi';
+    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9998;'
+      + 'background:#791f1f;color:#fff;padding:9px 14px;font-size:12px;'
+      + 'line-height:1.5;text-align:center';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = '⚠️ <b>Backend versi lama terdeteksi</b> — server menjawab '
+    + '<b>' + (versiServer || 'tanpa versi') + '</b>, seharusnya <b>' + VERSI_DIHARAPKAN + '</b>. '
+    + 'URL server kemungkinan menunjuk deployment lama. Data yang tampil bisa salah. '
+    + '<span style="opacity:.8">Hubungi pengelola sistem.</span>';
+}
