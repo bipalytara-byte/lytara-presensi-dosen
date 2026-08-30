@@ -632,6 +632,7 @@ function openMJ(id){
   document.getElementById('jmh').value='Senin';
   // Reset field paralel
   document.getElementById('jmtipe').value='reguler';
+  document.getElementById('jmsem').value = SEMESTER_AKTIF || '';
   if(document.getElementById('jmpola')) document.getElementById('jmpola').value='tetap';
   togglePolaJadwal();
   document.getElementById('jmbatch').value='';
@@ -648,6 +649,7 @@ function openMJ(id){
     document.getElementById('jmr').value=j.ruang;document.getElementById('jmsem').value=j.semester||'';
     // Isi field paralel
     document.getElementById('jmtipe').value=j.tipe||'reguler';
+    document.getElementById('jmsem').value = j.semester || SEMESTER_AKTIF || '';
     if(document.getElementById('jmpola')) document.getElementById('jmpola').value=j.polaJadwal||'tetap';
     togglePolaJadwal();
     document.getElementById('jmbatch').value=j.batch||'';
@@ -716,6 +718,18 @@ async function hapusJad(id){
 function togglePolaJadwal() {
   var sel  = document.getElementById('jmpola');
   var hint = document.getElementById('hint-pola');
-  if (!sel || !hint) return;
-  hint.style.display = sel.value === 'flex' ? 'block' : 'none';
+  if (!sel) return;
+  var flex = sel.value === 'flex';
+  if (hint) hint.style.display = flex ? 'block' : 'none';
+
+  // Kelas flex tidak punya hari & jam tetap — kolomnya dinonaktifkan
+  // supaya tidak ada yang bingung harus mengisi apa.
+  ['jmh','jms','jme','jmr'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.disabled = flex;
+    el.style.background = flex ? '#f5f5f3' : '';
+    el.style.color      = flex ? '#aaa' : '';
+    if (flex) el.value = '';
+  });
 }

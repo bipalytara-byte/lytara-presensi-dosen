@@ -1034,7 +1034,7 @@
       <div class="field"><label>Jam selesai</label><input type="time" id="jme"/></div>
     </div>
     <div class="field"><label>Ruang</label><input type="text" id="jmr" placeholder="Ruang 301"/></div>
-    <div class="field"><label>Semester</label><input type="text" id="jmsem" placeholder="Genap 2025/2026"/></div>
+    <div class="field"><label>Semester <span style="font-size:11px;color:#888;font-weight:400">(otomatis dari semester aktif)</span></label><input type="text" id="jmsem" readonly style="background:#f5f5f3;color:#888"/></div>
 
     <!-- Tipe Jadwal -->
     <div class="field">
@@ -1090,8 +1090,8 @@
 
 <!-- Modal Tambah / Edit Mata Kuliah -->
 <div class="mo" id="modal-flex">
-  <div class="mo-c">
-    <h3 id="fb-title">Tetapkan Blok Waktu</h3>
+  <div class="md">
+    <div class="mt" id="fb-title">Tetapkan Blok Waktu</div>
     <input type="hidden" id="fb-jadwal"/>
 
     <div class="field">

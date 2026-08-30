@@ -64,10 +64,15 @@ function renderFlex() {
   }
 
   var mb = mingguBerjalan();
+  var mulai = new Date(TGL_MULAI_KULIAH + 'T00:00:00');
+  var tglMulai = mulai.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+  var info = mb < 1
+    ? '📌 Perkuliahan dimulai <b>' + tglMulai + '</b> (minggu 1). '
+      + 'Anda sudah bisa menetapkan blok untuk minggu-minggu ke depan.'
+    : '📌 Sekarang <b>minggu ke-' + mb + '</b>. Blok waktu ditetapkan paling lambat <b>H-1</b>. '
+      + 'Selama belum lewat, Anda bisa mengubah atau membatalkannya sendiri.';
   el.innerHTML = '<div style="background:#e6f1fb;color:#185fa5;border-radius:10px;padding:10px 14px;'
-      + 'font-size:12px;margin-bottom:14px;line-height:1.6">'
-      + '📌 Sekarang <b>minggu ke-' + mb + '</b>. Blok waktu ditetapkan paling lambat <b>H-1</b>. '
-      + 'Selama belum lewat, Anda bisa mengubah atau membatalkannya sendiri.</div>'
+      + 'font-size:12px;margin-bottom:14px;line-height:1.6">' + info + '</div>'
     + jadwal.map(kartuJadwalFlex).join('');
 }
 
@@ -158,7 +163,14 @@ function hitungMingguForm() {
   var info = document.getElementById('fb-info');
   if (!info) return;
   var w = mingguBerjalan(tgl);
-  if (!w) { info.innerHTML = '⚠️ Tanggal di luar kalender akademik.'; info.style.color = '#a32d2d'; return; }
+  if (!w) {
+    var m = TGL_MULAI_KULIAH
+      ? new Date(TGL_MULAI_KULIAH + 'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'})
+      : '(belum diset)';
+    info.innerHTML = '⚠️ Tanggal ini sebelum perkuliahan dimulai (' + m + ').';
+    info.style.color = '#a32d2d';
+    return;
+  }
   var label = 'Minggu ke-' + w;
   if (w === MINGGU_UTS) label += ' — minggu UTS';
   if (w === MINGGU_UAS) label += ' — minggu UAS';
