@@ -216,7 +216,10 @@ async function simpanBlokFlex() {
     var r = await post({ action:'saveFlexBlok', data:data });
     if (!r.success) { setSB('er'); alert('❌ ' + r.error); }
     else {
-      FLEX_BLOK = (await get({ action:'getFlexBlok', dosenId: currentUser.id })).data || [];
+      // Admin tidak punya currentUser — ambil semua blok, bukan milik satu dosen.
+      var q = { action:'getFlexBlok' };
+      if (currentUser) q.dosenId = currentUser.id;
+      FLEX_BLOK = (await get(q)).data || [];
       setSB('ok');
       cm('modal-flex');
       renderFlex();
