@@ -642,6 +642,7 @@ function renderPengaturanSistem() {
     + renderKartuArsip()
     + renderKartuStatus()
     + renderKartuKalender()
+    + renderKartuUji()
     + renderKartuCache()
     + renderKartuImport()
     + renderKartuRollover();
@@ -788,6 +789,33 @@ async function simpanKalender() {
     alert('✅ Kalender akademik tersimpan.\n\nMinggu 1 dimulai '
       + d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
       + '\nUTS minggu ke-' + uts + ' · UAS minggu ke-' + uas);
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
+}
+
+// =====================================================
+// [V11.3] KARTU DATA UJI
+// =====================================================
+function renderKartuUji() {
+  return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
+    + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">🧪 Data Uji</div>'
+    + '<div style="font-size:12px;color:#888;margin-bottom:10px">'
+      + 'Menghapus semua jadwal, blok flex, dan presensi bertanda <b>[UJI]</b>. '
+      + 'Data asli tidak tersentuh. Pakai ini setelah selesai menguji sistem.</div>'
+    + '<button class="btn btn-danger btn-sm" onclick="bersihkanDataUji()" style="font-size:12px">🧪 Bersihkan Data Uji</button>'
+  + '</div>';
+}
+
+async function bersihkanDataUji() {
+  if (!confirm('Hapus semua data bertanda [UJI]?\n\n'
+    + 'Jadwal, blok flex, dan presensi uji akan dibuang.\n'
+    + 'Data asli tidak tersentuh.')) return;
+  setSB('sy');
+  try {
+    var r = await get({ action:'bersihkanDataUji' });
+    if (!r.success) { setSB('er'); alert('Gagal: ' + (r.error||'')); return; }
+    setSB('ok');
+    alert('✅ ' + r.message + '\n\nHalaman akan dimuat ulang.');
+    location.reload();
   } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
 }
 
