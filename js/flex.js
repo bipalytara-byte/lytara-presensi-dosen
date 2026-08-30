@@ -38,7 +38,7 @@ function blokUntukHariIni(jadwalId) {
 }
 
 function jadwalFlexSaya() {
-  if (!currentUser) return [];
+  if (!currentUser) return [];   // admin memakai renderFlexAdmin()
   return J.filter(function(j){
     return j.polaJadwal === 'flex' && j.dosenId === currentUser.id;
   });
@@ -50,6 +50,7 @@ function jadwalFlexSaya() {
 function renderFlex() {
   var el = document.getElementById('flex-list');
   if (!el) return;
+  if (isAdmin) return renderFlexAdmin(el);
 
   if (!TGL_MULAI_KULIAH) {
     el.innerHTML = '<div class="card"><p class="empty">🗓️ Kalender akademik belum diisi admin.'
@@ -200,7 +201,9 @@ async function simpanBlokFlex() {
     jamMulai:     document.getElementById('fb-mulai').value,
     jamSelesai:   document.getElementById('fb-selesai').value,
     modaSumbuA:   document.getElementById('fb-moda').value,
-    metodeSumbuB: document.getElementById('fb-metode').value
+    metodeSumbuB: document.getElementById('fb-metode').value,
+    olehAdmin:    isAdmin === true,
+    direvisiOleh: isAdmin ? 'Admin / WK I' : ''
   };
   if (!data.tanggal || !data.jamMulai || !data.jamSelesai) {
     alert('Tanggal, jam mulai, dan jam selesai wajib diisi.'); return;
@@ -313,4 +316,99 @@ async function renderRekapFlexAdmin() {
   } catch(e) {
     el.innerHTML = '<p class="empty">Gagal memuat: ' + e.message + '</p>';
   }
+}
+
+
+// =====================================================
+// TAMPILAN ADMIN (WK I / Ka BAAK)
+// Semua kelas flex, semua dosen. Admin boleh mengubah atau
+// menghapus blok yang sudah terkunci — tercatat sebagai revisi.
+// =====================================================
+function renderFlexAdmin(el) {
+  if (!TGL_MULAI_KULIAH) {
+    el.innerHTML = '<div class="card"><p class="empty">🗓️ Kalender akademik belum diisi.<br>'
+      + 'Isi dulu di Pengaturan → Kalender Akademik.</p></div>';
+    return;
+  }
+
+  var semua = J.filter(function(j){ return j.polaJadwal === 'flex'; });
+  if (!semua.length) {
+    el.innerHTML = '<div class="card"><p class="empty">Belum ada kelas Flex Class semester ini.</p></div>';
+    return;
+  }
+
+  var filterEl = document.getElementById('flex-filter-dosen');
+  var pilih = filterEl ? filterEl.value : 'all';
+  var dosenIds = [];
+  semua.forEach(function(j){ if (dosenIds.indexOf(j.dosenId) === -1) dosenIds.push(j.dosenId); });
+
+  var opsi = '<option value="all">Semua dosen (' + dosenIds.length + ')</option>'
+    + dosenIds.map(function(id){
+        var d = D.find(function(x){ return x.id === id; });
+        var n = semua.filter(function(j){ return j.dosenId === id; }).length;
+        return '<option value="'+id+'"'+(pilih===id?' selected':'')+'>'
+             + (d ? d.nama : id) + ' (' + n + ')</option>';
+      }).join('');
+
+  var tampil = pilih === 'all' ? semua : semua.filter(function(j){ return j.dosenId === pilih; });
+  var mb = mingguBerjalan();
+
+  el.innerHTML = '<div class="card" style="margin-bottom:14px">'
+      + '<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px">Filter dosen</label>'
+      + '<select id="flex-filter-dosen" onchange="renderFlex()" '
+      + 'style="width:100%;border:1px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit">'
+      + opsi + '</select>'
+      + '<div style="font-size:11px;color:#888;margin-top:8px">'
+        + 'Minggu berjalan: <b>' + mb + '</b> · ' + tampil.length + ' kelas ditampilkan. '
+        + 'Sebagai admin, Anda bisa mengubah blok yang sudah terkunci — perubahan tercatat.</div>'
+    + '</div>'
+    + tampil.map(kartuFlexAdmin).join('');
+}
+
+function kartuFlexAdmin(j) {
+  var dosen = D.find(function(x){ return x.id === j.dosenId; });
+  var blok = FLEX_BLOK.filter(function(b){ return b.jadwalId === j.id && b.status !== 'batal'; })
+                      .sort(function(a,b){ return a.minggu - b.minggu; });
+  var komp = blok.filter(function(b){ return b.modaSumbuA === 'Kompensasi Asinkronus'; }).length;
+  var mb = mingguBerjalan();
+  var hariIni = new Date(); hariIni.setHours(0,0,0,0);
+
+  var belum = [];
+  for (var w = 1; w <= Math.min(mb, 16); w++) {
+    if (!blok.some(function(b){ return b.minggu === w; })) belum.push(w);
+  }
+
+  var daftar = blok.length ? blok.map(function(b){
+    var lewat = new Date(b.tanggal + 'T00:00:00') < hariIni;
+    var warna = b.modaSumbuA === 'Kompensasi Asinkronus' ? '#faeeda' : '#eaf3de';
+    var tx    = b.modaSumbuA === 'Kompensasi Asinkronus' ? '#633806' : '#27500a';
+    return '<div style="background:'+warna+';border-radius:8px;padding:8px 10px;margin-bottom:6px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">'
+        + '<div style="min-width:0">'
+          + '<div style="font-size:12px;font-weight:700;color:'+tx+'">Minggu ' + b.minggu
+            + ' · ' + b.tanggal + ' · ' + b.jamMulai + '–' + b.jamSelesai
+            + (lewat ? ' <span style="font-size:10px;color:#888;font-weight:400">(terkunci)</span>' : '') + '</div>'
+          + '<div style="font-size:11px;color:#555;margin-top:2px">' + b.modaSumbuA + ' · ' + b.metodeSumbuB + '</div>'
+          + (b.direvisiOleh ? '<div style="font-size:10px;color:#a32d2d;margin-top:2px">✏️ Direvisi ' + b.direvisiOleh + ' · ' + b.direvisiPada + '</div>' : '')
+        + '</div>'
+        + '<div style="display:flex;gap:4px;flex-shrink:0">'
+          + '<button class="btn btn-sm" style="font-size:10px" onclick="editBlokFlex(\'' + b.id + '\')">Ubah</button>'
+          + '<button class="btn btn-danger btn-sm" style="font-size:10px" onclick="hapusBlokFlex(\'' + b.id + '\')">Hapus</button>'
+        + '</div>'
+      + '</div></div>';
+  }).join('') : '<p class="empty" style="font-size:12px">Belum ada blok ditetapkan.</p>';
+
+  return '<div class="card" style="margin-bottom:14px">'
+    + '<div style="font-size:11px;color:#888">' + (dosen ? dosen.nama : j.dosenId) + '</div>'
+    + '<div style="font-size:14px;font-weight:700;color:#1a1a1a">' + j.mk + '</div>'
+    + '<div style="font-size:11px;color:#888;margin-bottom:10px">'
+      + (j.kelas ? 'Kelas ' + j.kelas + ' · ' : '') + blok.length + ' dari ' + j.maxPertemuan + ' blok'
+      + ' · Kompensasi ' + komp + '/' + MAKS_KOMPENSASI + '</div>'
+    + (belum.length
+      ? '<div style="background:#fcebeb;color:#791f1f;border-radius:8px;padding:7px 10px;font-size:11px;margin-bottom:10px">'
+        + '⚠️ Minggu belum ditetapkan: ' + belum.join(', ') + '</div>' : '')
+    + daftar
+    + '<button class="btn btn-sm" style="font-size:12px;margin-top:8px" '
+      + 'onclick="bukaFormBlok(\'' + j.id + '\')">➕ Tambahkan Blok</button>'
+  + '</div>';
 }
