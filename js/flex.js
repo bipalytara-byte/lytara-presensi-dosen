@@ -142,6 +142,20 @@ function bukaFormBlok(jadwalId, blokId) {
           + '-' + String(besok.getDate()).padStart(2,'0');
 
   document.getElementById('fb-jadwal').value  = jadwalId;
+
+  // Tunjukkan blok ini milik mata kuliah yang mana — dosen bisa punya
+  // beberapa kelas flex, dan modal tanpa konteks bikin salah ubah.
+  var jad = J.find(function(x){ return x.id === jadwalId; });
+  var elMk = document.getElementById('fb-mk');
+  var elMeta = document.getElementById('fb-meta');
+  if (elMk) elMk.textContent = jad ? jad.mk : '—';
+  if (elMeta && jad) {
+    var dipakai = FLEX_BLOK.filter(function(x){ return x.jadwalId === jadwalId && x.status !== 'batal'; });
+    var komp = dipakai.filter(function(x){ return x.modaSumbuA === 'Kompensasi Asinkronus'; }).length;
+    elMeta.textContent = (jad.kelas ? 'Kelas ' + jad.kelas + ' · ' : '')
+      + dipakai.length + ' dari ' + jad.maxPertemuan + ' blok ditetapkan'
+      + ' · Kompensasi asinkronus ' + komp + '/' + MAKS_KOMPENSASI;
+  }
   document.getElementById('fb-tanggal').value = b ? b.tanggal : def;
   document.getElementById('fb-mulai').value   = b ? b.jamMulai : '';
   document.getElementById('fb-selesai').value = b ? b.jamSelesai : '';
