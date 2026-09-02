@@ -7,6 +7,27 @@
    - TAMBAH: ringkasan kesimpulan & rekomendasi di penutup
 */
 
+// [V11.7] Klasifikasi moda perkuliahan.
+// Laporan ini dulu menebak dari kata "Luring/Sinkronus/Asinkronus".
+// Setelah Flex Class, muncul istilah baru (Tatap Muka Terjadwal,
+// Blended Terstruktur, moda ujian) yang tidak mengandung kata itu,
+// sehingga presensinya tidak terhitung di mana pun. Fungsi ini
+// menerjemahkan kosakata lama maupun baru ke empat golongan.
+function _golonganModa(mode) {
+  var m = String(mode || '').toLowerCase();
+  if (!m) return 'luring';
+  if (m.indexOf('ujian') > -1) return 'ujian';
+  if (m.indexOf('asinkronus') > -1 || m.indexOf('kompensasi') > -1) return 'asinkron';
+  if (m.indexOf('sinkronus') > -1 || m.indexOf('hybrid') > -1) return 'sinkron';
+  if (m.indexOf('blended') > -1) return 'sinkron';
+  return 'luring';   // Luring, Tatap Muka Terjadwal, dan kosong
+}
+
+function _isUjian(p) {
+  return p.jenisPertemuan === 'UTS' || p.jenisPertemuan === 'UAS'
+      || _golonganModa(p.modeKuliah) === 'ujian';
+}
+
 function exportLaporanYayasan() {
   if (!isAdmin) { alert('Hanya admin yang dapat mengekspor laporan yayasan.'); return; }
 
@@ -31,9 +52,11 @@ function exportLaporanYayasan() {
   var nTepat    = data.filter(function(p){ return p.color === 'green';  }).length;
   var nLambat   = data.filter(function(p){ return p.color === 'yellow'; }).length;
   var nSangat   = data.filter(function(p){ return p.color === 'red';    }).length;
-  var nLuring   = data.filter(function(p){ return !p.modeKuliah || p.modeKuliah.indexOf('Luring') > -1; }).length;
-  var nSinkron  = data.filter(function(p){ return p.modeKuliah && p.modeKuliah.indexOf('Sinkronus') > -1 && p.modeKuliah.indexOf('Asinkronus') === -1; }).length;
-  var nAsinkron = data.filter(function(p){ return p.modeKuliah && p.modeKuliah.indexOf('Asinkronus') > -1; }).length;
+  var kuliahSaja = data.filter(function(p){ return !_isUjian(p); });
+  var nUjian    = data.length - kuliahSaja.length;
+  var nLuring   = kuliahSaja.filter(function(p){ return _golonganModa(p.modeKuliah) === 'luring';   }).length;
+  var nSinkron  = kuliahSaja.filter(function(p){ return _golonganModa(p.modeKuliah) === 'sinkron';  }).length;
+  var nAsinkron = kuliahSaja.filter(function(p){ return _golonganModa(p.modeKuliah) === 'asinkron'; }).length;
   var pTepat    = _pct(nTepat, nTotal);
   var pLambat   = _pct(nLambat, nTotal);
   var pSangat   = _pct(nSangat, nTotal);
@@ -49,9 +72,11 @@ function exportLaporanYayasan() {
     var totalMenitLambat = lambatSesi.reduce(function(acc, p){ return acc + (Number(p.diff) || 0); }, 0);
     // Deteksi anomali: sesi dengan diff > 120 mnt
     var anomali = lambatSesi.filter(function(p){ return (Number(p.diff) || 0) > 120; });
-    var mLuring   = dd.filter(function(p){ return !p.modeKuliah || p.modeKuliah.indexOf('Luring') > -1; }).length;
-    var mSinkron  = dd.filter(function(p){ return p.modeKuliah && p.modeKuliah.indexOf('Sinkronus') > -1 && p.modeKuliah.indexOf('Asinkronus') === -1; }).length;
-    var mAsinkron = dd.filter(function(p){ return p.modeKuliah && p.modeKuliah.indexOf('Asinkronus') > -1; }).length;
+    var ddKuliah  = dd.filter(function(p){ return !_isUjian(p); });
+    var mLuring   = ddKuliah.filter(function(p){ return _golonganModa(p.modeKuliah) === 'luring';   }).length;
+    var mSinkron  = ddKuliah.filter(function(p){ return _golonganModa(p.modeKuliah) === 'sinkron';  }).length;
+    var mAsinkron = ddKuliah.filter(function(p){ return _golonganModa(p.modeKuliah) === 'asinkron'; }).length;
+    var mUjian    = dd.length - ddKuliah.length;
     // Riwayat tanggal mengajar (urut kronologis)
     var riwayatTgl = dd.slice().sort(function(a, b){
       return parseTanggal(a.tanggal) - parseTanggal(b.tanggal);
@@ -171,7 +196,7 @@ function exportLaporanYayasan() {
   if (totalAnomali > 0) {
     html += '<div style="margin-top:24px;padding:12px 20px;background:#fff8e6;border:1.5px solid #f9c84a;border-radius:10px;font-size:11px;color:#7a4f00;max-width:380px;text-align:left">';
     html += '⚠️ <b>Catatan:</b> Ditemukan ' + totalAnomali + ' sesi dengan durasi keterlambatan >120 menit. ';
-    html += 'Data tersebut kemungkinan merupakan anomali teknis (lupa rekam selesai). Lihat detail di BAB IV.';
+    html += 'Data tersebut kemungkinan merupakan anomali teknis (lupa rekam selesai). Lihat detail di BAB V.';
     html += '</div>';
   }
   html += '<div class="cover-footer">Dokumen ini digenerate otomatis oleh sistem LYTARA v6.0 · Bersifat rahasia</div>';
@@ -199,11 +224,15 @@ function exportLaporanYayasan() {
     'Menunjukkan mata kuliah mana yang paling sering mengalami keterlambatan. ' +
     'Urutan dari yang paling banyak keterlambatannya. Berguna untuk mengidentifikasi apakah masalah keterlambatan berpola pada mata kuliah tertentu.');
 
-  html += _panduanBox('🔍 BAB IV — Detail Keterlambatan per Dosen',
+  html += _panduanBox('🔀 BAB IV — Pelaksanaan Flex Class',
+    'Khusus kelas yang jam kuliahnya ditetapkan sendiri oleh dosen tiap minggu. '
+    + 'Memperlihatkan berapa blok waktu yang sudah ditetapkan, berapa kali memakai kompensasi asinkronus dari batas 5 kali, '
+    + 'dan minggu mana saja yang belum diisi.');
+  html += _panduanBox('🔍 BAB V — Detail Keterlambatan per Dosen',
     'Hanya berisi dosen yang pernah terlambat. Menjelaskan secara rinci: di mata kuliah apa, berapa kali, dan rata-rata berapa menit. ' +
     'Jika ada tanda <b>⚠️ Data Perlu Dicek</b>, artinya durasi keterlambatan tidak wajar (>120 menit) dan kemungkinan terjadi kesalahan teknis, bukan keterlambatan nyata.');
 
-  html += _panduanBox('👤 BAB V — Profil Lengkap per Dosen',
+  html += _panduanBox('👤 BAB VI — Profil Lengkap per Dosen',
     'Satu halaman khusus untuk setiap dosen, menampilkan ringkasan kinerja, peringkat, rincian per mata kuliah, ' +
     'dan grafik distribusi ketepatan waktu. Berguna untuk evaluasi individual atau bahan diskusi dengan dosen bersangkutan.');
 
@@ -357,9 +386,89 @@ function exportLaporanYayasan() {
   });
   html += '</tbody></table></div>';
 
-  // ── BAB IV: Detail Keterlambatan per Dosen ───────────────────────────
+  // ── BAB IV: Flex Class ───────────────────────────────────────────────
+  // [V11.7] Bab baru. Flex Class punya kewajiban berbeda: dosen menetapkan
+  // sendiri blok waktunya, dan kompensasi asinkronus dibatasi 5x.
+  // Tanpa bab ini, laporan yayasan tidak menunjukkan kepatuhan itu.
+  var jadwalFlex = J.filter(function(j){
+    return j.polaJadwal === 'flex' && (df === 'all' || j.dosenId === df);
+  });
+
+  if (jadwalFlex.length) {
+    var MODA_UJIAN_LAP = ['Ujian Sinkronus (diawasi)','Ujian Asinkronus (take-home / project)'];
+    var mingguKini = (typeof mingguBerjalan === 'function') ? mingguBerjalan() : 0;
+    var liburArr = (typeof mingguLiburList === 'function') ? mingguLiburList() : [];
+
+    var barisFlex = jadwalFlex.map(function(j) {
+      var dsn  = D.find(function(x){ return x.id === j.dosenId; });
+      var blok = (typeof FLEX_BLOK !== 'undefined' ? FLEX_BLOK : []).filter(function(b){
+        return b.jadwalId === j.id && b.status !== 'batal'; });
+      var ujian = blok.filter(function(b){ return MODA_UJIAN_LAP.indexOf(b.modaSumbuA) > -1; }).length;
+      var komp  = blok.filter(function(b){ return b.modaSumbuA === 'Kompensasi Asinkronus'; }).length;
+      var tm    = blok.length - ujian;
+      var belum = [];
+      for (var w = 1; w <= Math.min(mingguKini, 16); w++) {
+        if (liburArr.indexOf(w) > -1) continue;
+        if (!blok.some(function(b){ return b.minggu === w; })) belum.push(w);
+      }
+      return {
+        dosen: dsn ? dsn.nama : j.dosenId, mk: j.mk, kelas: j.kelas || '-',
+        tm: tm, targetTm: j.maxTatapMuka || 14, ujian: ujian, komp: komp,
+        belum: belum
+      };
+    }).sort(function(a,b){ return b.belum.length - a.belum.length; });
+
+    var totalKomp  = barisFlex.reduce(function(a,b){ return a + b.komp; }, 0);
+    var totalBelum = barisFlex.reduce(function(a,b){ return a + b.belum.length; }, 0);
+
+    html += '<div class="section page-break">';
+    html += '<div class="bab">BAB IV</div>';
+    html += '<div class="bab-judul">Pelaksanaan Flex Class</div>';
+    html += '<div class="narasi-box">Flex Class adalah kelas yang jam perkuliahannya ditetapkan sendiri oleh dosen setiap minggu, ';
+    html += 'paling lambat sehari sebelum pelaksanaan. Jumlah pertemuannya sama dengan kelas reguler, yaitu 14 tatap muka ditambah UTS dan UAS. ';
+    html += 'Perkuliahan tanpa pertemuan langsung (<b>Kompensasi Asinkronus</b>) dibatasi maksimal <b>5 kali</b> per mata kuliah. ';
+    html += 'Kolom <b>Minggu Belum Diisi</b> menunjukkan minggu yang sudah berjalan namun belum ditetapkan blok waktunya.</div>';
+
+    html += '<div class="stat-row">';
+    html += _kotakAngka('Kelas Flex', jadwalFlex.length, 'mata kuliah', '#f0f7ff', '#185fa5', '#85b7eb');
+    html += _kotakAngka('Minggu Berjalan', mingguKini, 'dari 16 minggu', '#f8f8f7', '#555555', '#dddddd');
+    html += _kotakAngka('Kompensasi Asinkronus', totalKomp, 'total seluruh kelas', '#fff8ef', '#633806', '#e0c9a0');
+    html += _kotakAngka('Blok Belum Ditetapkan', totalBelum, 'perlu tindak lanjut',
+                        totalBelum ? '#fff8f8' : '#f4faee',
+                        totalBelum ? '#a32d2d' : '#27500a',
+                        totalBelum ? '#e8a5a5' : '#a8cf7d');
+    html += '</div>';
+
+    html += '<table class="tbl"><thead><tr>';
+    html += '<th style="width:28px">No.</th><th>Dosen</th><th>Mata Kuliah</th>';
+    html += '<th class="tc">Kelas</th><th class="tc">Tatap Muka</th><th class="tc">Ujian</th>';
+    html += '<th class="tc">Kompensasi</th><th class="tc">Minggu Belum Diisi</th>';
+    html += '</tr></thead><tbody>';
+    barisFlex.forEach(function(b, i) {
+      var sorot = b.belum.length >= 3 || b.komp >= 5;
+      html += '<tr' + (sorot ? ' style="background:#fff8f8"' : '') + '>';
+      html += '<td class="tc">' + (i+1) + '</td>';
+      html += '<td>' + b.dosen + '</td>';
+      html += '<td>' + b.mk + '</td>';
+      html += '<td class="tc">' + b.kelas + '</td>';
+      html += '<td class="tc">' + b.tm + ' / ' + b.targetTm + '</td>';
+      html += '<td class="tc">' + b.ujian + ' / 2</td>';
+      html += '<td class="tc"' + (b.komp >= 5 ? ' style="color:#a32d2d;font-weight:700"' : '') + '>' + b.komp + ' / 5</td>';
+      html += '<td class="tc"' + (b.belum.length ? ' style="color:#a32d2d"' : '') + '>'
+            + (b.belum.length ? b.belum.join(', ') : '—') + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+
+    html += _legendaBox('Baris merah muda',
+      'Tertinggal 3 minggu atau lebih, atau kuota kompensasi asinkronus sudah penuh. Perlu ditindaklanjuti.',
+      '#fff8f8', '#a32d2d', '#e8a5a5');
+    html += '</div>';
+  }
+
+  // ── BAB V: Detail Keterlambatan per Dosen ────────────────────────────
   html += '<div class="section page-break">';
-  html += '<div class="bab">BAB IV</div>';
+  html += '<div class="bab">BAB V</div>';
   html += '<div class="bab-judul">Detail Keterlambatan per Dosen dan Mata Kuliah</div>';
   html += '<div class="narasi-box">Bagian ini hanya menampilkan dosen yang pernah terlambat minimal 1 kali. ';
   html += 'Urutan dari dosen dengan keterlambatan terbanyak. ';
@@ -409,9 +518,9 @@ function exportLaporanYayasan() {
   }
   html += '</div>';
 
-  // ── BAB V: Profil Lengkap per Dosen ─────────────────────────────────
+  // ── BAB VI: Profil Lengkap per Dosen ────────────────────────────────
   html += '<div class="section page-break">';
-  html += '<div class="bab">BAB V</div>';
+  html += '<div class="bab">BAB VI</div>';
   html += '<div class="bab-judul">Profil Kinerja Individual Per Dosen</div>';
   html += '<div class="narasi-box">Setiap halaman berikut menyajikan profil lengkap satu dosen: peringkat keseluruhan, distribusi ketepatan waktu, rincian per mata kuliah, dan mode perkuliahan yang digunakan. Halaman ini dapat digunakan sebagai lampiran untuk evaluasi individual.</div>';
   html += '</div>';
@@ -608,6 +717,17 @@ function _fmtTgl(str) {
   return new Date(str + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 function _pct(n, total) { return total > 0 ? Math.round(n / total * 100) : 0; }
+
+// [V11.7] Kotak angka sederhana — _statBox selalu menambahkan kata
+// "sesi" dan menaruh persentase sebagai angka utama, yang tidak cocok
+// untuk angka Flex Class seperti "3 dari 16 minggu".
+function _kotakAngka(label, angka, sub, bg, tx, border) {
+  return '<div style="flex:1;min-width:140px;background:' + bg + ';border:1.5px solid ' + border + ';border-radius:10px;padding:14px 12px;text-align:center">'
+    + '<div style="font-size:11px;font-weight:700;color:' + tx + ';margin-bottom:6px">' + label + '</div>'
+    + '<div style="font-size:32px;font-weight:800;color:' + tx + ';line-height:1">' + angka + '</div>'
+    + '<div style="font-size:10px;color:' + tx + ';opacity:.7;margin-top:6px;line-height:1.4">' + sub + '</div>'
+    + '</div>';
+}
 
 function _statBox(label, count, pct, bg, tx, border, sub) {
   return '<div style="flex:1;min-width:140px;background:' + bg + ';border:1.5px solid ' + border + ';border-radius:10px;padding:14px 12px;text-align:center">'
