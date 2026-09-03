@@ -60,10 +60,15 @@ function fillJadwalDosen(){
   });
   
   var todJ=jadwalHariIniAsli.filter(function(j){
-    return jadwalSelesai.indexOf(j.id) === -1;
+    return j.polaJadwal !== 'flex' && jadwalSelesai.indexOf(j.id) === -1;
   }).sort(function(a,b){return a.jamMulai.localeCompare(b.jamMulai);});
   
-  var othJ=jd.filter(function(j){return j.hari!==today;}).sort(function(a,b){return HARI.indexOf(a.hari)-HARI.indexOf(b.hari)||a.jamMulai.localeCompare(b.jamMulai);});
+  // [V11.8] Kelas flex dipisah: dia tidak punya hari, jadi tidak boleh
+  // ikut pengurutan berdasarkan hari maupun masuk kelompok "hari lain".
+  var flexJ = jd.filter(function(j){
+    return j.polaJadwal === 'flex' && jadwalSelesai.indexOf(j.id) === -1;
+  });
+  var othJ=jd.filter(function(j){return j.polaJadwal!=='flex' && j.hari!==today;}).sort(function(a,b){return HARI.indexOf(a.hari)-HARI.indexOf(b.hari)||a.jamMulai.localeCompare(b.jamMulai);});
 
   // Fungsi label jadwal — tampilkan [Paralel · Batch X · Ptm ke-N] jika paralel
   function labelJadwal(j, prefix) {
@@ -102,6 +107,22 @@ function fillJadwalDosen(){
     var o=document.createElement('option');o.disabled=true;o.textContent='— Tidak ada jadwal hari '+today+' —';sel.appendChild(o);
   }
   
+  // [V11.8] Kelompok Flex Class — labelnya memakai blok minggu ini,
+  // bukan hari & jam jadwal (yang memang kosong untuk kelas flex).
+  if(flexJ.length>0){
+    var gf=document.createElement('optgroup');gf.label='── Flex Class ──';
+    flexJ.forEach(function(j){
+      var b = (typeof blokUntukHariIni === 'function') ? blokUntukHariIni(j.id) : null;
+      var o=document.createElement('option');
+      o.value=j.id;
+      o.textContent = (b ? '🔀 ' : '⚪ ') + j.mk + (j.kelas?' ['+j.kelas+']':'')
+        + (b ? ' · Minggu ' + b.minggu + ' · ' + b.jamMulai + '–' + b.jamSelesai
+             : ' · belum ada blok untuk hari ini');
+      gf.appendChild(o);
+    });
+    sel.appendChild(gf);
+  }
+
   if(othJ.length>0){
     var g2=document.createElement('optgroup');g2.label='── Jadwal hari lain ──';
     othJ.forEach(function(j){
@@ -115,7 +136,12 @@ function fillJadwalDosen(){
   
   if(jd.length===0){var o=document.createElement('option');o.disabled=true;o.textContent='Belum ada jadwal terdaftar';sel.appendChild(o);}
   
-  if(todJ.length===1 && jadwalGantiVirtual.length===0){sel.value=todJ[0].id;onJadwal();}
+  var flexBerblok = flexJ.filter(function(j){
+    return (typeof blokUntukHariIni === 'function') && blokUntukHariIni(j.id); });
+  if(todJ.length===0 && jadwalGantiVirtual.length===0 && flexBerblok.length===1){
+    sel.value=flexBerblok[0].id; onJadwal();
+  }
+  else if(todJ.length===1 && jadwalGantiVirtual.length===0){sel.value=todJ[0].id;onJadwal();}
   else if(todJ.length===0 && jadwalGantiVirtual.length===1){sel.value=jadwalGantiVirtual[0].j.id;onJadwal();}
 }
 
@@ -276,6 +302,27 @@ function onJadwal(){
       w.className = 'ai';
       w.innerHTML='⏩ <b>Jadwal Maju</b> digunakan — ACC Admin tgl <b>'+isMajuValid.tgl+'</b> · Jam: <b>'+isMajuValid.jam+'</b>';
       w.style.display='block';
+  } else if (j.polaJadwal === 'flex') {
+      // [V11.8] Kelas flex tidak punya hari & jam di jadwalnya —
+      // keduanya berasal dari blok minggu ini yang ditetapkan dosen.
+      var blokIni = (typeof blokUntukHariIni === 'function') ? blokUntukHariIni(j.id) : null;
+      var w = document.getElementById('warn-hari');
+      if (blokIni) {
+        document.getElementById('pjam').value   = jStr(blokIni.jamMulai);
+        document.getElementById('pruang').value = document.getElementById('pruang').value || '';
+        w.className = 'ai';
+        w.innerHTML = '🔀 <b>Flex Class</b> — blok minggu ke-<b>' + blokIni.minggu + '</b> · Jam: <b>'
+                    + blokIni.jamMulai + '–' + blokIni.jamSelesai + '</b> · ' + blokIni.modaSumbuA;
+        w.style.display = 'block';
+      } else {
+        document.getElementById('pjam').value   = '';
+        document.getElementById('pruang').value = '';
+        w.className = 'aw';
+        w.innerHTML = '🔀 <b>Flex Class</b> — belum ada blok waktu untuk hari ini. '
+                    + 'Buka menu <b>Flex Class</b> dan tetapkan blok minggu ini terlebih dahulu '
+                    + '(paling lambat H-1 sebelum pelaksanaan).';
+        w.style.display = 'block';
+      }
   } else {
       document.getElementById('pjam').value=jStr(j.jamMulai);
       document.getElementById('pruang').value=j.ruang;
