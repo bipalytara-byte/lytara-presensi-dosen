@@ -352,7 +352,13 @@ function previewStatus(){
     : null;
   var isMajuValid  = M.find(function(m){ return m.dosenId === currentUser.id && m.mk === j.mk && m.statusAcc === 'Disetujui' && m.tglRaw === ymd; });
 
-  if(j&&j.hari!==today && !isGantiValid && !isMajuValid){
+  var blokPrev = (j && j.polaJadwal === 'flex' && typeof blokUntukHariIni === 'function')
+                 ? blokUntukHariIni(j.id) : null;
+  if (j && j.polaJadwal === 'flex' && !blokPrev) {
+     el.style.display='block';el.style.background='#fcebeb';el.style.color='#791f1f';
+     el.textContent='❌ Belum ada blok Flex Class untuk hari ini';return;
+  }
+  if(j && j.polaJadwal!=='flex' && j.hari!==today && !isGantiValid && !isMajuValid){
      el.style.display='block';el.style.background='#fcebeb';el.style.color='#791f1f';el.textContent='❌ Tidak bisa presensi — jadwal hari '+j.hari+', bukan '+today;return;
   }
 
@@ -484,7 +490,18 @@ async function rekam(){
     return;
   }
 
-  if(jad.hari!==todayHari() && !isGantiValid && !isMajuValid){
+  // [V11.8] Kelas flex tidak terikat hari. Yang menentukan boleh atau
+  // tidaknya presensi adalah ada tidaknya blok waktu untuk hari ini.
+  var blokHariIni = (jad.polaJadwal === 'flex' && typeof blokUntukHariIni === 'function')
+                    ? blokUntukHariIni(jad.id) : null;
+
+  if (jad.polaJadwal === 'flex') {
+    if (!blokHariIni) {
+      alert('🔀 Presensi gagal!\n\nKelas Flex Class "'+jad.mk+'" belum punya blok waktu untuk hari ini.\n\n'
+          + 'Buka menu Flex Class dan tetapkan blok minggu ini terlebih dahulu.');
+      return;
+    }
+  } else if(jad.hari!==todayHari() && !isGantiValid && !isMajuValid){
     alert('❌ Presensi gagal!\nJadwal "'+jad.mk+'" adalah hari '+jad.hari+'.\nTidak ada pengajuan pengganti/maju yang di-ACC untuk hari ini.');
     return;
   }
