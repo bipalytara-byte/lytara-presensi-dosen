@@ -671,7 +671,9 @@ function renderKartuStatus() {
   return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
     + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">🩺 Status Sistem</div>'
     + '<div style="font-size:12px;color:#888;margin-bottom:10px">'
-      + 'Cek database mana yang sedang dipakai dan apakah kode di server sudah versi terbaru.</div>'
+      + 'Cek database mana yang sedang dipakai dan apakah kode di server sudah versi terbaru. '
+      + '<b>Versi produk</b> adalah nama rilis yang dilihat pengguna; '
+      + '<b>versi kode</b> dipakai untuk memastikan server dan aplikasi cocok.</div>'
     + '<button class="btn btn-sm" onclick="cekStatusSistem()" style="font-size:12px">🩺 Periksa Sekarang</button>'
     + '<div id="hasil-status" style="margin-top:10px"></div>'
 
@@ -699,6 +701,7 @@ async function cekStatusSistem() {
         + '<span style="color:'+(warna||'#1a1a1a')+';text-align:right;word-break:break-all">'+isi+'</span></div>';
     };
     var html = '<div style="background:#f8f8f7;border-radius:8px;padding:10px 12px">'
+      + baris('Versi produk', 'LYTARA Remastered v2.0')
       + baris('Versi kode di server', r.versi || '—', '#185fa5')
       + baris('Spreadsheet', r.terbuka ? r.nama : '❌ tidak bisa dibuka', r.terbuka ? '' : '#a32d2d')
       + baris('Semester aktif', r.semester || '—')

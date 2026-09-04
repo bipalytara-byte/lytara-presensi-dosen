@@ -199,7 +199,7 @@ function exportLaporanYayasan() {
     html += 'Data tersebut kemungkinan merupakan anomali teknis (lupa rekam selesai). Lihat detail di BAB V.';
     html += '</div>';
   }
-  html += '<div class="cover-footer">Dokumen ini digenerate otomatis oleh sistem LYTARA v6.0 · Bersifat rahasia</div>';
+  html += '<div class="cover-footer">Dokumen ini digenerate otomatis oleh sistem LYTARA Remastered v2.0 · Bersifat rahasia</div>';
   html += '</div>';
 
   // ── PANDUAN MEMBACA (halaman baru, sebelum BAB I) ────────────────────
