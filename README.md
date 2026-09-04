@@ -1,399 +1,302 @@
-# 🕹️ LYTARA
-### Layanan Tracking Aktivitas dan Realisasi Akademik
+# LYTARA Remastered v2.0
 
-Sistem presensi digital berbasis web untuk dosen — terhubung langsung ke Google Apps Script (GAS) sebagai backend dan Google Sheets sebagai database.
+**Layanan Tracking Aktivitas dan Realisasi Akademik** — STMIK Bina Patria Magelang
+
+Aplikasi pencatatan pelaksanaan perkuliahan oleh dosen: kapan kuliah dimulai,
+kapan selesai, dengan moda apa dilaksanakan, dan apakah jumlah pertemuannya
+terpenuhi. Yang dicatat adalah aktivitas **dosen**, bukan kehadiran mahasiswa
+(presensi mahasiswa tetap di SIAKAD).
+
+- Aplikasi: <https://mylytara.my.id>
+- Panduan untuk pengguna non-teknis: `Panduan_Lytara.docx`
 
 ---
 
-## 📁 Struktur File
+## Daftar isi
+
+- [Arsitektur](#arsitektur)
+- [Tiga model kelas](#tiga-model-kelas)
+- [Struktur berkas](#struktur-berkas)
+- [Struktur data](#struktur-data)
+- [Dua nomor versi](#dua-nomor-versi)
+- [Cara deploy](#cara-deploy)
+- [Pekerjaan rutin tiap semester](#pekerjaan-rutin-tiap-semester)
+- [Pengujian](#pengujian)
+- [Masalah umum](#masalah-umum)
+- [Utang teknis](#utang-teknis)
+
+---
+
+## Arsitektur
 
 ```
-/
-├── index.html              # Aplikasi utama (dosen & admin)
-├── leaderboard.html        # Papan peringkat kehadiran (layar publik)
-├── leaderboard-tv.html     # Versi TV/display besar leaderboard
-├── hrd.html                # Portal HRD (monitoring SDM)
-│
-└── js/
-    ├── config.js           # Konstanta, variabel global, state sistem
-    ├── api.js              # Komunikasi ke GAS (get, post, logout)
-    ├── auth.js             # Login dosen, login admin, refresh data
-    ├── helpers.js          # Utilitas umum (parseTanggal, jStr, stH, stS, tutupPaksa)
-    ├── hadir.js            # Rekam presensi mulai & selesai, banner override
-    ├── ganti.js            # Jadwal pengganti, manajemen dosen & jadwal
-    ├── maju.js             # Pengajuan jadwal maju (kuliah lebih awal)
-    ├── mk.js               # Master data mata kuliah
-    ├── notif.js            # Notifikasi status ganti/maju, libur nasional
-    ├── beranda.js          # Dashboard beranda dosen & admin
-    ├── monitoring.js       # Panel monitoring admin, pengaturan sistem
-    ├── rapor.js            # Rapor kinerja per dosen
-    ├── report.js           # Laporan presensi, export Excel, leaderboard
-    └── export-yayasan.js   # Laporan Evaluasi Dosen (export PDF untuk yayasan)
+Browser (GitHub Pages, domain mylytara.my.id)
+        │  fetch → /exec
+        ▼
+Google Apps Script (proyek standalone "LYTARA Backend V10")
+        │  SpreadsheetApp.openById()
+        ▼
+Google Spreadsheet (database aktif + arsip semester lalu)
 ```
 
----
+Tiga hal yang perlu diketahui sejak awal:
 
-## 🖥️ Halaman Utama (`index.html`)
+**Script berdiri sendiri.** Sejak V10 script tidak lagi menempel di
+spreadsheet. Database dibuka lewat `openById()`, dan ID-nya ada di
+`DB_ID_AKTIF` pada baris ~40 `Kode_GS_V10.gs`. Nilai itu hanya cadangan —
+yang dipakai sehari-hari adalah ID di Script Properties (`DB_ID`) hasil
+rollover lewat UI.
 
-### Tab Dosen
-| Tab | Deskripsi |
-|---|---|
-| **Beranda** | Ringkasan jadwal hari ini, notifikasi ganti/maju, banner libur nasional |
-| **Presensi** | Rekam hadir & selesai, banner override saat sistem nonaktif |
-| **Jadwal Pengganti** | Ajukan, pantau, dan batalkan jadwal pengganti |
-| **Jadwal Maju** | Ajukan kuliah lebih awal dari jadwal normal |
-| **Riwayat** | Riwayat presensi pribadi |
-| **Rapor** | Ringkasan kinerja kehadiran per semester |
+**Ada cache 3 menit.** `CacheService` menyimpan hasil baca agar ringan.
+Semua penulisan lewat aplikasi membersihkan cache sendiri. Perubahan yang
+dilakukan **langsung di spreadsheet** tidak, jadi butuh tombol
+*Muat Ulang dari Spreadsheet* di Pengaturan.
 
-### Tab Admin
-| Tab | Deskripsi |
-|---|---|
-| **Beranda Admin** | Dashboard harian, ringkasan agregat ketepatan waktu bulan ini |
-| **Laporan** | Filter & export data presensi, export Excel, Laporan Evaluasi Dosen |
-| **Data Dosen** | CRUD data dosen, reset password |
-| **Jadwal** | CRUD jadwal mengajar per dosen |
-| **Mata Kuliah** | Master data MK, import dari jadwal |
-| **Monitoring** | Status kehadiran hari ini, tren keterlambatan, riwayat ganti |
-| **Pengaturan** | Toggle sistem, kode override, pesan libur, pengumuman login, semester aktif |
+**Ada warmer.** Trigger tiap 5 menit menjaga instance GAS tetap hangat
+(07.00–17.00, Jumat–Sabtu sampai 22.00). Tanpa ini, permintaan pertama tiap
+pagi lambat sekali. Pasang dengan `pasangWarmer()`.
 
 ---
 
-## 🗂️ Deskripsi File JS
+## Tiga model kelas
 
-### `config.js`
-Mendefinisikan semua variabel global yang diakses lintas file:
+Banyak aturan di dalam kode hanya masuk akal setelah memahami ini.
 
-| Variabel | Tipe | Keterangan |
+| Model | Total | Tatap muka | Ujian | Penjadwalan |
+|---|---|---|---|---|
+| Reguler | 16 | 14 | UTS + UAS | Jam tetap tiap minggu |
+| Paralel | 8 | 7 | UAS saja | Jam tetap, dua batch per semester |
+| Flex | 16 | 14 | UTS + UAS | Jam ditetapkan dosen tiap minggu |
+
+Dua kolom yang membedakannya di sheet `Jadwal`:
+
+- `tipe` → `reguler` | `paralel` (menentukan jumlah pertemuan)
+- `polaJadwal` → `tetap` | `flex` (menentukan cara jam ditentukan)
+
+Konsekuensi yang mudah terlewat:
+
+- **Paralel tidak punya UTS.** Batch 1 berakhir di minggu UTS, batch 2 di
+  minggu UAS — keduanya dicatat sebagai `UAS`. Lihat `tentukanJenisPertemuan()`.
+- **Paralel tidak boleh flex.** Ditolak di importer maupun form.
+- Kelas paralel ditentukan otomatis dari hari & jam saat impor: Jumat ≥ 16:30
+  atau Sabtu ≥ 14:00. Ambangnya dapat diubah di sheet `Pengaturan`
+  (`ambangParalelJumat`, `ambangParalelSabtu`).
+
+### Flex Class
+
+- Satu blok per minggu per jadwal, disimpan di sheet `Flex_Blok`.
+- Ditetapkan paling lambat **H-1**; sesudah lewat hanya admin yang bisa mengubah.
+- Nomor minggu dihitung dari `tglMulaiKuliah`, bukan dari urutan input.
+- Moda **Sumbu A** dan metode **Sumbu B** wajib diisi (khusus flex).
+- `Kompensasi Asinkronus` dibatasi **5×** per jadwal — hanya untuk minggu kuliah.
+- Minggu ujian memakai moda tersendiri (`MODA_UJIAN`) dan tidak memakan kuota itu.
+
+---
+
+## Struktur berkas
+
+```
+index.html              halaman utama (semua tampilan & modal)
+style.css               tema: navy #185fa5, hijau #639922
+hrd.html                halaman HRD (berdiri sendiri)
+leaderboard.html        papan peringkat
+leaderboard-tv.html     papan peringkat untuk layar TV
+Kode_GS_V10.gs          seluruh backend Apps Script
+Panduan_Lytara.docx     panduan pengguna non-teknis
+
+js/
+  config.js             konstanta, state global, get/post/postBesar
+  helpers.js            utilitas kecil, tutupPaksa
+  auth.js               login, sesi, muat data awal, cek versi backend
+  hadir.js              presensi mulai & selesai
+  ganti.js              jadwal pengganti + kelola dosen & jadwal
+  maju.js               jadwal maju
+  flex.js               Flex Class
+  manual.js             presensi manual darurat
+  mk.js                 master mata kuliah
+  monitoring.js         dashboard admin + kartu Pengaturan Sistem
+  report.js             laporan, leaderboard, export Excel
+  export-yayasan.js     Laporan Yayasan (BAB I–VI)
+  rapor.js              rapor dosen
+  notif.js              notifikasi & libur nasional
+  beranda.js            beranda + navigasi halaman
+```
+
+> Tanpa bundler. Semua fungsi berada di lingkup global dan urutan
+> `<script>` di `index.html` menentukan siapa menimpa siapa. Hati-hati
+> membuat fungsi dengan nama yang sama di dua berkas.
+
+**URL `/exec` ditulis di empat tempat**: `js/config.js`, `hrd.html`,
+`leaderboard.html`, `leaderboard-tv.html`. Kalau membuat deployment baru,
+keempatnya harus diganti.
+
+---
+
+## Struktur data
+
+Sheet dan urutan kolomnya didefinisikan pada `HEADER` di `Kode_GS_V10.gs`.
+Kode membaca berdasarkan **posisi kolom**, bukan nama — jangan menyisipkan
+atau menukar kolom.
+
+| Sheet | Isi |
+|---|---|
+| `Dosen` | id, nama, nip, mk, noWA, aktif, password |
+| `Jadwal` | + `tipe`, `batch`, `statusParalel`, `maxPertemuan`, `maxTatapMuka`, `polaJadwal` |
+| `MataKuliah` | id, kode, nama, prodi, tahunAkademik |
+| `Presensi` | 24 kolom; tiga terakhir `minggu`, `jenisPertemuan`, `metodeSumbuB` |
+| `Jadwal_Pengganti` | pengajuan kuliah pengganti |
+| `Jadwal_Maju` | pengajuan kuliah lebih awal |
+| `Flex_Blok` | blok waktu mingguan kelas flex |
+| `Presensi_Manual` | pengajuan darurat + tautan foto bukti |
+| `Libur_Nasional` | tanggal, nama — diedit manual tiap tahun |
+| `Pengaturan` | kunci, nilai, diubah |
+| `Import_Jadwal` | lembar kerja impor (boleh dihapus setelah dipakai) |
+
+### Kunci di sheet `Pengaturan`
+
+| Kunci | Contoh | Catatan |
 |---|---|---|
-| `API` | `const` | URL endpoint Google Apps Script |
-| `HARI` | `const` | Array nama hari kerja |
-| `D, J, P, G, M, MK` | `let[]` | Data dosen, jadwal, presensi, ganti, maju, mata kuliah |
-| `SISTEM_AKTIF` | `bool` | Status sistem presensi (true = aktif) |
-| `PESAN_LIBUR` | `string` | Pesan banner saat sistem nonaktif |
-| `PENGUMUMAN_LOGIN` | `string` | Pengumuman di halaman login |
-| `SEMESTER_AKTIF` | `string` | Semester berjalan (misal: "2025/2026 Genap") |
-| `TAHUN_AKADEMIK` | `string` | Tahun akademik aktif |
-| `OVERRIDE_CODE` | `string` | Kode override presensi saat sistem nonaktif |
-| `isAdmin` | `bool` | Status login sebagai admin |
-| `currentUser` | `object` | Objek dosen yang sedang login |
+| `semesterAktif` | `2026/2027 Ganjil` | ikut tercatat di tiap presensi |
+| `tahunAkademik` | `2026/2027` | |
+| `tglMulaiKuliah` | `2026-08-31` | dasar perhitungan minggu |
+| `mingguUTS` / `mingguUAS` | `8` / `16` | |
+| `mingguLibur` | `5, 12` | minggu tanpa perkuliahan |
+| `liburAktif` / `pesanLibur` | | menghentikan presensi sementara |
+| `overrideCode` | | izin presensi saat sistem nonaktif |
+| `adminPin` | | **tidak pernah dikirim ke browser** |
+| `tokenWki` | | dipakai untuk tutup paksa sesi |
 
----
+`adminPin` dan `tokenWki` diverifikasi di server (`doAdminLogin`,
+`verifyTokenWki`) dan sengaja dibuang dari `getSettingsPublik()`.
 
-### `api.js`
-Komunikasi HTTP ke Google Apps Script.
+### Disimpan di Script Properties, bukan di sheet
 
-| Fungsi | Keterangan |
+| Kunci | Isi |
 |---|---|
-| `get(params)` | GET request ke GAS |
-| `post(body)` | POST request ke GAS |
-| `setSB(status)` | Update indikator sinkronisasi (`ok` / `sy` / `er`) |
-| `loadForLogin()` | Load data dosen untuk dropdown login |
-| `doLogin()` | Proses login dosen |
-| `logout()` | Hapus session & kembali ke halaman login |
-
-> `doAdminLogin()` ditangani di `auth.js` (async via GAS), bukan di `api.js`.
+| `DB_ID` | ID database aktif (hasil rollover) |
+| `DAFTAR_ARSIP` | JSON daftar arsip — bertahan melewati pergantian semester |
+| `FOLDER_BUKTI_ID` | folder Drive untuk foto presensi manual |
 
 ---
 
-### `auth.js`
-Autentikasi & inisialisasi data setelah login.
+## Dua nomor versi
 
-| Fungsi | Keterangan |
+Jangan tertukar:
+
+- **Versi produk** — `LYTARA Remastered v2.0`, tertulis di footer dan judul.
+  Nama rilis untuk pengguna.
+- **Versi kode** — `KODE_VERSI` di `Kode_GS_V10.gs` dan `VERSI_DIHARAPKAN`
+  di `js/config.js`. **Keduanya harus sama.** Kalau berbeda, aplikasi
+  menampilkan pita merah di bawah layar.
+
+Pemeriksa ini dibuat setelah berkali-kali frontend memanggil deployment lama
+tanpa disadari. Gejalanya menyesatkan: fitur baru "tidak dikenal", atau data
+semester lama muncul kembali. **Naikkan kedua angka setiap kali backend diubah.**
+
+---
+
+## Cara deploy
+
+### Backend
+
+1. Buka proyek Apps Script `LYTARA Backend V10`.
+2. Tempel isi `Kode_GS_V10.gs`, lalu **Ctrl+S** (tidak tersimpan otomatis).
+3. **Deploy → Manage deployments → ✏️ → Version: New version → Deploy.**
+
+Gunakan **Manage deployments**, bukan *New deployment* — yang kedua membuat
+URL baru dan mengharuskan keempat berkas frontend diganti.
+
+Kesalahan paling sering: dropdown *Version* dibiarkan di versi lama. Tombol
+Deploy tetap bisa ditekan tanpa pesan apa pun, dan tidak ada yang berubah.
+
+### Frontend
+
+Push ke repo (GitHub Pages). Setelahnya buka aplikasi dan pastikan pita merah
+versi tidak muncul.
+
+### Verifikasi
+
+Pengaturan → **Status Sistem** → *Periksa Sekarang*. Periksa versi kode, nama
+spreadsheet, dan semester aktif.
+
+---
+
+## Pekerjaan rutin tiap semester
+
+Semuanya lewat UI, tidak perlu membuka Apps Script.
+
+1. **Ganti Semester (rollover)** — siapkan spreadsheet baru berisi `Dosen` dan
+   `MataKuliah`, lalu isi kartu Ganti Semester. Database lama otomatis masuk
+   daftar arsip.
+2. **Perbarui `DB_ID_AKTIF`** di baris ~40 `Kode_GS_V10.gs` agar cadangannya
+   ikut menunjuk database baru, lalu redeploy. Kalau dilewat, sistem akan
+   jatuh ke database salah bila Script Properties hilang.
+3. **Rapikan Database** — meluruskan header dan membuang kolom/baris sisa.
+4. **Kalender Akademik** — tanggal mulai, minggu UTS/UAS, minggu libur.
+5. **Import Jadwal** — Buat Template → isi di spreadsheet → Cek Dulu → Import.
+6. **Libur Nasional** — edit sheet `Libur_Nasional`. Data 2027 masih perkiraan
+   dan wajib dikoreksi setelah SKB resmi terbit.
+7. Pastikan status presensi **aktif** dan pesan libur lama sudah dihapus.
+
+---
+
+## Pengujian
+
+Dari editor Apps Script:
+
+| Fungsi | Kegunaan |
 |---|---|
-| `doAdminLogin()` | Login admin via PIN yang divalidasi GAS |
-| `loadThenShow()` | Load semua data (dosen, jadwal, presensi, ganti, maju, MK, settings) lalu tampilkan app |
-| `refreshDataLokal()` | Refresh semua data dari GAS tanpa reload halaman |
-| `resetPasswordDosen()` | Reset password dosen oleh admin |
+| `ujiSistem()` | ±40 pengujian otomatis aturan server; membuat data `[UJI]` lalu menghapusnya |
+| `buatDataUji()` | membuat jadwal yang jamnya relatif terhadap jam sekarang, untuk menguji status tepat waktu / terlambat |
+| `cekKesehatan()` | ringkasan sheet, semester, dan status warmer |
+| `lihatDatabaseId()` | menampilkan ID yang dipakai dan daftar arsip |
+
+Membersihkan data uji: Pengaturan → **🧪 Bersihkan Data Uji**.
+
+`ujiSistem()` hanya menguji aturan di server. Tampilan, tombol, dan banner
+tetap perlu diperiksa manual — gunakan daftar periksa di `Panduan_Lytara.docx`.
 
 ---
 
-### `helpers.js`
-Fungsi utilitas umum.
+## Masalah umum
 
-| Fungsi | Keterangan |
+| Gejala | Penyebab biasanya |
 |---|---|
-| `parseTanggal(str)` | Parse string DD/MM/YYYY ke timestamp |
-| `getHariInRange(start, end)` | Kembalikan array nama hari dalam rentang tanggal |
-| `jStr(v)` | Normalisasi format jam ke HH:MM |
-| `stH(jam)` | Hitung status ketepatan hadir (green/yellow/red) |
-| `stS(jamSelesai)` | Hitung status ketepatan selesai |
-| `tutupPaksa(id)` | Tutup paksa sesi presensi (otorisasi Token WK I) |
-| `onModeChange()` | Update hint mode perkuliahan di form rekam |
+| Pita merah "backend versi lama" | Deployment belum diperbarui, atau URL `/exec` menunjuk deployment lain |
+| `Action tidak dikenal: xxx` | Sama seperti di atas |
+| Data semester lama muncul kembali | `DB_ID` di Script Properties hilang, sistem jatuh ke `DB_ID_AKTIF` di kode |
+| Perubahan di spreadsheet belum muncul | Cache 3 menit — tekan *Muat Ulang dari Spreadsheet* |
+| 404 pada `googleusercontent.com/macros/echo` | Eksekusi gagal, biasanya izin Drive belum diberikan. Jalankan `folderBukti()` sekali |
+| Flex Class menolak semua tanggal | `tglMulaiKuliah` belum diisi |
+| Aplikasi lambat tiap pagi | Warmer mati — `pasangWarmer()` |
 
 ---
 
-### `hadir.js`
-Inti fitur rekam presensi.
+## Utang teknis
 
-| Fungsi | Keterangan |
+Diketahui dan belum dikerjakan:
+
+- **Status presensi memakai jam perangkat.** `stH()`/`stS()` memakai jam
+  browser, sehingga dapat diakali dengan mengubah jam HP. Perlu jam server.
+- **Tidak ada escaping HTML.** Input dosen (nama MK, keterangan, alasan tolak)
+  masuk ke `innerHTML` apa adanya.
+- **Password dosen tersimpan sebagai teks biasa** di sheet `Dosen` kolom G.
+- **Pemeriksaan "boleh presensi atau tidak" tersebar** di beberapa tempat pada
+  `hadir.js`, masing-masing menghitung ulang. Sudah pernah menyebabkan bug
+  berulang; layak disatukan seperti `ambilJamResmi()`.
+- **Aturan minggu libur belum punya pengujian otomatis.**
+- **Libur nasional 2027 masih perkiraan.**
+
+---
+
+## Riwayat singkat
+
+| Versi | Perubahan besar |
 |---|---|
-| `fillJadwalDosen()` | Isi dropdown jadwal hari ini (termasuk jadwal ganti & maju yang disetujui) |
-| `rekam()` | Validasi & mulai proses rekam hadir |
-| `eksekusiRekam()` | Kirim data presensi ke GAS setelah konfirmasi |
-| `rekamSelesai()` | Rekam waktu selesai mengajar |
-| `renderBannerHadirNonaktif()` | Tampilkan banner saat sistem nonaktif + input kode override |
-| `cekOverrideCode()` | Validasi kode override yang diinput dosen |
-| `renderRiwayatSaya()` | Tampilkan riwayat presensi dosen yang login |
-| `renderHari()` | Render jadwal mingguan dosen |
-
----
-
-### `ganti.js`
-Manajemen jadwal pengganti & data master.
-
-| Fungsi | Keterangan |
-|---|---|
-| `kirimGanti()` | Ajukan jadwal pengganti |
-| `setStatusGanti(id, status)` | ACC atau tolak pengajuan (admin) |
-| `ajukanBatalGanti(id)` | Dosen ajukan pembatalan ganti |
-| `accBatalGanti(id)` | Admin setujui pembatalan |
-| `tandaiTerlaksana(id)` | Tandai jadwal ganti sudah terlaksana |
-| `renderG()` | Render daftar pengajuan ganti |
-| `renderD()` | Render tabel dosen (admin) |
-| `saveDos()` | Simpan data dosen baru/edit |
-| `hapusDos(id)` | Hapus data dosen |
-| `renderJ()` | Render tabel jadwal (admin) |
-
----
-
-### `maju.js`
-Pengajuan jadwal maju (kuliah lebih awal).
-
-| Fungsi | Keterangan |
-|---|---|
-| `kirimMaju()` | Ajukan jadwal maju |
-| `setStatusMaju(id, status)` | ACC atau tolak pengajuan maju (admin) |
-| `renderM()` | Render daftar pengajuan maju |
-| `renderRiwayatMaju()` | Render riwayat maju untuk panel admin |
-
----
-
-### `mk.js`
-Master data Mata Kuliah.
-
-| Fungsi | Keterangan |
-|---|---|
-| `renderMK()` | Render tabel MK dengan filter nama/prodi/tahun |
-| `openMMK(id)` | Buka modal tambah/edit MK |
-| `saveMMK()` | Simpan data MK |
-| `hapusMK(id)` | Hapus MK (dengan cek penggunaan di jadwal) |
-| `importMkDariJadwal()` | Import MK unik dari data jadwal ke master |
-| `fillDropdownMK(elId)` | Isi dropdown MK di form lain |
-
----
-
-### `notif.js`
-Sistem notifikasi dosen.
-
-| Fungsi | Keterangan |
-|---|---|
-| `cekNotifMaju()` | Cek & render notif status pengajuan ganti/maju |
-| `getLiburDalamRentang(start, end)` | Ambil daftar libur nasional dalam rentang tanggal |
-| `cekJadwalBenturanLibur()` | Deteksi jadwal dosen yang bertabrakan dengan libur nasional |
-| `renderNotifLiburBeranda()` | Render banner libur nasional H-2 di beranda |
-| `renderNotifLiburHadir()` | Render banner libur di halaman presensi |
-| `LIBUR_NASIONAL` | Data libur nasional Indonesia 2025–2026 |
-
----
-
-### `beranda.js`
-Dashboard beranda.
-
-| Fungsi | Keterangan |
-|---|---|
-| `fillBerandaAdmin()` | Render dashboard admin: stat harian, ringkasan ketepatan waktu bulan ini, alert pending |
-| `fillBerandaDosen()` | Render dashboard dosen: jadwal hari ini, resume sesi aktif |
-| `renderBannerHadirNonaktif()` | Banner sistem nonaktif (dipanggil dari sini juga) |
-| `pg(page, btn)` | Navigasi antar halaman/tab |
-
----
-
-### `monitoring.js`
-Panel monitoring & pengaturan admin.
-
-| Fungsi | Keterangan |
-|---|---|
-| `renderDailyDashboard()` | Dashboard ringkasan kehadiran hari ini |
-| `renderAlertAbsen()` | Alert dosen yang belum hadir |
-| `renderRataLambat(data)` | Statistik rata-rata keterlambatan per dosen |
-| `renderTren()` | Grafik tren ketepatan waktu bulanan |
-| `renderGantiAlert()` | Alert pengajuan ganti yang menunggu ACC |
-| `renderRiwayatGanti()` | Riwayat lengkap pengajuan ganti (admin) |
-| `renderPengaturanSistem()` | Panel pengaturan sistem lengkap |
-| `toggleSistemPresensi()` | Toggle ON/OFF sistem presensi |
-| `simpanOverrideCode()` | Aktifkan kode override presensi |
-| `hapusOverrideCode()` | Hapus kode override |
-| `simpanPesanLibur()` | Simpan pesan banner libur |
-| `simpanPengumumanLogin()` | Simpan pengumuman di halaman login |
-| `simpanSemesterAktif()` | Simpan semester & tahun akademik aktif |
-
----
-
-### `rapor.js`
-Rapor kinerja kehadiran per dosen.
-
-| Fungsi | Keterangan |
-|---|---|
-| `renderRapor(dosenOverride)` | Render rapor dosen yang login (atau dosen tertentu jika admin) |
-| `renderAdminRapor()` | Render rapor semua dosen (admin) |
-| `calcGrade(...)` | Hitung grade kinerja (A/B/C/D) |
-| `buildTrenHTML(myP)` | Bangun HTML grafik tren bulanan |
-| `buildMkHTML(myP)` | Bangun HTML rekap per MK di rapor |
-| `filterBySemester(...)` | Filter data presensi berdasarkan semester |
-
----
-
-### `report.js`
-Laporan presensi & export data.
-
-| Fungsi | Keterangan |
-|---|---|
-| `renderR()` | Render laporan presensi dengan filter tanggal & dosen |
-| `exportExcel()` | Export data presensi ke file Excel (.xlsx) |
-| `renderTop10(data)` | Render top 10 dosen di leaderboard |
-| `donut(id, sl, tot)` | Render donut chart ketepatan waktu |
-
----
-
-### `export-yayasan.js`
-Laporan Evaluasi Dosen untuk keperluan yayasan.
-
-| Fungsi | Keterangan |
-|---|---|
-| `exportLaporanYayasan()` | Generate & buka jendela print laporan PDF lengkap |
-| `_fmtTgl(str)` | Format tanggal YYYY-MM-DD ke format Indonesia |
-| `_pct(n, total)` | Hitung persentase bulat |
-| `_statBox(...)` | Helper render kotak statistik besar |
-| `_profilStat(...)` | Helper render kotak stat profil dosen |
-| `_miniStat(...)` | Helper render kotak ringkasan kecil |
-| `_panduanBox(...)` | Helper render kotak panduan membaca |
-| `_legendaBox(...)` | Helper render kotak legenda status |
-| `_cssLaporan()` | CSS lengkap laporan (A4, print-friendly) |
-
-**Isi laporan:**
-
-| Bagian | Konten |
-|---|---|
-| Sampul | Judul, periode, institusi, total dosen & sesi, warning anomali data |
-| Panduan | Cara membaca laporan + legenda status (untuk pembaca non-teknis) |
-| BAB I | Agregat keseluruhan: % tepat/terlambat/sangat, progress bar, mode perkuliahan |
-| BAB II | Peringkat dosen: ranking, predikat, mode perkuliahan per dosen |
-| BAB III | Rekapitulasi per mata kuliah |
-| BAB IV | Detail keterlambatan per dosen & MK + flag anomali data (>120 mnt) |
-| BAB V | Profil individual per dosen: stat, progress bar, tabel per MK, riwayat tanggal mengajar |
-| Penutup | Kesimpulan & rekomendasi otomatis + tanda tangan Admin LYTARA |
-
-> Filter tanggal & dosen mengikuti filter aktif di halaman Laporan sebelum tombol diklik.
-
----
-
-## 🔑 Fitur Khusus
-
-### Override Code Presensi
-Saat sistem dinonaktifkan (hari libur), admin dapat mengaktifkan **kode override** sementara agar dosen tertentu tetap bisa merekam presensi (misalnya kelas darurat yang disepakati bersama mahasiswa).
-
-**Alur:**
-```
-Admin buat kode (4–8 karakter) di Pengaturan
-  → Bagikan ke dosen yang mendapat izin via WA/chat
-  → Dosen input kode di halaman Presensi
-  → Form presensi terbuka untuk sesi tersebut
-  → Admin hapus kode setelah semua selesai mengajar
-```
-
-**Catatan keamanan:**
-- Kode tersimpan di GAS Settings (`overrideCode`)
-- Session unlock tersimpan di `sessionStorage` — otomatis hilang saat logout atau tab ditutup
-- Kode hanya berlaku selama belum dihapus admin
-
----
-
-### Notifikasi Libur Nasional
-Sistem mendeteksi otomatis jadwal dosen yang bertabrakan dengan libur nasional dan menampilkan peringatan:
-- **H-2 hingga H-0** → banner kuning di beranda, ajak dosen ajukan pengganti
-- **Sudah lewat, belum diganti** → banner merah di beranda & halaman presensi
-
-Data libur nasional tersedia untuk tahun **2025 dan 2026** di `notif.js` (`LIBUR_NASIONAL`).
-
----
-
-### Tutup Paksa Sesi (WK I)
-Admin dengan Token WK I (`1990`) dapat menutup paksa sesi presensi yang masih terbuka. Status selesai dihitung otomatis berdasarkan jam jadwal selesai vs waktu tutup paksa.
-
----
-
-## 🗄️ Struktur Data GAS
-
-Data disimpan di Google Sheets melalui GAS dengan action berikut:
-
-| Action | Keterangan |
-|---|---|
-| `getDosen` | Ambil semua data dosen |
-| `getJadwal` | Ambil semua jadwal |
-| `getPresensi` | Ambil semua data presensi |
-| `getGanti` | Ambil semua pengajuan jadwal pengganti |
-| `getMaju` | Ambil semua pengajuan jadwal maju |
-| `getMataKuliah` | Ambil master data MK |
-| `getSettings` | Ambil konfigurasi sistem (semester, toggle, kode override, dll.) |
-| `saveSettings` | Simpan konfigurasi sistem |
-| `savePresensi` | Simpan rekaman presensi baru |
-| `updateSelesai` | Update waktu & status selesai |
-| `saveGanti` | Simpan pengajuan jadwal pengganti |
-| `updateStatusGanti` | Update status ACC/tolak pengajuan ganti |
-| `saveMaju` | Simpan pengajuan jadwal maju |
-| `updateStatusMaju` | Update status ACC/tolak pengajuan maju |
-| `saveDosen` | Simpan data dosen baru/edit |
-| `deleteDosen` | Hapus data dosen |
-| `saveJadwal` | Simpan jadwal baru/edit |
-| `deleteJadwal` | Hapus jadwal |
-| `saveMataKuliah` | Simpan MK baru/edit |
-| `deleteMataKuliah` | Hapus MK |
-| `doAdminLogin` | Validasi PIN admin |
-
----
-
-## 📊 Status Presensi
-
-| `color` | Label | Keterangan |
-|---|---|---|
-| `green` | ✅ Tepat Waktu | Hadir ≤ 0 menit dari jam jadwal |
-| `yellow` | ⏱ Terlambat | Terlambat 1–15 menit |
-| `red` | 🚨 Sangat Terlambat | Terlambat > 15 menit |
-
----
-
-## 📐 Konvensi Kode
-
-- Semua variabel global didefinisikan di `config.js` (window scope)
-- Tidak menggunakan module bundler — semua file dimuat via `<script src>` di `index.html`
-- Urutan load script penting: `config` → `api` → `helpers` → `auth` → fitur-fitur → `beranda` → `export-yayasan`
-- Format tanggal di database: `DD/MM/YYYY`
-- Format tanggal di filter HTML input: `YYYY-MM-DD`
-- Konversi dilakukan via `parseTanggal()` di `helpers.js`
-
----
-
-## 🚀 Deployment
-
-1. Deploy Google Apps Script sebagai Web App (akses: Anyone)
-2. Salin URL endpoint ke variabel `API` di `config.js`
-3. Host file HTML + folder `js/` di server statis (GitHub Pages, Netlify, atau web server kampus)
-4. Buka `index.html` di browser
-
----
-
-## 📋 Changelog
-
-| Versi | Perubahan |
-|---|---|
-| v6.0 | Rilis awal sistem LYTARA |
-| v6.1 | Tambah fitur Jadwal Maju, Master MK, import MK dari jadwal |
-| v6.2 | Tambah notifikasi libur nasional H-2, banner terlambat ajukan ganti |
-| v6.3 | Tambah summary card ketepatan waktu bulan ini di beranda admin |
-| v6.4 | Tambah **Laporan Evaluasi Dosen** (export PDF 6 BAB untuk yayasan), fix bug normalisasi nama MK, flag anomali data >120 mnt |
-| v6.5 | Laporan: tambah mode perkuliahan per dosen (BAB II & IV), panduan membaca, profil individual per dosen (BAB V), riwayat tanggal mengajar, tanda tangan, kesimpulan & rekomendasi otomatis |
-| v6.6 | Tambah **Override Code** presensi saat sistem nonaktif, pisah blokir sistem (presensi vs pengajuan ganti/maju), banner kontekstual di halaman Presensi, fix bug `auth.js` missing catch, hapus fungsi `doAdminLogin` duplikat di `api.js` |
-
----
-
-*LYTARA v6.6 — Sistem Presensi Digital Dosen*
+| V10.0 | Script jadi standalone, notifikasi WhatsApp (Fonnte) dihapus, PIN & token pindah ke sheet, libur nasional pindah ke sheet |
+| V10.5 | Kartu Status Sistem, arsip per-pengguna, rollover lewat UI |
+| V11.0 | Import jadwal, penentuan kelas paralel otomatis |
+| V11.3 | Flex Class, kalender akademik, pengujian otomatis |
+| V11.6 | Moda ujian, pemisahan tatap muka & ujian di rapor, minggu libur |
+| V11.7 | Laporan Yayasan: perbaikan penggolongan moda + BAB IV Flex Class |
+| V12.0 | Jam selesai jadwal ditampilkan & diperbaiki untuk kelas flex |

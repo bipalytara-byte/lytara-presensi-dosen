@@ -1317,17 +1317,22 @@
 
 <!-- ============================================================
      LYTARA JavaScript — urutan load PENTING, jangan diubah
-     config.js   → konstanta, state global (D, J, P, G, M, dll), get/post
-     helpers.js  → utilitas kecil (parseTanggal, jStr, stH, dll)
-     auth.js     → login, logout, session
-     hadir.js    → rekam presensi mulai & selesai
-     ganti.js    → jadwal pengganti + kelola dosen/jadwal (admin)
-     monitoring.js → dashboard admin
-     report.js   → laporan, leaderboard, export Excel
-     maju.js     → jadwal maju
-     rapor.js    → rapor evaluasi dosen
-     notif.js    → notifikasi status + libur nasional
-     beranda.js  → halaman beranda dosen (fillAll, pg, cm)
+     config.js       → konstanta, state global (D, J, P, G, M, MK, FLEX_BLOK),
+                       get/post/postBesar, VERSI_DIHARAPKAN
+     helpers.js      → utilitas kecil (parseTanggal, jStr, stH, tutupPaksa)
+     auth.js         → login, logout, session, muat data awal, cek versi backend
+     hadir.js        → rekam presensi mulai & selesai, ambilJamResmi()
+     ganti.js        → jadwal pengganti + kelola dosen/jadwal (admin)
+     monitoring.js   → dashboard admin + seluruh kartu Pengaturan Sistem
+     report.js       → laporan, leaderboard, export Excel
+     export-yayasan.js → Laporan Yayasan (BAB I–VI)
+     maju.js         → jadwal maju
+     rapor.js        → rapor evaluasi dosen + pemenuhan pertemuan
+     mk.js           → master mata kuliah
+     flex.js         → Flex Class: blok waktu mingguan (dosen & admin)
+     manual.js       → presensi manual darurat + verifikasi WK I
+     notif.js        → notifikasi status + libur nasional
+     beranda.js      → halaman beranda dosen (fillAll, pg, cm)
 ============================================================ -->
 <script src="js/config.js"></script>
 <script src="js/helpers.js"></script>
