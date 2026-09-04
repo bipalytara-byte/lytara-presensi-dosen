@@ -270,7 +270,12 @@ function onJadwal(){
   document.getElementById('hint').style.display='none';
   document.getElementById('warn-hari').style.display='none';
   document.getElementById('prev').style.display='none';
-  if(!jid){document.getElementById('pjam').value='';document.getElementById('pruang').value='';return;}
+  if(!jid){
+    document.getElementById('pjam').value='';
+    document.getElementById('pselesai').value='';
+    document.getElementById('pruang').value='';
+    return;
+  }
   var j=J.find(function(x){return x.id===jid;});if(!j)return;
 
   sesuaikanModeUjian(j);
@@ -288,6 +293,8 @@ function onJadwal(){
       document.getElementById('pjam').value = jStr(jMulaiOverride);
       document.getElementById('pruang').value = isGantiValid.tempat || j.ruang;
       document.getElementById('pmode').value = isGantiValid.mode === 'daring' ? 'Daring Sinkronus' : 'Luring';
+      document.getElementById('pselesai').value = jStr(
+        isGantiValid.jam.indexOf('-') > -1 ? isGantiValid.jam.split('-')[1].trim() : (j.jamSelesai||''));
       var w=document.getElementById('warn-hari');
       w.className = 'ai';
       w.textContent='ℹ️ Menggunakan Jadwal Pengganti yang telah di-ACC Admin.';
@@ -298,6 +305,8 @@ function onJadwal(){
       document.getElementById('pjam').value = jStr(jMulaiMaju);
       document.getElementById('pruang').value = isMajuValid.tempat || j.ruang;
       document.getElementById('pmode').value = isMajuValid.mode === 'daring' ? 'Daring Sinkronus' : 'Luring';
+      document.getElementById('pselesai').value = jStr(
+        isMajuValid.jam.indexOf('-') > -1 ? isMajuValid.jam.split('-')[1].trim() : (j.jamSelesai||''));
       var w=document.getElementById('warn-hari');
       w.className = 'ai';
       w.innerHTML='⏩ <b>Jadwal Maju</b> digunakan — ACC Admin tgl <b>'+isMajuValid.tgl+'</b> · Jam: <b>'+isMajuValid.jam+'</b>';
@@ -308,15 +317,17 @@ function onJadwal(){
       var blokIni = (typeof blokUntukHariIni === 'function') ? blokUntukHariIni(j.id) : null;
       var w = document.getElementById('warn-hari');
       if (blokIni) {
-        document.getElementById('pjam').value   = jStr(blokIni.jamMulai);
+        document.getElementById('pjam').value     = jStr(blokIni.jamMulai);
+        document.getElementById('pselesai').value = jStr(blokIni.jamSelesai);
         document.getElementById('pruang').value = document.getElementById('pruang').value || '';
         w.className = 'ai';
         w.innerHTML = '🔀 <b>Flex Class</b> — blok minggu ke-<b>' + blokIni.minggu + '</b> · Jam: <b>'
                     + blokIni.jamMulai + '–' + blokIni.jamSelesai + '</b> · ' + blokIni.modaSumbuA;
         w.style.display = 'block';
       } else {
-        document.getElementById('pjam').value   = '';
-        document.getElementById('pruang').value = '';
+        document.getElementById('pjam').value     = '';
+        document.getElementById('pselesai').value = '';
+        document.getElementById('pruang').value   = '';
         w.className = 'aw';
         w.innerHTML = '🔀 <b>Flex Class</b> — belum ada blok waktu untuk hari ini. '
                     + 'Buka menu <b>Flex Class</b> dan tetapkan blok minggu ini terlebih dahulu '
@@ -325,6 +336,7 @@ function onJadwal(){
       }
   } else {
       document.getElementById('pjam').value=jStr(j.jamMulai);
+      document.getElementById('pselesai').value=jStr(j.jamSelesai||'');
       document.getElementById('pruang').value=j.ruang;
       var today=todayHari();
       if(j.hari!==today){
@@ -576,6 +588,12 @@ async function eksekusiRekam(){
   var jamSelesaiAkhir = '';
   if(p.isGantiValid && p.isGantiValid.jam.indexOf('-') > -1) jamSelesaiAkhir = p.isGantiValid.jam.split('-')[1].trim();
   else if(p.isMajuValid && p.isMajuValid.jam.indexOf('-') > -1) jamSelesaiAkhir = p.isMajuValid.jam.split('-')[1].trim();
+  else if (p.jad.polaJadwal === 'flex') {
+    // Kelas flex tidak punya jamSelesai di jadwal — nilainya ada di blok.
+    // Tanpa ini, status "pulang awal" tidak pernah bisa dinilai.
+    var bs = (typeof blokUntukHariIni === 'function') ? blokUntukHariIni(p.jad.id) : null;
+    jamSelesaiAkhir = bs ? jStr(bs.jamSelesai) : '';
+  }
   else jamSelesaiAkhir = p.jad.jamSelesai||'';
 
   // Tandai sumber jadwal di record
