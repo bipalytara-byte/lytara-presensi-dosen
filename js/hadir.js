@@ -166,10 +166,13 @@ function renderBannerHadirNonaktif() {
 
     // Jadwal dosen hari ini yang belum punya pengganti
     var hariIni = todayHari();
-    var belumGanti = currentUser ? J.filter(function(j){
-      return j.dosenId === currentUser.id && j.hari === hariIni &&
-        !G.some(function(g){ return g.dosenId === currentUser.id && g.mk === j.mk && g.statusAcc !== 'Ditolak'; });
-    }) : [];
+    // [V12.4] Sebelum perkuliahan dimulai tidak ada pertemuan yang hilang,
+    // jadi tidak ada yang perlu diganti.
+    var belumGanti = (currentUser && (typeof kuliahSudahMulai !== 'function' || kuliahSudahMulai()))
+      ? J.filter(function(j){
+          return j.dosenId === currentUser.id && j.hari === hariIni &&
+            !G.some(function(g){ return g.dosenId === currentUser.id && g.mk === j.mk && g.statusAcc !== 'Ditolak'; });
+        }) : [];
 
     var jadwalHtml = belumGanti.length > 0
       ? '<div style="margin:8px 0 6px;font-size:12px;font-weight:700;color:#7a4f00">📋 Jadwal hari ini yang perlu diganti:</div>'

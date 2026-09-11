@@ -231,9 +231,13 @@ function fillBerandaDosen() {
       var sudahGanti = G.filter(function(g) {
         return g.dosenId === currentUser.id && g.asli === todayYmd;
       });
-      var belumGanti = jadwalTerdampak.filter(function(j) {
-        return !sudahGanti.some(function(g){ return g.mk === j.mk; });
-      });
+      // [V12.4] Sebelum perkuliahan dimulai, jadwal belum berjalan —
+      // tidak ada pertemuan yang perlu diganti.
+      var belumGanti = (typeof kuliahSudahMulai === 'function' && !kuliahSudahMulai())
+        ? []
+        : jadwalTerdampak.filter(function(j) {
+            return !sudahGanti.some(function(g){ return g.mk === j.mk; });
+          });
 
       var reminderHtml = '';
       if (belumGanti.length > 0) {

@@ -113,6 +113,9 @@ function dateToStr(d) {
  */
 function cekJadwalBenturanLibur() {
   if (!currentUser || isAdmin) return [];
+  // [V12.4] Libur nasional sebelum perkuliahan dimulai tidak membatalkan
+  // pertemuan apa pun, jadi tidak perlu jadwal pengganti.
+  if (typeof kuliahSudahMulai === 'function' && !kuliahSudahMulai()) return [];
 
   var today = new Date(); today.setHours(0,0,0,0);
 

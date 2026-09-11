@@ -1,3 +1,19 @@
+
+// [V12.4] Perkuliahan sudah dimulai atau belum.
+// Sebelum tanggal mulai kuliah, tidak ada kewajiban mengajar — peringatan
+// "belum presensi" dan "jadwal perlu diganti" tidak boleh muncul.
+function kuliahSudahMulai() {
+  if (typeof TGL_MULAI_KULIAH === 'undefined' || !TGL_MULAI_KULIAH) return true;
+  var mulai = new Date(TGL_MULAI_KULIAH + 'T00:00:00');
+  if (isNaN(mulai)) return true;
+  var kini = new Date(); kini.setHours(0,0,0,0);
+  return kini >= mulai;
+}
+
+function labelBelumMulai() {
+  var m = new Date(TGL_MULAI_KULIAH + 'T00:00:00');
+  return m.toLocaleDateString('id-ID', { day:'numeric', month:'long', year:'numeric' });
+}
 /* report.js — Halaman Laporan Dashboard admin
    Fungsi: renderR (main report render), exportExcel,
            switchLbTab, renderTop10, donut
@@ -187,8 +203,23 @@ function renderR(){
       +'</div>';
   }).filter(Boolean).join('')+'</div>'||'<p class="empty">Belum ada data.</p>';
 
-  document.getElementById('tp-count').textContent = totalPelanggaran;
-  document.getElementById('pelanggaran-banner').style.display = totalPelanggaran > 0 ? 'block' : 'none';
+  var bannerP = document.getElementById('pelanggaran-banner');
+  if (!kuliahSudahMulai()) {
+    // Perkuliahan belum dimulai — beri informasi, bukan peringatan.
+    bannerP.style.display = 'block';
+    bannerP.style.background = '#e6f1fb';
+    bannerP.style.borderColor = '#85b7eb';
+    bannerP.style.color = '#185fa5';
+    bannerP.innerHTML = '📅 Perkuliahan semester ini dimulai <b>' + labelBelumMulai()
+      + '</b>. Belum ada kewajiban mengajar, jadi presensi masih kosong.';
+  } else {
+    bannerP.style.background = '#fcebeb';
+    bannerP.style.borderColor = '#f09595';
+    bannerP.style.color = '#a32d2d';
+    bannerP.innerHTML = '🚨 Terdapat <b id="tp-count" style="font-size:15px">'
+      + totalPelanggaran + '</b> dosen yang seharusnya mengajar di rentang ini namun belum presensi.';
+    bannerP.style.display = totalPelanggaran > 0 ? 'block' : 'none';
+  }
 
   // Fitur 4: rata-rata keterlambatan (pakai data filtered)
   renderRataLambat(data);
