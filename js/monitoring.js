@@ -642,6 +642,7 @@ function renderPengaturanSistem() {
     + renderKartuArsip()
     + renderKartuStatus()
     + renderKartuKalender()
+    + renderKartuGanda()
     + renderKartuUji()
     + renderKartuCache()
     + renderKartuImport()
@@ -819,6 +820,61 @@ async function simpanKalender() {
 // =====================================================
 // [V11.3] KARTU DATA UJI
 // =====================================================
+// =====================================================
+// [V12.5] KARTU PRESENSI GANDA
+// =====================================================
+function renderKartuGanda() {
+  return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
+    + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">🧹 Presensi Ganda</div>'
+    + '<div style="font-size:12px;color:#888;margin-bottom:10px">'
+      + 'Satu pertemuan yang tercatat lebih dari sekali — biasanya karena tombol ditekan berulang '
+      + 'saat server lambat. Yang dipertahankan catatan pertama.</div>'
+    + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      + '<button class="btn btn-sm" onclick="cekPresensiGanda()" style="font-size:12px">🔍 Periksa</button>'
+      + '<button class="btn btn-danger btn-sm" onclick="bersihkanPresensiGanda()" style="font-size:12px">🧹 Bersihkan</button>'
+    + '</div>'
+    + '<div id="hasil-ganda" style="margin-top:10px"></div>'
+  + '</div>';
+}
+
+async function cekPresensiGanda() {
+  var el = document.getElementById('hasil-ganda');
+  el.innerHTML = '<div style="font-size:12px;color:#888">Memeriksa…</div>';
+  try {
+    var r = await get({ action:'cariPresensiGanda' });
+    if (!r.jumlahKelompok) {
+      el.innerHTML = '<div style="font-size:12px;color:#27500a;background:#eaf3de;border-radius:6px;padding:7px 10px">'
+        + '✅ Tidak ada presensi ganda.</div>';
+      return;
+    }
+    el.innerHTML = '<div style="font-size:12px;color:#791f1f;background:#fcebeb;border-radius:6px;padding:7px 10px;margin-bottom:8px">'
+        + '⚠️ ' + r.jumlahKelompok + ' pertemuan tercatat ganda · ' + r.jumlahBaris + ' baris berlebih</div>'
+      + r.kelompok.slice(0, 12).map(function(g){
+          var d = g.data[0];
+          return '<div style="font-size:11px;color:#555;background:#f8f8f7;border-radius:6px;padding:5px 9px;margin-bottom:4px">'
+            + '<b>' + d.dosen + '</b> — ' + d.mk + ' (' + d.tanggal + ') · jam mulai: '
+            + g.data.map(function(x){ return x.mulai; }).join(', ') + '</div>';
+        }).join('')
+      + (r.kelompok.length > 12 ? '<div style="font-size:11px;color:#888">… dan ' + (r.kelompok.length-12) + ' lainnya</div>' : '');
+  } catch(e) {
+    el.innerHTML = '<div style="font-size:12px;color:#a32d2d">Gagal: ' + e.message + '</div>';
+  }
+}
+
+async function bersihkanPresensiGanda() {
+  if (!confirm('Bersihkan presensi ganda?\n\n'
+    + 'Catatan pertama dipertahankan, sisanya dihapus.\n'
+    + 'Jam selesai dipindahkan bila catatan pertama belum memilikinya.')) return;
+  setSB('sy');
+  try {
+    var r = await get({ action:'hapusPresensiGanda' });
+    if (!r.success) { setSB('er'); alert('Gagal: ' + (r.error||'')); return; }
+    setSB('ok');
+    alert('✅ ' + r.message + '\n\nHalaman akan dimuat ulang.');
+    location.reload();
+  } catch(e) { setSB('er'); alert('Gagal: ' + e.message); }
+}
+
 function renderKartuUji() {
   return '<div style="margin-bottom:1.5rem;padding-top:1.2rem;border-top:1px solid #f0f0ee">'
     + '<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:4px">🧪 Data Uji</div>'

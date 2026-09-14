@@ -627,8 +627,19 @@ async function eksekusiRekam(){
   var btn=document.getElementById('brek');btn.disabled=true;btn.textContent='Menyimpan...';
   setSB('sy');
   try{
-    await post({action:'savePresensi',data:rec});
-    P.push(rec);setSB('ok');actId=rec.id;actJad=p.jad;
+    var rSave = await post({action:'savePresensi',data:rec});
+    // [V12.5] Server menolak menyimpan dua kali untuk jadwal & tanggal yang
+    // sama. Kalau itu terjadi, pakai id yang sudah ada — jangan menambah
+    // baris baru di data lokal.
+    if (rSave && rSave.duplikat) {
+      rec.id = rSave.id;
+      if (!P.some(function(x){ return x.id === rec.id; })) P.push(rec);
+      setSB('ok'); actId = rec.id; actJad = p.jad;
+      alert('ℹ️ Presensi untuk jadwal ini sudah tercatat sebelumnya.\n'
+          + 'Tidak ada catatan ganda yang dibuat.');
+    } else {
+      P.push(rec);setSB('ok');actId=rec.id;actJad=p.jad;
+    }
     // Bug 2 fix: simpan jam selesai yang berlaku agar rekamSelesai pakai jam yang tepat
     actJamSelesai = jamSelesaiAkhir;
     document.getElementById('resume-banner').style.display='none';
