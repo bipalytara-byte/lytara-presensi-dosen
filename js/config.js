@@ -8,7 +8,7 @@ const API = 'https://script.google.com/macros/s/AKfycbxGKxl4M9NdTNZTJu1xSvdDulR0
 // Versi backend yang diharapkan. Kalau server menjawab dengan versi
 // lain, berarti URL /exec menunjuk deployment lama — penyebab paling
 // sering dari "action tidak dikenal" dan "data lama muncul lagi".
-const VERSI_DIHARAPKAN = 'V12.5';
+const VERSI_DIHARAPKAN = 'V12.6';
 const HARI = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 let D=[],J=[],P=[],G=[],M=[],MK=[];
 let eDos=null,eJad=null,eMk=null,tempMk=[];
@@ -71,13 +71,50 @@ function setSB(s){
   el.className   = 'sb'+(s==='sy'?' sy':s==='er'?' se':'');
 }
 
+// =====================================================
+// [V12.6] PERCOBAAN ULANG OTOMATIS
+// -----------------------------------------------------
+// Apps Script membatasi jumlah eksekusi yang berjalan bersamaan.
+// Pada jam sibuk (presensi pagi) sebagian permintaan ditolak dan
+// muncul sebagai "gagal terhubung ke server", padahal servernya
+// sehat — hanya sedang padat.
+//
+// Tanpa penanganan ini, dosen menekan tombol berulang kali, dan
+// itulah yang kemarin melahirkan catatan presensi ganda.
+// =====================================================
+const RETRY_JEDA = [700, 1600, 3000];   // milidetik
+
+function _tunggu(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+// Kegagalan sesaat: jaringan putus, 404/500 dari googleusercontent,
+// atau jawaban yang bukan JSON. Semuanya layak dicoba ulang.
+async function _ambil(url, opsi, maksUlang) {
+  var galat;
+  for (var i = 0; i <= maksUlang; i++) {
+    if (i > 0) await _tunggu(RETRY_JEDA[Math.min(i - 1, RETRY_JEDA.length - 1)]);
+    try {
+      var r = await fetch(url, opsi);
+      var teks = await r.text();
+      try {
+        return JSON.parse(teks);
+      } catch(e) {
+        galat = new Error('Jawaban server tidak utuh');
+        continue;                       // kemungkinan halaman error, coba lagi
+      }
+    } catch(e) {
+      galat = e;                        // jaringan gagal, coba lagi
+    }
+  }
+  throw galat || new Error('Gagal terhubung ke server');
+}
+
 // [V10] get() otomatis menyertakan arsipId kalau sedang melihat arsip.
 async function get(p){
   var q = {};
   Object.keys(p).forEach(function(k){ q[k] = p[k]; });
   if (ARSIP_AKTIF && !q.arsipId) q.arsipId = ARSIP_AKTIF.id;
-  var r = await fetch(API+'?'+new URLSearchParams(q).toString(),{redirect:'follow'});
-  return JSON.parse(await r.text());
+  // Membaca data aman diulang berkali-kali.
+  return await _ambil(API+'?'+new URLSearchParams(q).toString(), {redirect:'follow'}, 3);
 }
 
 // [V10.9] postBesar() — untuk kiriman besar seperti foto bukti.
@@ -89,13 +126,12 @@ async function postBesar(b){
     alert('📁 Anda sedang melihat arsip ' + ARSIP_AKTIF.nama + '.\n\nData arsip tidak bisa diubah.');
     throw new Error('Mode arsip: penulisan ditolak.');
   }
-  var r = await fetch(API, {
+  return await _ambil(API, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(b),
     redirect: 'follow'
-  });
-  return JSON.parse(await r.text());
+  }, 1);
 }
 
 // [V10] post() diblokir saat melihat arsip. Server juga menolak,
@@ -106,6 +142,8 @@ async function post(b){
         + 'Data arsip tidak bisa diubah. Kembali ke semester berjalan dulu.');
     throw new Error('Mode arsip: penulisan ditolak.');
   }
-  var r = await fetch(API+'?method=POST&payload='+encodeURIComponent(JSON.stringify(b)),{redirect:'follow'});
-  return JSON.parse(await r.text());
+  // Penulisan hanya diulang SEKALI. Server sudah menolak presensi ganda,
+  // tapi pengulangan berlebihan tetap berisiko untuk aksi lain.
+  return await _ambil(API+'?method=POST&payload='+encodeURIComponent(JSON.stringify(b)),
+                      {redirect:'follow'}, 1);
 }
