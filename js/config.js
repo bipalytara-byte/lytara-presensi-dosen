@@ -82,7 +82,15 @@ function setSB(s){
 // Tanpa penanganan ini, dosen menekan tombol berulang kali, dan
 // itulah yang kemarin melahirkan catatan presensi ganda.
 // =====================================================
-const RETRY_JEDA = [900, 2500];          // milidetik
+const RETRY_JEDA = [900, 2500];          // milidetik — untuk server sibuk
+
+// [V12.8.1] (frontend saja — tidak perlu deploy ulang GAS)
+// Jeda untuk kegagalan penyajian (404/500 dari googleusercontent).
+// Ini beda jenis: datangnya CEPAT, servernya sudah selesai bekerja, dan
+// mengulangnya tidak menambah beban apa pun. Jadi jedanya pendek dan
+// percobaannya lebih banyak.
+const RETRY_JEDA_SAJI = [300, 600, 1200];
+const MAKS_ULANG_SAJI = 4;
 
 // [V12.8] Batas waktu SATU percobaan. Lewat ini, permintaan benar-benar
 // dibatalkan lewat AbortController — bukan sekadar "dianggap gagal" tapi
@@ -97,8 +105,22 @@ async function _ambil(url, opsi, maksUlang, batasMs) {
   if (maksUlang == null) maksUlang = 1;
   batasMs = batasMs || BATAS_WAKTU;
   var galat;
-  for (var i = 0; i <= maksUlang; i++) {
-    if (i > 0) await _tunggu(RETRY_JEDA[Math.min(i - 1, RETRY_JEDA.length - 1)]);
+
+  // Dua jenis kegagalan, dua perlakuan:
+  //  - gagal penyajian (404/HTML) → murah diulang, ulangi sampai MAKS_ULANG_SAJI
+  //  - server sibuk / timeout     → mahal diulang, cukup sesuai maksUlang
+  var gagalSaji = false;
+  var batasUlang = Math.max(maksUlang, MAKS_ULANG_SAJI);
+
+  for (var i = 0; i <= batasUlang; i++) {
+    if (i > maksUlang && !gagalSaji) break;   // sudah cukup untuk server sibuk
+    if (i > 0) {
+      var jeda = gagalSaji
+        ? RETRY_JEDA_SAJI[Math.min(i - 1, RETRY_JEDA_SAJI.length - 1)]
+        : RETRY_JEDA[Math.min(i - 1, RETRY_JEDA.length - 1)];
+      await _tunggu(jeda);
+    }
+    gagalSaji = false;
 
     var ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     var jam = setTimeout(function(c){ return function(){ if (c) c.abort(); }; }(ctl), batasMs);
@@ -114,17 +136,21 @@ async function _ambil(url, opsi, maksUlang, batasMs) {
       try {
         return JSON.parse(teks);
       } catch(e) {
-        // [V12.8] Dulu pesannya berhenti di "Jawaban server tidak utuh" —
-        // benar, tapi tidak memberi tahu apa pun tentang APA yang dikirim
-        // server. Sekarang status HTTP dan cuplikan jawabannya ikut dibawa,
-        // supaya penyebabnya terbaca langsung dari layar dosen:
-        //   <!DOCTYPE html> + "Google Drive" → halaman error penyajian
-        //   accounts.google.com             → diminta login dulu
-        //   JSON terpotong di tengah        → jawaban terputus di jalan
+        // [V12.8.1] INI PENYEBAB "kadang bisa kadang tidak" YANG SEBENARNYA.
+        //
+        // Permintaan ke /exec dijawab redirect ke script.googleusercontent.com.
+        // Sebagian redirect itu mendarat di 404 — halaman HTML, bukan JSON.
+        // Server kita sehat dan sudah selesai bekerja; yang gagal cuma
+        // lapisan penyajian Google, dan itu acak.
+        //
+        // Obatnya memang mengulang. Percobaan berikutnya hampir selalu
+        // berhasil. Jangan diturunkan lagi jumlah percobaannya — versi
+        // V12.8 sempat menurunkannya ke 1 dan errornya justru lebih sering.
         var cuplik = String(teks).replace(/\s+/g, ' ').trim().slice(0, 200);
         galat = new Error('Jawaban server tidak utuh (HTTP ' + r.status + '): '
                           + (cuplik || '(kosong)'));
-        continue;                       // kemungkinan halaman error, coba lagi
+        gagalSaji = true;
+        continue;
       }
     } catch(e) {
       clearTimeout(jam);
