@@ -23,10 +23,14 @@ function swapLogin(v) {
 }
 
 async function loadForLogin(){
+  // [V12.8] Dulu memakai get() polos tanpa batas waktu, dan kegagalannya
+  // ditelan catch kosong. Kalau server sedang padat, halaman login bisa
+  // menggantung lama lalu muncul tanpa pengumuman apa pun, tanpa penjelasan.
+  showLogin();
   try {
     var results = await Promise.all([
-      get({action:'getDosen'}),
-      get({action:'getSettings'})
+      get({action:'getDosen'},   { ulang: 0, batasMs: 15000 }),
+      get({action:'getSettings'},{ ulang: 0, batasMs: 15000 })
     ]);
     D = results[0].data || [];
     var cfg = results[1].data || {};
@@ -34,8 +38,14 @@ async function loadForLogin(){
     PESAN_LIBUR      = cfg.pesanLibur      || '';
     PENGUMUMAN_LOGIN = cfg.pengumumanLogin || '';
     OVERRIDE_CODE    = cfg.overrideCode    || '';
-  } catch(e) {}
-  showLogin();
+  } catch(e) {
+    var err = document.getElementById('login-err');
+    if (err) {
+      err.textContent = e.message === 'Timeout'
+        ? '⚠️ Server lambat merespons. Anda tetap bisa mencoba masuk.'
+        : '⚠️ Gagal menghubungi server. Periksa koneksi, lalu muat ulang halaman.';
+    }
+  }
 }
 
 function tampilkanPengumumanLogin() {
@@ -76,7 +86,7 @@ async function doLogin(){
   btn.textContent = 'Memeriksa...';
 
   try {
-    var r = await get({ action: 'doLogin', id: id, pass: pass });
+    var r = await get({ action: 'doLogin', id: id, pass: pass }, { ulang: 1, batasMs: 20000 });
     if (!r.success) {
       err.textContent = '❌ ' + (r.error || 'Login gagal.');
       passEl.value = '';
@@ -135,7 +145,7 @@ async function doAdminLogin(){
   btn.textContent = 'Memeriksa...';
 
   try {
-    var r = await get({ action: 'doAdminLogin', pin: pin });
+    var r = await get({ action: 'doAdminLogin', pin: pin }, { ulang: 1, batasMs: 20000 });
     if (!r.success) {
       err.textContent = '❌ ' + (r.error || 'PIN salah.');
       document.getElementById('admin-pin').value = '';
@@ -255,20 +265,23 @@ function showLoadError(msg) {
   document.getElementById('load-error').style.display = 'block';
 }
 
+// [V12.8] Batas waktu sekarang ditangani di dalam get() lewat AbortController.
+// Dulu fungsi ini memakai Promise.race: janjinya memang ditolak, tapi fetch
+// di belakangnya tetap jalan DAN tetap mengulang sendiri sampai 4x. Satu kali
+// buka halaman bisa melahirkan 8 permintaan getAll — persis yang membuat
+// server tersedak di jam presensi pagi.
 function getWithTimeout(params, ms) {
-  ms = ms || 15000;
-  return Promise.race([
-    get(params),
-    new Promise(function(_, reject) {
-      setTimeout(function() { reject(new Error('Timeout')); }, ms);
-    })
-  ]);
+  return get(params, { ulang: 0, batasMs: ms || 25000 });
 }
 
+// Tepat DUA percobaan, tidak lebih. Yang pertama dibatalkan betulan
+// sebelum yang kedua berangkat.
 function getWithRetry(params) {
-  return getWithTimeout(params, 15000).catch(function() {
+  return getWithTimeout(params, 25000).catch(function() {
     updateLoadStep('⚠️ Server lambat, mencoba ulang...');
-    return getWithTimeout(params, 20000);
+    return _tunggu(1500).then(function() {
+      return getWithTimeout(params, 30000);
+    });
   });
 }
 
