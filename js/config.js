@@ -114,7 +114,16 @@ async function _ambil(url, opsi, maksUlang, batasMs) {
       try {
         return JSON.parse(teks);
       } catch(e) {
-        galat = new Error('Jawaban server tidak utuh');
+        // [V12.8] Dulu pesannya berhenti di "Jawaban server tidak utuh" —
+        // benar, tapi tidak memberi tahu apa pun tentang APA yang dikirim
+        // server. Sekarang status HTTP dan cuplikan jawabannya ikut dibawa,
+        // supaya penyebabnya terbaca langsung dari layar dosen:
+        //   <!DOCTYPE html> + "Google Drive" → halaman error penyajian
+        //   accounts.google.com             → diminta login dulu
+        //   JSON terpotong di tengah        → jawaban terputus di jalan
+        var cuplik = String(teks).replace(/\s+/g, ' ').trim().slice(0, 200);
+        galat = new Error('Jawaban server tidak utuh (HTTP ' + r.status + '): '
+                          + (cuplik || '(kosong)'));
         continue;                       // kemungkinan halaman error, coba lagi
       }
     } catch(e) {
